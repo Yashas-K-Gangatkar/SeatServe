@@ -194,3 +194,20 @@ Work Log:
 
 Stage Summary:
 - All four phases delivered within sandbox limits: Phase 3 rails are structurally complete and env-activated; Phase 4 artifacts (PG kit, KYC, security, legal, deploy) done; remaining real-world steps (provider keys, actual PG host, counsel sign-off) are documented, not hallucinated
+
+---
+Task ID: receipt-redesign
+Agent: Super Z (main)
+Task: Redesign the post-payment bill as a thermal paper receipt sliding out of a machine slot — slot only, no machine body, no hands (user reference photo)
+
+Work Log:
+- New src/components/seatserve/views/PaperReceipt.tsx: warm-hardware slot strip (rounded bar, inset dark slit, pulsing amber print LED, SEATSERVE engraving) + white thermal paper emerging underneath with print-out animation
+- globals.css: receipt-slide keyframes (slide + feed jiggle), slot-led blink, .receipt-zigzag torn bottom edge (dual 45° gradient sawtooth), .receipt-paper warm tint + drop shadow, .receipt-barcode irregular stripe gradient (v1 background-blend-mode: multiply silently failed to render — replaced with single-layer repeating gradient), prefers-reduced-motion support
+- Receipt content (mirrors reference photo): SEATSERVE header / cinema · screen / seat · movie, per-store item lines, dashed separators, Subtotal / Platform fee 5% / TOTAL, PAID — <method + masked detail>, timestamp + deterministic REF number, big tracking number, fake barcode, REAL scannable QR (qrcode lib → #/track/<code>), THANK YOU! + ENJOY THE SHOW · NO DELIVERY FEE
+- PaymentSheet: new optional receipt prop; paid phase renders the paper + Copy tracking + Track my order below (print-hide on buttons); masked payment detail promoted to state (paidDetail) so it prints on the paper
+- CheckoutSheet passes receipt from live cart selection + ctx (seat/screen/cinema/movie); Tracking retry passes it from tracking data (cancelled legs excluded)
+- FIXED during verification: PaymentSheet SheetContent had no height cap — tall receipt pushed the top above the viewport, unreachable (bottom-anchored fixed sheet). Added max-h-[92dvh] + overflow-y-auto + ref; auto-scrolls to top when the receipt prints
+- Verified: tsc 0, lint 0, 70/70 unit, 102/102 API, desktop + 390×844 mobile screenshots (scripts/verify-receipt-*.png), console clean; QR + barcode render; slot/paper animation on mount
+
+Stage Summary:
+- Post-payment bill is now a printed thermal receipt sliding out of a slot — exactly the reference vibe (no machine body, no hands), with a scannable tracking QR as a functional bonus
