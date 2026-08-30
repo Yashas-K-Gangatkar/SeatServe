@@ -24,7 +24,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#0b0d12",
+  themeColor: "#fbf7ef",
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",
@@ -36,11 +36,11 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className="dark" suppressHydrationWarning>
+    <html lang="en">
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased bg-background text-foreground`}>
         {children}
         <Toaster />
-        <SonnerToaster position="top-center" theme="dark" />
+        <SonnerToaster position="top-center" theme="light" richColors closeButton />
       </body>
     </html>
   );

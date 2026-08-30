@@ -91,7 +91,7 @@ export default function Admin({ go }: { go: (p: string) => void }) {
 
       <header className="flex items-start justify-between gap-2">
         <div>
-          <p className="text-[10px] font-extrabold tracking-[0.18em] text-amber-300">MALL ADMIN · AURORA MALL</p>
+          <p className="text-[10px] font-extrabold tracking-[0.18em] text-amber-600">MALL ADMIN · AURORA MALL</p>
           <h1 className="mt-1 text-2xl font-black tracking-tight sm:text-3xl">Operations board</h1>
           <p className="text-xs text-muted-foreground">Rolling window: {data.window.label}</p>
         </div>
@@ -99,7 +99,7 @@ export default function Admin({ go }: { go: (p: string) => void }) {
           <LiveDot connected={online} />
           <button
             onClick={() => go('#/qr')}
-            className="rounded-full border border-border px-3 py-1.5 text-[11px] font-bold hover:bg-muted"
+            className="rounded-full border border-stone-300 bg-white px-3 py-1.5 text-[11px] font-bold text-stone-600 shadow-sm hover:bg-stone-50"
           >
             QR sheets
           </button>
@@ -119,11 +119,11 @@ export default function Admin({ go }: { go: (p: string) => void }) {
 
       {/* refunds alert */}
       {data.kpis.refundsOpen > 0 && (
-        <section className="mt-4 rounded-2xl border border-amber-500/30 bg-amber-500/10 p-4" role="status">
-          <p className="text-sm font-bold text-amber-200">{data.kpis.refundsOpen} open refund/support request{data.kpis.refundsOpen === 1 ? '' : 's'}</p>
+        <section className="mt-4 rounded-2xl border border-amber-300 bg-amber-50 p-4" role="status">
+          <p className="text-sm font-bold text-amber-900">{data.kpis.refundsOpen} open refund/support request{data.kpis.refundsOpen === 1 ? '' : 's'}</p>
           <ul className="mt-2 space-y-1.5">
             {data.refunds.filter((r) => r.status === 'REQUESTED' || r.status === 'APPROVED').map((r) => (
-              <li key={r.id} className="text-xs text-amber-100/90">
+              <li key={r.id} className="text-xs text-amber-800">
                 <b>{r.code}</b> · {r.reason.replaceAll('_', ' ').toLowerCase()} · {rupees(r.amountPaise)} · {r.status} (processing lands in Phase 3)
               </li>
             ))}
@@ -143,7 +143,7 @@ export default function Admin({ go }: { go: (p: string) => void }) {
                 <div className="flex items-center justify-between gap-2">
                   <div>
                     <p className="text-sm font-black">
-                      {o.code} · <span className="text-lime-300">Seat {o.seat}</span>
+                      {o.code} · <span className="text-orange-600">Seat {o.seat}</span>
                     </p>
                     <p className="text-[11px] text-muted-foreground">
                       {o.screen} · {o.cinema} · {minAgo(o.placedAt)} · {rupees(o.totalPaise)}
@@ -172,7 +172,7 @@ export default function Admin({ go }: { go: (p: string) => void }) {
                 <div>
                   <p className="text-sm font-bold">
                     <span aria-hidden>{s.emoji}</span> {s.name}
-                    <span className={`ml-2 rounded-full px-2 py-0.5 text-[10px] font-bold ${s.kycStatus === 'VERIFIED' ? 'bg-emerald-500/15 text-emerald-300' : 'bg-amber-500/15 text-amber-300'}`}>
+                    <span className={`ml-2 rounded-full px-2 py-0.5 text-[10px] font-bold ${s.kycStatus === 'VERIFIED' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-800'}`}>
                       KYC {s.kycStatus}
                     </span>
                   </p>
@@ -190,7 +190,7 @@ export default function Admin({ go }: { go: (p: string) => void }) {
                   </button>
                   <button
                     onClick={() => toggleStore(s.id, !s.isOpen, s.name)}
-                    className={`rounded-full border px-3 py-1.5 text-[11px] font-bold ${s.isOpen ? 'border-emerald-500/40 bg-emerald-500/10 text-emerald-300' : 'border-red-500/40 bg-red-500/10 text-red-300'}`}
+                    className={`rounded-full border px-3 py-1.5 text-[11px] font-bold ${s.isOpen ? 'border-emerald-300 bg-emerald-50 text-emerald-700' : 'border-red-300 bg-red-50 text-red-700'}`}
                   >
                     {s.isOpen ? 'Open' : 'Closed'}
                   </button>
@@ -203,7 +203,7 @@ export default function Admin({ go }: { go: (p: string) => void }) {
                       <span className="truncate text-xs font-semibold">{p.name}</span>
                       <button
                         onClick={() => toggleProduct(p.id, !p.isAvailable, p.name)}
-                        className={`shrink-0 rounded-full px-2.5 py-1 text-[10px] font-bold ${p.isAvailable ? 'bg-emerald-500/15 text-emerald-300' : 'bg-red-500/15 text-red-300'}`}
+                        className={`shrink-0 rounded-full px-2.5 py-1 text-[10px] font-bold ${p.isAvailable ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'}`}
                       >
                         {p.isAvailable ? 'Available' : 'Sold out'}
                       </button>
@@ -243,7 +243,7 @@ export default function Admin({ go }: { go: (p: string) => void }) {
             <li key={a.id} className="text-[11px] leading-relaxed text-muted-foreground">
               <span className="tabular text-muted-foreground/60">{timeHM(a.at)}</span>{' '}
               <span className="font-bold text-foreground">{a.action}</span>
-              {a.actorRef ? <span className="text-violet-300"> · {a.actorRef}</span> : null}
+              {a.actorRef ? <span className="text-orange-600"> · {a.actorRef}</span> : null}
               {a.orderCode ? <span> · {a.orderCode}</span> : null}
               {a.meta && (a.meta as { from?: string; to?: string }).to ? (
                 <span>

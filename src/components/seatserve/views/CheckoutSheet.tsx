@@ -99,7 +99,7 @@ export function CheckoutSheet({
           <div className="px-5 pb-6 pt-3">
             {selection.map((r) => (
               <div key={r.storeId} className="mb-4">
-                <p className="mb-2 flex items-center gap-1.5 text-xs font-extrabold text-violet-300">
+                <p className="mb-2 flex items-center gap-1.5 text-xs font-extrabold text-orange-600">
                   <StoreIcon className="h-3.5 w-3.5" aria-hidden /> {r.emoji} {r.storeName}
                 </p>
                 <ul className="space-y-2">
@@ -116,7 +116,7 @@ export function CheckoutSheet({
                         onChange={(e) => cart.setNote(i.id, e.target.value)}
                         placeholder="Note for kitchen (e.g. no onion — allergy)"
                         maxLength={200}
-                        className="mt-2 w-full rounded-lg border border-border bg-background px-2.5 py-1.5 text-xs placeholder:text-muted-foreground/50 focus:outline-none focus:ring-1 focus:ring-violet-400"
+                        className="mt-2 w-full rounded-lg border border-border bg-background px-2.5 py-1.5 text-xs placeholder:text-muted-foreground/50 focus:outline-none focus:ring-1 focus:ring-amber-500"
                         aria-label={`Kitchen note for ${i.name}`}
                       />
                     </li>
@@ -132,7 +132,7 @@ export function CheckoutSheet({
                 <div className="flex justify-between"><dt className="text-muted-foreground">Item total (GST incl.)</dt><dd className="tabular">{rupees(subtotal)}</dd></div>
                 <div className="flex justify-between"><dt className="text-muted-foreground">Delivery · {selection.length} store{selection.length === 1 ? '' : 's'}</dt><dd className="tabular">{rupees(deliveryFees)}</dd></div>
                 <div className="flex justify-between"><dt className="text-muted-foreground">Platform fee ({pf.platformFeePct}%)</dt><dd className="tabular">{rupees(platformFee)}</dd></div>
-                <div className="mt-2 flex justify-between border-t border-border pt-2 text-base font-black"><dt>Total</dt><dd className="text-lime-300 tabular">{rupees(estimatedTotal)}</dd></div>
+                <div className="mt-2 flex justify-between border-t border-border pt-2 text-base font-black"><dt>Total</dt><dd className="text-orange-600 tabular">{rupees(estimatedTotal)}</dd></div>
               </dl>
               <p className="mt-2 flex items-center gap-1.5 text-[11px] text-muted-foreground">
                 <Timer className="h-3 w-3" aria-hidden /> Est. delivery ~{Math.max(...ctx.stores.map((s) => s.prepBufferMin), 0) + 12} min · ordering closes {ctx.showtime ? new Date(ctx.showtime.cutoff.cutoffAt).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }) : '—'}
@@ -148,7 +148,7 @@ export function CheckoutSheet({
             <button
               onClick={placeOrder}
               disabled={placing || itemCount === 0}
-              className="mt-4 flex w-full items-center justify-center gap-2 rounded-full bg-lime-300 py-3.5 text-sm font-extrabold text-lime-950 hover:bg-lime-200 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-lime-300 disabled:opacity-50"
+              className="mt-4 flex w-full items-center justify-center gap-2 rounded-full bg-gradient-to-b from-amber-500 to-orange-500 py-3.5 text-sm font-extrabold text-white shadow-md shadow-orange-500/30 hover:from-amber-600 hover:to-orange-600 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-orange-500 disabled:opacity-50"
             >
               {placing ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : <Lock className="h-4 w-4" aria-hidden />}
               Continue to pay {rupees(estimatedTotal)}
@@ -215,7 +215,7 @@ export function PaymentSheet({ order, onClose }: { order: PlacedOrder | null; on
       <SheetContent side="bottom" className="mx-auto w-full max-w-md rounded-t-3xl border-border bg-popover p-0 sm:left-1/2 sm:-translate-x-1/2 sm:right-auto">
         <SheetHeader className="p-5 pb-0">
           <SheetTitle className="flex items-center gap-2 text-left">
-            <Lock className="h-4 w-4 text-lime-300" aria-hidden /> Secure payment
+            <Lock className="h-4 w-4 text-orange-500" aria-hidden /> Secure payment
           </SheetTitle>
           <SheetDescription className="text-left">
             Order {order.code} · <span className="font-bold text-foreground">{rupees(order.totalPaise)}</span> · SANDBOX (mock gateway)
@@ -225,23 +225,23 @@ export function PaymentSheet({ order, onClose }: { order: PlacedOrder | null; on
         <div className="px-5 pb-6 pt-4">
           {phase === 'processing' ? (
             <div className="flex flex-col items-center gap-3 py-10" role="status" aria-live="polite">
-              <Loader2 className="h-8 w-8 animate-spin text-lime-300" aria-hidden />
+              <Loader2 className="h-8 w-8 animate-spin text-orange-500" aria-hidden />
               <p className="text-sm font-semibold">Contacting bank{method === 'UPI' ? ' (UPI)' : ''}…</p>
               <p className="text-xs text-muted-foreground">Do not close this window</p>
             </div>
           ) : phase === 'failed' ? (
             <div className="py-4" role="alert">
-              <div className="flex items-start gap-3 rounded-2xl border border-red-500/30 bg-red-500/10 p-4">
-                <TriangleAlert className="mt-0.5 h-5 w-5 shrink-0 text-red-400" aria-hidden />
+              <div className="flex items-start gap-3 rounded-2xl border border-red-200 bg-red-50 p-4">
+                <TriangleAlert className="mt-0.5 h-5 w-5 shrink-0 text-red-500" aria-hidden />
                 <div>
-                  <p className="text-sm font-bold text-red-200">Payment failed</p>
-                  <p className="mt-1 text-xs text-red-200/80">{failMsg}</p>
+                  <p className="text-sm font-bold text-red-800">Payment failed</p>
+                  <p className="mt-1 text-xs text-red-700/90">{failMsg}</p>
                 </div>
               </div>
-              <button onClick={() => setPhase('form')} className="mt-4 w-full rounded-full bg-lime-300 py-3 text-sm font-extrabold text-lime-950 hover:bg-lime-200">
+              <button onClick={() => setPhase('form')} className="mt-4 w-full rounded-full bg-gradient-to-b from-amber-500 to-orange-500 py-3 text-sm font-extrabold text-white shadow-md shadow-orange-500/30 hover:from-amber-600 hover:to-orange-600">
                 Retry payment
               </button>
-              <button onClick={() => onClose(false)} className="mt-2 w-full rounded-full border border-border py-3 text-sm font-bold hover:bg-muted">
+              <button onClick={() => onClose(false)} className="mt-2 w-full rounded-full border border-stone-300 bg-white py-3 text-sm font-bold text-stone-700 hover:bg-stone-50">
                 Pay later from tracking
               </button>
             </div>
@@ -255,7 +255,7 @@ export function PaymentSheet({ order, onClose }: { order: PlacedOrder | null; on
                     role="tab"
                     aria-selected={method === m}
                     onClick={() => setMethod(m)}
-                    className={`rounded-xl border px-2 py-2.5 text-xs font-extrabold transition ${method === m ? 'border-lime-300/60 bg-lime-300/10 text-lime-300' : 'border-border text-muted-foreground hover:bg-muted'}`}
+                    className={`rounded-xl border px-2 py-2.5 text-xs font-extrabold transition ${method === m ? 'border-orange-400 bg-orange-50 text-orange-700 shadow-sm' : 'border-stone-200 bg-white text-stone-500 hover:bg-stone-50'}`}
                   >
                     {m === 'NETBANKING' ? 'NET BANK' : m}
                   </button>
@@ -283,14 +283,14 @@ export function PaymentSheet({ order, onClose }: { order: PlacedOrder | null; on
                 )}
               </div>
 
-              <div className="mt-4 flex items-center justify-between rounded-xl border border-amber-500/25 bg-amber-500/5 px-3 py-2.5">
-                <span className="text-xs font-semibold text-amber-200">Simulate a failed payment</span>
+              <div className="mt-4 flex items-center justify-between rounded-xl border border-amber-300 bg-amber-50 px-3 py-2.5">
+                <span className="text-xs font-semibold text-amber-800">Simulate a failed payment</span>
                 <Switch checked={failure} onCheckedChange={setFailure} aria-label="Simulate payment failure" />
               </div>
 
               <button
                 onClick={pay}
-                className="mt-4 flex w-full items-center justify-center gap-2 rounded-full bg-lime-300 py-3.5 text-sm font-extrabold text-lime-950 hover:bg-lime-200 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-lime-300"
+                className="mt-4 flex w-full items-center justify-center gap-2 rounded-full bg-gradient-to-b from-amber-500 to-orange-500 py-3.5 text-sm font-extrabold text-white shadow-md shadow-orange-500/30 hover:from-amber-600 hover:to-orange-600 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-orange-500"
               >
                 <ShieldCheck className="h-4 w-4" aria-hidden /> Pay {rupees(order.totalPaise)}
               </button>

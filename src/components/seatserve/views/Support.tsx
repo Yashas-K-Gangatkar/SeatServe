@@ -77,9 +77,9 @@ export default function Support({ code, go }: { code: string; go: (p: string) =>
       </button>
 
       <header>
-        <p className="text-[10px] font-extrabold tracking-[0.18em] text-violet-300">SUPPORT DESK</p>
+        <p className="text-[10px] font-extrabold tracking-[0.18em] text-orange-600">SUPPORT DESK</p>
         <h1 className="mt-1 flex items-center gap-2 text-2xl font-black tracking-tight">
-          <CircleHelp className="h-6 w-6 text-violet-300" aria-hidden /> Help & refunds
+          <CircleHelp className="h-6 w-6 text-orange-500" aria-hidden /> Help & refunds
         </h1>
         <p className="mt-1 text-sm text-muted-foreground">
           Order {order.code} · {order.location.screen} · Seat {order.location.seat} · {rupees(order.totals.totalPaise)}
@@ -87,13 +87,13 @@ export default function Support({ code, go }: { code: string; go: (p: string) =>
       </header>
 
       {openRefund ? (
-        <section className="mt-6 rounded-2xl border border-amber-500/30 bg-amber-500/10 p-4" role="status">
-          <p className="text-sm font-bold text-amber-200">Request already open</p>
-          <p className="mt-1 text-xs text-amber-100/80">
+        <section className="mt-6 rounded-2xl border border-amber-300 bg-amber-50 p-4" role="status">
+          <p className="text-sm font-bold text-amber-900">Request already open</p>
+          <p className="mt-1 text-xs text-amber-700">
             {openRefund.reason.replaceAll('_', ' ').toLowerCase()} · {rupees(openRefund.amountPaise)} · status: {openRefund.status}. The finance desk
             processes refunds to the original payment method (real payout rails land in Phase 3).
           </p>
-          <button onClick={() => go(`#/track/${order.code}`)} className="mt-3 rounded-full border border-amber-500/40 px-4 py-2 text-xs font-bold text-amber-200 hover:bg-amber-500/10">
+          <button onClick={() => go(`#/track/${order.code}`)} className="mt-3 rounded-full border border-amber-400 bg-white px-4 py-2 text-xs font-bold text-amber-800 hover:bg-amber-100">
             Back to tracking
           </button>
         </section>
@@ -104,7 +104,7 @@ export default function Support({ code, go }: { code: string; go: (p: string) =>
             id="reason"
             value={reason}
             onChange={(e) => setReason(e.target.value)}
-            className="mt-1.5 w-full rounded-xl border border-border bg-background px-3 py-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-violet-400"
+            className="mt-1.5 w-full rounded-xl border border-border bg-background px-3 py-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-amber-500"
           >
             {REASONS.map((r) => (
               <option key={r.value} value={r.value}>
@@ -121,13 +121,13 @@ export default function Support({ code, go }: { code: string; go: (p: string) =>
             rows={3}
             maxLength={500}
             placeholder="Tell us what happened — e.g. popcorn arrived but cold coffee missing"
-            className="mt-1.5 w-full resize-none rounded-xl border border-border bg-background px-3 py-2.5 text-sm placeholder:text-muted-foreground/50 focus:outline-none focus:ring-1 focus:ring-violet-400"
+            className="mt-1.5 w-full resize-none rounded-xl border border-border bg-background px-3 py-2.5 text-sm placeholder:text-muted-foreground/50 focus:outline-none focus:ring-1 focus:ring-amber-500"
           />
 
           <button
             onClick={submit}
             disabled={submitting}
-            className="mt-4 flex w-full items-center justify-center gap-2 rounded-full bg-lime-300 py-3 text-sm font-extrabold text-lime-950 hover:bg-lime-200 disabled:opacity-50"
+            className="mt-4 flex w-full items-center justify-center gap-2 rounded-full bg-gradient-to-b from-amber-500 to-orange-500 py-3 text-sm font-extrabold text-white shadow-md shadow-orange-500/30 hover:from-amber-600 hover:to-orange-600 disabled:opacity-50"
           >
             <Send className="h-4 w-4" aria-hidden /> {submitting ? 'Sending…' : 'Request help / refund'}
           </button>

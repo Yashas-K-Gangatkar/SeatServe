@@ -87,9 +87,9 @@ export default function Runner({ runnerId, go, onRouteChange }: { runnerId?: str
       <header className="rounded-2xl border border-border bg-card p-5">
         <div className="flex items-start justify-between">
           <div>
-            <p className="text-[10px] font-extrabold tracking-[0.18em] text-emerald-300">RUNNER CONSOLE · LIVE</p>
+            <p className="text-[10px] font-extrabold tracking-[0.18em] text-emerald-600">RUNNER CONSOLE · LIVE</p>
             <h1 className="mt-1 flex items-center gap-2 text-2xl font-black tracking-tight">
-              <Bike className="h-6 w-6 text-emerald-300" aria-hidden /> Runner
+              <Bike className="h-6 w-6 text-emerald-600" aria-hidden /> Runner
             </h1>
           </div>
           <LiveDot connected={online} />
@@ -99,13 +99,13 @@ export default function Runner({ runnerId, go, onRouteChange }: { runnerId?: str
             <button
               key={r.id}
               onClick={() => selectRunner(r.id)}
-              className={`rounded-full border px-3 py-1.5 text-[11px] font-bold transition ${data.activeRunnerId === r.id ? 'border-emerald-400/60 bg-emerald-400/10 text-emerald-300' : 'border-border text-muted-foreground hover:bg-muted'}`}
+              className={`rounded-full border px-3 py-1.5 text-[11px] font-bold transition ${data.activeRunnerId === r.id ? 'border-emerald-400 bg-emerald-50 text-emerald-700' : 'border-stone-300 bg-white text-stone-500 hover:bg-stone-50'}`}
               aria-pressed={data.activeRunnerId === r.id}
             >
               {r.name} ★{r.rating.toFixed(1)}
             </button>
           ))}
-          <span className="rounded-full border border-border px-3 py-1.5 text-[11px] text-muted-foreground">On duty today</span>
+          <span className="rounded-full border border-stone-300 bg-white px-3 py-1.5 text-[11px] text-stone-500">On duty today</span>
         </div>
       </header>
 
@@ -137,7 +137,7 @@ export default function Runner({ runnerId, go, onRouteChange }: { runnerId?: str
                       <button
                         onClick={() => move(t.ticketId, 'PICKED_UP')}
                         disabled={acting === t.ticketId}
-                        className="rounded-full bg-lime-300 px-4 py-2 text-xs font-extrabold text-lime-950 hover:bg-lime-200 disabled:opacity-50"
+                        className="rounded-full bg-gradient-to-b from-amber-500 to-orange-500 px-4 py-2 text-xs font-extrabold text-white shadow-sm shadow-orange-500/30 hover:from-amber-600 hover:to-orange-600 disabled:opacity-50"
                       >
                         <Zap className="mr-1 inline h-3 w-3" aria-hidden /> Pick up
                       </button>
@@ -175,7 +175,7 @@ export default function Runner({ runnerId, go, onRouteChange }: { runnerId?: str
                       <ShoppingBag className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden /> Pick up: {run.pickupLabel}
                     </p>
                     <p className="flex items-start gap-1.5">
-                      <MapPin className="mt-0.5 h-3.5 w-3.5 shrink-0 text-lime-300" aria-hidden />
+                      <MapPin className="mt-0.5 h-3.5 w-3.5 shrink-0 text-orange-500" aria-hidden />
                       <span>
                         Deliver: {run.dropLabel} {run.movieTitle ? `· ${run.movieTitle}` : ''}
                       </span>
@@ -184,7 +184,7 @@ export default function Runner({ runnerId, go, onRouteChange }: { runnerId?: str
                   <button
                     onClick={() => move(run.ticketId, 'DELIVERED')}
                     disabled={acting === run.ticketId || run.status !== 'PICKED_UP'}
-                    className="mt-3 w-full rounded-full bg-lime-300 py-2.5 text-xs font-extrabold text-lime-950 hover:bg-lime-200 disabled:cursor-not-allowed disabled:opacity-40"
+                    className="mt-3 w-full rounded-full bg-gradient-to-b from-amber-500 to-orange-500 py-2.5 text-xs font-extrabold text-white shadow-sm shadow-orange-500/30 hover:from-amber-600 hover:to-orange-600 disabled:cursor-not-allowed disabled:opacity-40"
                   >
                     <PackageCheck className="mr-1.5 inline h-3.5 w-3.5" aria-hidden />
                     {run.status === 'PICKED_UP' ? 'Mark delivered' : 'Pick up first'}

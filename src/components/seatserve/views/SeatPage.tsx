@@ -78,7 +78,7 @@ export default function SeatPage({ qrToken, go }: { qrToken: string; go: (p: str
       {/* seat header */}
       <header>
         <div className="flex items-center justify-between gap-2">
-          <p className="text-[10px] font-extrabold tracking-[0.18em] text-violet-300">{ctx.mall.name.toUpperCase()} · DEMO</p>
+          <p className="text-[10px] font-extrabold tracking-[0.18em] text-orange-600">{ctx.mall.name.toUpperCase()} · DEMO</p>
           <button
             onClick={() => go('#/')}
             className="inline-flex items-center gap-1 rounded-full border border-border px-2.5 py-1 text-[11px] font-semibold text-muted-foreground hover:text-foreground"
@@ -87,8 +87,8 @@ export default function SeatPage({ qrToken, go }: { qrToken: string; go: (p: str
             <ChevronLeft className="h-3 w-3" aria-hidden /> Home
           </button>
         </div>
-        <h1 className="mt-2 text-3xl font-black leading-tight tracking-tight">
-          {ctx.screen.name} · <span className="text-lime-300">Seat {ctx.seat.code}</span>
+        <h1 className="mt-2 text-3xl font-black leading-tight tracking-tight text-stone-900">
+          {ctx.screen.name} · <span className="bg-gradient-to-r from-amber-500 to-orange-600 bg-clip-text text-transparent">Seat {ctx.seat.code}</span>
         </h1>
         <p className="mt-1 flex items-center gap-1.5 text-sm text-muted-foreground">
           <MapPin className="h-3.5 w-3.5" aria-hidden />
@@ -104,11 +104,11 @@ export default function SeatPage({ qrToken, go }: { qrToken: string; go: (p: str
                 </p>
               </div>
               {cutoffClosed ? (
-                <span className="inline-flex items-center gap-1 rounded-full border border-red-500/30 bg-red-500/10 px-2.5 py-1 text-[11px] font-bold text-red-300">
+                <span className="inline-flex items-center gap-1 rounded-full border border-red-200 bg-red-50 px-2.5 py-1 text-[11px] font-bold text-red-700">
                   <Ban className="h-3 w-3" aria-hidden /> Ordering closed
                 </span>
               ) : (
-                <span className="inline-flex items-center gap-1 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-1 text-[11px] font-bold text-emerald-300">
+                <span className="inline-flex items-center gap-1 rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-[11px] font-bold text-emerald-700">
                   <Timer className="h-3 w-3" aria-hidden /> {show.cutoff.minutesUntilCutoff}m left to order
                 </span>
               )}
@@ -123,7 +123,7 @@ export default function SeatPage({ qrToken, go }: { qrToken: string; go: (p: str
               <button
                 key={s.qrToken}
                 onClick={() => go(`#/seat/${s.qrToken}`)}
-                className={`rounded-lg px-1 py-1.5 text-[10px] font-bold tabular hover:bg-muted ${s.code === ctx.seat.code ? 'bg-lime-300/15 text-lime-300' : 'text-muted-foreground'}`}
+                className={`rounded-lg px-1 py-1.5 text-[10px] font-bold tabular hover:bg-amber-100 ${s.code === ctx.seat.code ? 'bg-amber-100 text-amber-800' : 'text-stone-500'}`}
               >
                 {s.code}
               </button>
@@ -147,9 +147,9 @@ export default function SeatPage({ qrToken, go }: { qrToken: string; go: (p: str
                 aria-expanded={open}
               >
                 <div>
-                  <p className="flex items-center gap-2 text-sm font-extrabold">
+                  <p className="flex items-center gap-2 text-sm font-extrabold text-stone-900">
                     <span aria-hidden>{store.emoji}</span> {store.name}
-                    {!store.isOpen && <span className="rounded-full bg-red-500/15 px-2 py-0.5 text-[10px] font-bold text-red-300">CLOSED</span>}
+                    {!store.isOpen && <span className="rounded-full bg-red-100 px-2 py-0.5 text-[10px] font-bold text-red-700">CLOSED</span>}
                   </p>
                   <p className="mt-0.5 text-[11px] text-muted-foreground">
                     ★ {store.rating.toFixed(1)} · prep ~{store.prepBufferMin + 8} min · delivery {rupees(store.deliveryFeePaise)}
@@ -170,27 +170,27 @@ export default function SeatPage({ qrToken, go }: { qrToken: string; go: (p: str
                           </p>
                           <p className="truncate text-[11px] text-muted-foreground">{p.description}</p>
                           <p className="mt-0.5 flex flex-wrap items-center gap-x-2 text-[11px] text-muted-foreground">
-                            <span className="font-bold text-foreground tabular">{rupees(p.pricePaise)}</span>
+                            <span className="font-bold text-stone-900 tabular">{rupees(p.pricePaise)}</span>
                             <span>~{p.prepEstimateMin} min</span>
-                            <span className="text-muted-foreground/70">GST {p.taxRatePct}% incl.</span>
-                            {p.allergens && <span className="text-amber-300/80">allergens: {p.allergens}</span>}
+                            <span className="text-stone-400">GST {p.taxRatePct}% incl.</span>
+                            {p.allergens && <span className="text-amber-700">allergens: {p.allergens}</span>}
                           </p>
-                          {!p.isAvailable && <p className="mt-0.5 text-[11px] font-bold text-red-300">Sold out right now</p>}
+                          {!p.isAvailable && <p className="mt-0.5 text-[11px] font-bold text-red-600">Sold out right now</p>}
                         </div>
                         {line?.qty ? (
-                          <div className="flex items-center gap-1 rounded-full border border-lime-300/40 bg-lime-300/10 p-1" aria-label={`Quantity of ${p.name}: ${line.qty}`}>
+                          <div className="flex items-center gap-1 rounded-full border border-amber-300 bg-amber-50 p-1" aria-label={`Quantity of ${p.name}: ${line.qty}`}>
                             <button
                               onClick={() => cart.remove(p.id)}
-                              className="flex h-8 w-8 items-center justify-center rounded-full text-lime-200 hover:bg-lime-300/20 focus-visible:outline-2 focus-visible:outline-lime-300"
+                              className="flex h-8 w-8 items-center justify-center rounded-full text-amber-700 hover:bg-amber-100 focus-visible:outline-2 focus-visible:outline-amber-500"
                               aria-label={`Remove one ${p.name}`}
                             >
                               <Minus className="h-4 w-4" aria-hidden />
                             </button>
-                            <span className="w-5 text-center text-sm font-extrabold tabular">{line.qty}</span>
+                            <span className="w-5 text-center text-sm font-extrabold tabular text-stone-900">{line.qty}</span>
                             <button
                               onClick={() => cart.add(p.id)}
                               disabled={line.qty >= 20}
-                              className="flex h-8 w-8 items-center justify-center rounded-full text-lime-200 hover:bg-lime-300/20 focus-visible:outline-2 focus-visible:outline-lime-300 disabled:opacity-40"
+                              className="flex h-8 w-8 items-center justify-center rounded-full text-amber-700 hover:bg-amber-100 focus-visible:outline-2 focus-visible:outline-amber-500 disabled:opacity-40"
                               aria-label={`Add one ${p.name}`}
                             >
                               <Plus className="h-4 w-4" aria-hidden />
@@ -203,7 +203,7 @@ export default function SeatPage({ qrToken, go }: { qrToken: string; go: (p: str
                               toast.success(`${p.name} added`, { duration: 1200 })
                             }}
                             disabled={disabled}
-                            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-border text-foreground hover:border-lime-300/50 hover:bg-lime-300/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-lime-300 disabled:cursor-not-allowed disabled:opacity-40"
+                            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-stone-300 bg-white text-stone-700 shadow-sm hover:border-amber-400 hover:bg-amber-50 hover:text-amber-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-500 disabled:cursor-not-allowed disabled:opacity-40"
                             aria-label={`Add ${p.name} to cart`}
                           >
                             <Plus className="h-4 w-4" aria-hidden />
@@ -222,17 +222,17 @@ export default function SeatPage({ qrToken, go }: { qrToken: string; go: (p: str
       {/* sticky cart bar */}
       <div className="pb-safe fixed inset-x-0 bottom-0 z-40 print-hide">
         <div className="mx-auto max-w-md px-4">
-          <div className="mb-3 flex items-center justify-between gap-3 rounded-2xl border border-lime-300/25 bg-[#141a12]/95 p-3 shadow-2xl shadow-black/50 backdrop-blur">
+          <div className="card-pop mb-3 flex items-center justify-between gap-3 rounded-2xl border border-amber-200/80 bg-white/90 p-3 shadow-2xl shadow-orange-900/10 backdrop-blur">
             <div className="min-w-0">
-              <p className="text-lg font-black leading-none text-lime-300 tabular">{rupees(cartInfo.totalPaise)}</p>
-              <p className="mt-0.5 truncate text-[11px] text-muted-foreground">
+              <p className="text-lg font-black leading-none text-orange-600 tabular">{rupees(cartInfo.totalPaise)}</p>
+              <p className="mt-0.5 truncate text-[11px] text-stone-500">
                 {cartInfo.count} item{cartInfo.count === 1 ? '' : 's'} · {cartInfo.storeCount} store{cartInfo.storeCount === 1 ? '' : 's'}
               </p>
             </div>
             <button
               onClick={() => setCheckoutOpen(true)}
               disabled={cartInfo.count === 0 || cutoffClosed}
-              className="inline-flex items-center gap-2 rounded-full bg-lime-300 px-5 py-3 text-sm font-extrabold text-lime-950 transition hover:bg-lime-200 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-lime-300 disabled:cursor-not-allowed disabled:opacity-40"
+              className="inline-flex items-center gap-2 rounded-full bg-gradient-to-b from-amber-500 to-orange-500 px-5 py-3 text-sm font-extrabold text-white shadow-md shadow-orange-500/30 transition hover:from-amber-600 hover:to-orange-600 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-orange-500 disabled:cursor-not-allowed disabled:opacity-40"
             >
               <ShoppingBag className="h-4 w-4" aria-hidden />
               {cutoffClosed ? 'Ordering closed' : 'View cart'}

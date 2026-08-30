@@ -51,7 +51,7 @@ export default function QrAdmin({ go }: { go: (p: string) => void }) {
 
         <header className="flex flex-wrap items-end justify-between gap-3">
           <div>
-            <p className="text-[10px] font-extrabold tracking-[0.18em] text-violet-300">SEAT QR GENERATOR</p>
+            <p className="text-[10px] font-extrabold tracking-[0.18em] text-orange-600">SEAT QR GENERATOR</p>
             <h1 className="mt-1 text-2xl font-black tracking-tight">Printable seat codes</h1>
             <p className="mt-1 flex items-center gap-1.5 text-xs text-muted-foreground">
               <ScanLine className="h-3.5 w-3.5" aria-hidden /> Every QR encodes this preview origin: <code className="text-foreground">{data.origin}/?qr=…</code>
@@ -59,7 +59,7 @@ export default function QrAdmin({ go }: { go: (p: string) => void }) {
           </div>
           <button
             onClick={() => window.print()}
-            className="inline-flex items-center gap-2 rounded-full bg-lime-300 px-4 py-2.5 text-xs font-extrabold text-lime-950 hover:bg-lime-200"
+            className="inline-flex items-center gap-2 rounded-full bg-gradient-to-b from-amber-500 to-orange-500 px-4 py-2.5 text-xs font-extrabold text-white shadow-md shadow-orange-500/30 hover:from-amber-600 hover:to-orange-600"
           >
             <Printer className="h-4 w-4" aria-hidden /> Print sheet
           </button>
@@ -70,7 +70,7 @@ export default function QrAdmin({ go }: { go: (p: string) => void }) {
             <button
               key={s.id}
               onClick={() => setScreenId(s.id)}
-              className={`rounded-full border px-3.5 py-2 text-xs font-bold transition ${data.screen.id === s.id ? 'border-lime-300/60 bg-lime-300/10 text-lime-300' : 'border-border text-muted-foreground hover:bg-muted'}`}
+              className={`rounded-full border px-3.5 py-2 text-xs font-bold transition ${data.screen.id === s.id ? 'border-orange-400 bg-orange-50 text-orange-700 shadow-sm' : 'border-stone-300 bg-white text-stone-500 hover:bg-stone-50'}`}
               aria-pressed={data.screen.id === s.id}
             >
               {s.name} · {s.cinema.replace('Aurora Cineplex — ', '')}

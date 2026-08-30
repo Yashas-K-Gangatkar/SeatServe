@@ -80,15 +80,22 @@ export function usePolling(callback: () => void, ms: number, enabled = true) {
   }, [ms, enabled])
 }
 
-/** Simple connection banner state */
+/** Simple connection banner state.
+ *  Hydration-safe: first client render MUST match the server (`true`), the real
+ *  value is synced after mount. (Node ≥21 exposes a `navigator` global without
+ *  `onLine`, so reading it in the useState initializer breaks SSR hydration.) */
 export function useOnline(): boolean {
-  const [online, setOnline] = useState(() => (typeof navigator !== 'undefined' ? navigator.onLine : true))
+  const [online, setOnline] = useState(true)
   useEffect(() => {
+    const sync = () => setOnline(navigator.onLine)
+    // sync the real value after mount (deferred — never during the effect body)
+    const raf = requestAnimationFrame(sync)
     const up = () => setOnline(true)
     const down = () => setOnline(false)
     window.addEventListener('online', up)
     window.addEventListener('offline', down)
     return () => {
+      cancelAnimationFrame(raf)
       window.removeEventListener('online', up)
       window.removeEventListener('offline', down)
     }

@@ -70,6 +70,10 @@ model Showtime {
   startsAt           DateTime
   orderCutoffMinutes Int      @default(30) // ordering closes N minutes before start
   isActive           Boolean  @default(true)
+  // Sandbox-demo guardian: when true, a stale (already-started) showtime is
+  // rolled forward so the demo never dead-ends at the ordering cutoff.
+  // The one intentionally-blocked demo showtime sets this to false.
+  demoAutoRoll       Boolean  @default(true)
   createdAt          DateTime @default(now())
   orders             Order[]
 }

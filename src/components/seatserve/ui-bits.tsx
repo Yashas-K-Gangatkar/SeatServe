@@ -24,13 +24,13 @@ export function minAgo(iso: string): string {
 }
 
 export const TICKET_STATUS_STYLE: Record<string, string> = {
-  NEW: 'bg-amber-400/15 text-amber-300 border-amber-400/30',
-  ACCEPTED: 'bg-violet-400/15 text-violet-300 border-violet-400/30',
-  PREPARING: 'bg-orange-400/15 text-orange-300 border-orange-400/30',
-  READY_FOR_PICKUP: 'bg-emerald-400/15 text-emerald-300 border-emerald-400/30',
-  PICKED_UP: 'bg-fuchsia-400/15 text-fuchsia-300 border-fuchsia-400/30',
-  DELIVERED: 'bg-emerald-500/20 text-emerald-400 border-emerald-500/40',
-  CANCELLED: 'bg-red-400/15 text-red-300 border-red-400/30',
+  NEW: 'bg-amber-100 text-amber-800 border-amber-300',
+  ACCEPTED: 'bg-violet-100 text-violet-800 border-violet-300',
+  PREPARING: 'bg-orange-100 text-orange-800 border-orange-300',
+  READY_FOR_PICKUP: 'bg-emerald-100 text-emerald-800 border-emerald-300',
+  PICKED_UP: 'bg-fuchsia-100 text-fuchsia-800 border-fuchsia-300',
+  DELIVERED: 'bg-emerald-600 text-white border-emerald-600',
+  CANCELLED: 'bg-red-100 text-red-700 border-red-300',
 }
 
 export const TICKET_STATUS_LABEL: Record<string, string> = {
@@ -59,7 +59,7 @@ export function StatusPill({ status, className }: { status: string; className?: 
       )}
       role="status"
     >
-      {status === 'PREPARING' && <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-orange-400" aria-hidden />}
+      {status === 'PREPARING' && <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-orange-500" aria-hidden />}
       {TICKET_STATUS_LABEL[status] ?? RUN_STATUS_LABEL[status] ?? status}
     </span>
   )
@@ -68,7 +68,7 @@ export function StatusPill({ status, className }: { status: string; className?: 
 export function OfflineBanner({ show }: { show: boolean }) {
   if (!show) return null
   return (
-    <div className="print-hide sticky top-0 z-50 flex items-center justify-center gap-2 bg-red-950/90 px-4 py-1.5 text-xs font-medium text-red-200" role="alert">
+    <div className="print-hide sticky top-0 z-50 flex items-center justify-center gap-2 bg-red-600 px-4 py-1.5 text-xs font-medium text-white shadow-sm" role="alert">
       <WifiOff className="h-3.5 w-3.5" aria-hidden /> You are offline — live updates paused
     </div>
   )
@@ -86,11 +86,11 @@ export function EmptyState({ icon, title, hint }: { icon?: React.ReactNode; titl
 
 export function LoadError({ message, onRetry }: { message: string; onRetry?: () => void }) {
   return (
-    <div className="flex flex-col items-center gap-3 rounded-2xl border border-red-500/20 bg-red-500/5 px-6 py-8 text-center" role="alert">
-      <AlertTriangle className="h-5 w-5 text-red-400" aria-hidden />
-      <p className="text-sm text-red-200">{message}</p>
+    <div className="flex flex-col items-center gap-3 rounded-2xl border border-red-200 bg-red-50 px-6 py-8 text-center" role="alert">
+      <AlertTriangle className="h-5 w-5 text-red-500" aria-hidden />
+      <p className="text-sm text-red-800">{message}</p>
       {onRetry && (
-        <button onClick={onRetry} className="rounded-full border border-border px-4 py-1.5 text-xs font-semibold text-foreground hover:bg-muted">
+        <button onClick={onRetry} className="rounded-full border border-red-300 bg-white px-4 py-1.5 text-xs font-semibold text-red-700 hover:bg-red-100">
           Try again
         </button>
       )}
@@ -111,10 +111,10 @@ export function LiveDot({ connected }: { connected: boolean }) {
   return (
     <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold" aria-live="polite">
       <span
-        className={cn('h-2 w-2 rounded-full', connected ? 'animate-pulse bg-emerald-400' : 'bg-red-400')}
+        className={cn('h-2 w-2 rounded-full', connected ? 'animate-pulse bg-emerald-500' : 'bg-red-500')}
         aria-hidden
       />
-      <span className={connected ? 'text-emerald-400' : 'text-red-400'}>{connected ? 'Live' : 'Reconnecting…'}</span>
+      <span className={connected ? 'text-emerald-600' : 'text-red-600'}>{connected ? 'Live' : 'Reconnecting…'}</span>
     </span>
   )
 }

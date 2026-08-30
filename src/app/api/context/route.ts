@@ -4,6 +4,7 @@ import { db } from '@/lib/db'
 import { ok, fail } from '@/lib/api-helpers'
 import { cutoffInfo } from '@/lib/cutoff'
 import { getSettings } from '@/lib/settings'
+import { rollStaleShowtimes } from '@/lib/demo-roll'
 
 export async function GET(request: Request) {
   const url = new URL(request.url)
@@ -16,15 +17,21 @@ export async function GET(request: Request) {
       screen: {
         include: {
           cinema: { include: { mall: true } },
-          showtimes: { where: { isActive: true }, orderBy: { startsAt: 'asc' } },
         },
       },
     },
   })
   if (!seat) return fail('Unknown seat QR. Please scan the QR printed at your seat.', 404)
 
+  // Sandbox demo guardian: keep stale showtimes usable (see lib/demo-roll.ts)
+  await rollStaleShowtimes(seat.screenId)
+  const showtimes = await db.showtime.findMany({
+    where: { screenId: seat.screenId, isActive: true },
+    orderBy: { startsAt: 'asc' },
+  })
+
   const now = new Date()
-  const upcoming = seat.screen.showtimes.filter((s) => new Date(s.startsAt).getTime() > now.getTime() - 3 * 3600_000)
+  const upcoming = showtimes.filter((s) => new Date(s.startsAt).getTime() > now.getTime() - 3 * 3600_000)
   const currentShow = upcoming[0] ?? null
 
   const settings = await getSettings()

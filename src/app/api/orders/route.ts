@@ -9,6 +9,7 @@ import { getSettings } from '@/lib/settings'
 import { generateOrderCode, generateTicketCode } from '@/lib/ids'
 import { audit } from '@/lib/audit'
 import { emitToRooms } from '@/lib/realtime'
+import { rollStaleShowtimes } from '@/lib/demo-roll'
 
 const bodySchema = z.object({
   qrToken: z.string().min(4),
@@ -32,12 +33,19 @@ export async function POST(request: Request) {
 
   const seat = await db.seat.findUnique({
     where: { qrToken },
-    include: { screen: { include: { cinema: true, showtimes: { where: { isActive: true }, orderBy: { startsAt: 'asc' } } } } },
+    include: { screen: { include: { cinema: true } } },
   })
   if (!seat) return fail('Unknown seat QR', 404)
 
+  // Sandbox demo guardian: keep stale showtimes usable (see lib/demo-roll.ts)
+  await rollStaleShowtimes(seat.screenId)
+  const screenShowtimes = await db.showtime.findMany({
+    where: { screenId: seat.screenId, isActive: true },
+    orderBy: { startsAt: 'asc' },
+  })
+
   const now = new Date()
-  const show = seat.screen.showtimes.find((s) => new Date(s.startsAt).getTime() > now.getTime() - 3 * 3600_000) ?? null
+  const show = screenShowtimes.find((s) => new Date(s.startsAt).getTime() > now.getTime() - 3 * 3600_000) ?? null
   if (!show) return fail('No active showtime for this screen right now.', 409)
 
   const info = cutoffInfo(new Date(show.startsAt), show.orderCutoffMinutes, now)

@@ -89,11 +89,12 @@ export async function seedDemoData(db: DB): Promise<void> {
   const screen5 = await createScreen(cinemaB.id, 'B', 5, 'Screen 5')
   const screen6 = await createScreen(cinemaB.id, 'B', 6, 'Screen 6')
 
-  // Showtimes — Screen 1 starts in 20 min ⇒ 30-min cutoff already passed (blocked demo)
-  const st = (screenId: string, movieTitle: string, language: string, startsAt: Date, cutoff = 30) =>
-    db.showtime.create({ data: { screenId, movieTitle, language, startsAt, orderCutoffMinutes: cutoff } })
+  // Showtimes — Screen 1 starts in 20 min ⇒ 30-min cutoff already passed (blocked demo,
+  // demoAutoRoll=false keeps it permanently demonstrable via the demo-roll guardian)
+  const st = (screenId: string, movieTitle: string, language: string, startsAt: Date, cutoff = 30, demoAutoRoll = true) =>
+    db.showtime.create({ data: { screenId, movieTitle, language, startsAt, orderCutoffMinutes: cutoff, demoAutoRoll } })
 
-  const show1 = await st(screen1.id, 'Vikram Damaka', 'Hindi', minutes(20)) // BLOCKED
+  const show1 = await st(screen1.id, 'Vikram Damaka', 'Hindi', minutes(20), 30, false) // BLOCKED (demo)
   await st(screen2.id, 'Kalki 2899 AD — Rerun', 'Telugu (dub. Hindi)', hours(3))
   const show3 = await st(screen3.id, 'Brahmāstra Part Two: Dev', 'Hindi', hours(2)) // hero
   await st(screen4.id, 'RRR: Encore', 'Telugu', hours(2.5))
