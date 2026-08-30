@@ -154,7 +154,7 @@ export default function SettlementPanel({ canAct }: { canAct: boolean }) {
                 <p className="text-sm font-bold">{s.storeName}</p>
                 <p className="text-sm font-black tabular text-orange-600">{rupees(s.netPayablePaise)}</p>
               </div>
-              <dl className="mt-2 grid grid-cols-2 gap-1.5 text-[11px] sm:grid-cols-4">
+              <dl className="mt-2 grid grid-cols-2 gap-1.5 text-[11px] sm:grid-cols-3">
                 <div className="rounded-lg bg-background px-2 py-1.5">
                   <dt className="text-muted-foreground">Store net (gross)</dt>
                   <dd className="font-bold tabular">{rupees(s.grossNetPaise)}</dd>
@@ -162,10 +162,6 @@ export default function SettlementPanel({ canAct }: { canAct: boolean }) {
                 <div className="rounded-lg bg-background px-2 py-1.5">
                   <dt className="text-muted-foreground">Commission</dt>
                   <dd className="font-bold tabular">{rupees(s.commissionPaise)}</dd>
-                </div>
-                <div className="rounded-lg bg-background px-2 py-1.5">
-                  <dt className="text-muted-foreground">GST payable</dt>
-                  <dd className="font-bold tabular">{rupees(s.taxPaise)}</dd>
                 </div>
                 <div className="rounded-lg bg-background px-2 py-1.5">
                   <dt className="text-muted-foreground">Refunds/voids</dt>
@@ -201,7 +197,7 @@ export default function SettlementPanel({ canAct }: { canAct: boolean }) {
                   {b.utr && <p className="text-[10px] tabular text-muted-foreground">UTR {b.utr}</p>}
                   {b.detail && (
                     <p className="text-[10px] text-muted-foreground">
-                      net {rupees(b.detail.netPayablePaise)} after refunds {rupees(b.detail.refundAdjustPaise)} · commission {rupees(b.detail.commissionPaise)} · GST {rupees(b.detail.taxPaise)}
+                      net {rupees(b.detail.netPayablePaise)} after refunds {rupees(b.detail.refundAdjustPaise)} · commission {rupees(b.detail.commissionPaise)}
                     </p>
                   )}
                 </div>

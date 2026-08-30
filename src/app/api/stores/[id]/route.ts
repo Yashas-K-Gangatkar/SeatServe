@@ -1,5 +1,6 @@
 // PATCH /api/stores/[id] — store controls (open/close). Phase 2: role-gated.
 // STORE_MANAGER: own store only. MALL_ADMIN: any store in their mall.
+// Money model: NO delivery fee (stores are next door); commission stays editable.
 import { z } from 'zod'
 import { db } from '@/lib/db'
 import { ok, fail, parseBody } from '@/lib/api-helpers'
@@ -10,9 +11,8 @@ import { emitToRooms } from '@/lib/realtime'
 
 const bodySchema = z.object({
   isOpen: z.boolean().optional(),
-  // Audit fix #44 (CRUD increment): commission % and delivery fee are editable
+  // Audit fix #44 (CRUD increment): commission % is editable
   commissionPct: z.number().min(0).max(50).optional(),
-  deliveryFeePaise: z.number().int().min(0).max(100_000).optional(),
 })
 
 export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -30,10 +30,9 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
     return fail('Your account is not authorized for this store', 403)
   }
 
-  const data: { isOpen?: boolean; commissionPct?: number; deliveryFeePaise?: number } = {}
+  const data: { isOpen?: boolean; commissionPct?: number } = {}
   if (parsed.data.isOpen !== undefined) data.isOpen = parsed.data.isOpen
   if (parsed.data.commissionPct !== undefined) data.commissionPct = parsed.data.commissionPct
-  if (parsed.data.deliveryFeePaise !== undefined) data.deliveryFeePaise = parsed.data.deliveryFeePaise
 
   if (data.isOpen !== undefined) {
     await db.store.update({ where: { id }, data: { isOpen: data.isOpen } })
@@ -48,7 +47,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
     })
     await emitToRooms({ rooms: [`admin:${store.mallId}`], event: 'store:update', data: { storeId: id, isOpen: data.isOpen } })
   }
-  if (data.commissionPct !== undefined || data.deliveryFeePaise !== undefined) {
+  if (data.commissionPct !== undefined) {
     await db.store.update({ where: { id }, data })
     await audit({
       actorRole: user.role,
@@ -60,11 +59,10 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
       meta: {
         name: store.name,
         ...(data.commissionPct !== undefined ? { commissionPct: data.commissionPct, previousPct: store.commissionPct } : {}),
-        ...(data.deliveryFeePaise !== undefined ? { deliveryFeePaise: data.deliveryFeePaise, previousPaise: store.deliveryFeePaise } : {}),
       },
     })
   }
 
   const updated = await db.store.findUnique({ where: { id } })
-  return ok({ id, isOpen: updated?.isOpen, commissionPct: updated?.commissionPct, deliveryFeePaise: updated?.deliveryFeePaise })
+  return ok({ id, isOpen: updated?.isOpen, commissionPct: updated?.commissionPct })
 }

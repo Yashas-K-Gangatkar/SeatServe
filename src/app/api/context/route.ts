@@ -82,7 +82,6 @@ export async function GET(request: Request) {
       isOpen: s.isOpen,
       kycStatus: s.kycStatus,
       rating: s.rating,
-      deliveryFeePaise: s.deliveryFeePaise,
       prepBufferMin: s.prepBufferMin,
       products: s.products.map((p) => ({
         id: p.id,
@@ -98,7 +97,7 @@ export async function GET(request: Request) {
       })),
     })),
     screenSeats,
-    settings: { platformFee: settings.platformFee, paymentFeePct: settings.paymentFeePct },
+    settings: { platformFeePct: settings.platformFeePct, walkBufferMin: settings.walkBufferMin, paymentFeePct: settings.paymentFeePct },
     serverTime: now.toISOString(),
   })
 }

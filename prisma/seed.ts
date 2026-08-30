@@ -8,7 +8,7 @@
  * Run: bun run db:seed
  */
 import { PrismaClient } from '@prisma/client'
-import { computeBill, DEFAULT_PLATFORM, type StoreLineGroup } from '../src/lib/pricing'
+import { computeBill, PLATFORM_FEE_PCT, type StoreLineGroup } from '../src/lib/pricing'
 import { generateTicketCode, generatePaymentRef, generateQrToken } from '../src/lib/ids'
 import { hashPassword } from '../src/lib/auth'
 
@@ -128,7 +128,6 @@ export async function seedDemoData(db: DB): Promise<void> {
       tagline: 'Popcorn, nachos & chai since 2009',
       emoji: '🍿',
       prepBufferMin: 8,
-      deliveryFeePaise: 1900,
       commissionPct: 12,
       kycStatus: 'VERIFIED',
       bankRefMasked: 'XXXX4821',
@@ -143,7 +142,6 @@ export async function seedDemoData(db: DB): Promise<void> {
       tagline: 'Wood-fired, delivered to your recliner',
       emoji: '🍕',
       prepBufferMin: 12,
-      deliveryFeePaise: 2900,
       commissionPct: 14,
       kycStatus: 'VERIFIED',
       bankRefMasked: 'XXXX9032',
@@ -158,7 +156,6 @@ export async function seedDemoData(db: DB): Promise<void> {
       tagline: 'Rolls, wraps & fries',
       emoji: '🌯',
       prepBufferMin: 10,
-      deliveryFeePaise: 2500,
       commissionPct: 13,
       kycStatus: 'VERIFIED',
       bankRefMasked: 'XXXX1177',
@@ -173,7 +170,6 @@ export async function seedDemoData(db: DB): Promise<void> {
       tagline: 'Indian sweets & filter coffee',
       emoji: '🍮',
       prepBufferMin: 8,
-      deliveryFeePaise: 1900,
       commissionPct: 10,
       kycStatus: 'PENDING',
       bankRefMasked: null,
@@ -215,7 +211,6 @@ export async function seedDemoData(db: DB): Promise<void> {
       tagline: 'Crisp dosas, filter kaapi, Pune style',
       emoji: '🥞',
       prepBufferMin: 9,
-      deliveryFeePaise: 1900,
       commissionPct: 11,
       kycStatus: 'VERIFIED',
       bankRefMasked: 'XXXX5510',
@@ -257,7 +252,7 @@ export async function seedDemoData(db: DB): Promise<void> {
   await db.user.create({ data: { name: 'Kiran Patil', phone: '+91 91000 00004', email: 'kiran@runner.demo', role: 'RUNNER', runnerId: rN.id, mallId: mall2.id, passwordHash: demoHash } })
 
   // ── settings ─────────────────────────────────────────────────────
-  await db.appSetting.create({ data: { key: 'platform_fee', value: JSON.stringify(DEFAULT_PLATFORM) } })
+  await db.appSetting.create({ data: { key: 'walk_buffer_min', value: JSON.stringify(6) } })
   await db.appSetting.create({ data: { key: 'ordering_cutoff_default_minutes', value: JSON.stringify(30) } })
   await db.appSetting.create({ data: { key: 'payment_fee_pct', value: JSON.stringify(2) } })
 
@@ -265,9 +260,8 @@ export async function seedDemoData(db: DB): Promise<void> {
   const seatsOf = (screen: { seats: { id: string; code: string }[] }, code: string) =>
     screen.seats.find((s) => s.code === code)!
 
-  const storeFee = (s: { id: string; commissionPct: number; deliveryFeePaise: number; prepBufferMin: number }) => ({
+  const storeFee = (s: { id: string; commissionPct: number; prepBufferMin: number }) => ({
     commissionPct: s.commissionPct,
-    deliveryFeePaise: s.deliveryFeePaise,
     prepBufferMin: s.prepBufferMin,
   })
 
@@ -279,7 +273,7 @@ export async function seedDemoData(db: DB): Promise<void> {
     code: string
     customerName: string
     groups: {
-      store: { id: string; name: string; commissionPct: number; deliveryFeePaise: number; prepBufferMin: number }
+      store: { id: string; name: string; commissionPct: number; prepBufferMin: number }
       items: { name: string; unitPricePaise: number; qty: number; taxRatePct: number; prepEstimateMin: number; notes?: string }[]
     }[]
     ticketStatus: 'NEW' | 'DELIVERED'
@@ -305,8 +299,6 @@ export async function seedDemoData(db: DB): Promise<void> {
         status: opts.ticketStatus === 'DELIVERED' ? 'COMPLETED' : 'PAID',
         paymentStatus: 'PAID',
         subtotalPaise: bill.subtotalPaise,
-        taxPaise: bill.taxPaise,
-        deliveryFeePaise: bill.deliveryFeePaise,
         platformFeePaise: bill.platformFeePaise,
         totalPaise: bill.totalPaise,
         customerName: opts.customerName,
@@ -369,9 +361,8 @@ export async function seedDemoData(db: DB): Promise<void> {
           storeId: g.store.id,
           beneficiary: 'STORE',
           amountPaise: storeBill.storeNetPaise,
-          // Phase 3: STORE rows carry their own commission & tax (ledger-driven settlement)
+          // STORE rows carry their own commission (ledger-driven settlement); no tax — stores remit their own GST
           commissionPaise: storeBill.commissionPaise,
-          taxPaise: storeBill.taxPaise,
           settlementStatus: done ? 'SETTLED' : 'PENDING',
         },
       })
@@ -391,16 +382,17 @@ export async function seedDemoData(db: DB): Promise<void> {
     }
 
     const commissionTotal = bill.perStore.reduce((s, p) => s + p.commissionPaise, 0)
-    const done = opts.ticketStatus === 'DELIVERED'
-    for (const b of [
-      { beneficiary: 'TAX' as const, amountPaise: bill.taxPaise },
-      { beneficiary: 'PLATFORM_COMMISSION' as const, amountPaise: bill.platformFeePaise + commissionTotal },
-      { beneficiary: 'DELIVERY_FEE' as const, amountPaise: bill.deliveryFeePaise },
-    ]) {
-      await db.split.create({
-        data: { orderId: order.id, storeId: null, beneficiary: b.beneficiary, amountPaise: b.amountPaise, settlementStatus: done ? 'SETTLED' : 'PENDING' },
-      })
-    }
+    const doneOuter = opts.ticketStatus === 'DELIVERED'
+    // single platform row (no delivery fee, no platform-held GST)
+    await db.split.create({
+      data: {
+        orderId: order.id,
+        storeId: null,
+        beneficiary: 'PLATFORM_COMMISSION',
+        amountPaise: bill.platformFeePaise + commissionTotal,
+        settlementStatus: doneOuter ? 'SETTLED' : 'PENDING',
+      },
+    })
 
     const seedRef = generatePaymentRef()
     const payment = await db.payment.create({

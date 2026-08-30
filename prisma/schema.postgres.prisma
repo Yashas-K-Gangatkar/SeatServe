@@ -11,7 +11,7 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
@@ -108,7 +108,6 @@ model Store {
   // NO delivery fee — stores sit next door to the screens (owner decision)
   commissionPct    Float         @default(12) // platform commission
   kycStatus        String        @default("PENDING") // PENDING | VERIFIED | REJECTED
-  kycDetail        String? // JSON snapshot: { gstin, panMasked, bankMasked, fssai, submittedAt } — masked only, never full credentials
   bankRefMasked    String? // e.g. "XXXX4821" — never real credentials
   rating           Float         @default(4.5)
   createdAt        DateTime      @default(now())

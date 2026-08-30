@@ -92,12 +92,11 @@ export async function POST(request: Request) {
     prepMinutes: list.map((x) => x.product.prepEstimateMin),
     fees: {
       commissionPct: list[0].product.store.commissionPct,
-      deliveryFeePaise: list[0].product.store.deliveryFeePaise,
       prepBufferMin: list[0].product.store.prepBufferMin,
     },
     lines: list.map((x) => ({ unitPricePaise: x.product.pricePaise, qty: x.qty, taxRatePct: x.product.taxRatePct })),
   }))
-  const bill = computeBill(lineGroups, settings.platformFee)
+  const bill = computeBill(lineGroups, settings.walkBufferMin)
 
   const code = generateOrderCode()
   const order = await db.order.create({
@@ -111,8 +110,6 @@ export async function POST(request: Request) {
       status: 'PENDING_PAYMENT',
       paymentStatus: 'PENDING',
       subtotalPaise: bill.subtotalPaise,
-      taxPaise: bill.taxPaise,
-      deliveryFeePaise: bill.deliveryFeePaise,
       platformFeePaise: bill.platformFeePaise,
       totalPaise: bill.totalPaise,
       customerName: customerName ?? null,
@@ -152,7 +149,6 @@ export async function POST(request: Request) {
           beneficiary: s.beneficiary,
           amountPaise: s.amountPaise,
           commissionPaise: s.commissionPaise,
-          taxPaise: s.taxPaise,
           settlementStatus: 'PENDING',
         })),
       },

@@ -193,7 +193,7 @@ export default function SeatLanding({ go }: { go: (path: string) => void }) {
           ))}
         </div>
         <p className="mt-4 text-[11px] leading-relaxed text-muted-foreground/70">
-          Settlement ledger preview: every order writes a split ledger (STORE / PLATFORM_COMMISSION / DELIVERY_FEE / TAX) whose
+          Settlement ledger preview: every order writes a split ledger (STORE / PLATFORM_COMMISSION) whose
           amounts always sum to the paid total. Live sample: seeded order SS-DEMO02 totals {rupees(75440)} with a verified split.
         </p>
       </section>

@@ -7,18 +7,21 @@
 //   Σ(all positive split rows) − Σ(all adjustment rows) === net settled
 //   and the pending-settlement view (Σ PENDING) stays exact.
 //
+// Money model: no delivery fee, no platform-held GST. The customer is refunded
+// the leg's food + that leg's share of the platform fee. Stores remit their own
+// GST, so no tax rows exist anywhere in the ledger.
+//
 // Adjustment rows carry settlementStatus:
 //   VOIDED   — leg cancelled before fulfilment (never owed)
 //   REFUNDED — money actually returned to the customer
 import { db } from '@/lib/db'
 import { audit } from '@/lib/audit'
-import { taxComponentPaise } from '@/lib/pricing'
 
 export interface LegReversal {
   /** per-beneficiary negative amounts, Σ === refundTotalPaise */
   rows: {
     storeId: string | null
-    beneficiary: 'STORE' | 'PLATFORM_COMMISSION' | 'DELIVERY_FEE' | 'TAX'
+    beneficiary: 'STORE' | 'PLATFORM_COMMISSION'
     amountPaise: number
     commissionPaise: number
     taxPaise: number
@@ -29,46 +32,33 @@ export interface LegReversal {
 /**
  * Computes the reversal for ONE cancelled store leg.
  * The customer is made whole for everything attributable to that leg:
- *   refund = legSubtotal + leg delivery fee + leg share of the platform fee
+ *   refund = legSubtotal + leg share of the platform fee
  * Ledger impact (all negative):
- *   STORE  = −(legSubtotal − legTax − legCommission)   (store never owed it)
- *   TAX    = −legTax
- *   DELIVERY_FEE = −leg delivery fee
+ *   STORE               = −(legSubtotal − legCommission)   (store never owed it)
  *   PLATFORM_COMMISSION = −(legCommission + platformShare)
  */
 export function computeLegReversal(input: {
   orderSubtotalPaise: number
   orderPlatformFeePaise: number
   legSubtotalPaise: number
-  legTaxPaise: number
   storeCommissionPct: number
-  storeDeliveryFeePaise: number
   storeId: string
 }): LegReversal {
   const commission = Math.round((input.legSubtotalPaise * input.storeCommissionPct) / 100)
-  const storeNet = input.legSubtotalPaise - input.legTaxPaise - commission
+  const storeNet = input.legSubtotalPaise - commission
   const platformShare =
     input.orderSubtotalPaise > 0
       ? Math.round((input.orderPlatformFeePaise * input.legSubtotalPaise) / input.orderSubtotalPaise)
       : 0
-  const refundTotal = input.legSubtotalPaise + input.storeDeliveryFeePaise + platformShare
+  const refundTotal = input.legSubtotalPaise + platformShare
 
   return {
     refundTotalPaise: refundTotal,
     rows: [
-      { storeId: input.storeId, beneficiary: 'STORE', amountPaise: -storeNet, commissionPaise: -commission, taxPaise: -input.legTaxPaise },
-      { storeId: null, beneficiary: 'TAX', amountPaise: -input.legTaxPaise, commissionPaise: 0, taxPaise: -input.legTaxPaise },
-      { storeId: null, beneficiary: 'DELIVERY_FEE', amountPaise: -input.storeDeliveryFeePaise, commissionPaise: 0, taxPaise: 0 },
+      { storeId: input.storeId, beneficiary: 'STORE', amountPaise: -storeNet, commissionPaise: -commission, taxPaise: 0 },
       { storeId: null, beneficiary: 'PLATFORM_COMMISSION', amountPaise: -(commission + platformShare), commissionPaise: 0, taxPaise: 0 },
     ],
   }
-}
-
-/** Per-leg tax from the order's line items (exact per-line GST extraction). */
-export function legTaxFromItems(items: { storeId: string; lineTotalPaise: number; taxRatePct: number }[], storeId: string): number {
-  return items
-    .filter((i) => i.storeId === storeId)
-    .reduce((sum, i) => sum + taxComponentPaise(i.lineTotalPaise, i.taxRatePct), 0)
 }
 
 /**
@@ -76,22 +66,22 @@ export function legTaxFromItems(items: { storeId: string; lineTotalPaise: number
  * POSITIVE split rows (largest-remainder, exact Σ). Used by the finance
  * action on refund PROCESS.
  *
- * Phase 3: negative STORE rows also carry their proportional share of the
- * original row's commission & tax (largest-remainder over the STORE rows),
- * so settlement stays ledger-driven and Σ commission reversal is exact.
+ * Negative STORE rows also carry their proportional share of the original
+ * row's commission (largest-remainder over the STORE rows), so settlement
+ * stays ledger-driven and Σ commission reversal is exact.
  */
 export function computeProportionalReversal(
   positiveSplits: {
     /** DB rows carry their row id; pure SplitRow (computeSplits) may omit it — never used positionally-independent */
     id?: string
     storeId: string | null
-    beneficiary: 'STORE' | 'PLATFORM_COMMISSION' | 'DELIVERY_FEE' | 'TAX'
+    beneficiary: 'STORE' | 'PLATFORM_COMMISSION'
     amountPaise: number
     commissionPaise?: number
     taxPaise?: number
   }[],
   refundAmountPaise: number,
-): { storeId: string | null; beneficiary: 'STORE' | 'PLATFORM_COMMISSION' | 'DELIVERY_FEE' | 'TAX'; amountPaise: number; commissionPaise: number; taxPaise: number }[] {
+): { storeId: string | null; beneficiary: 'STORE' | 'PLATFORM_COMMISSION'; amountPaise: number; commissionPaise: number; taxPaise: number }[] {
   const total = positiveSplits.reduce((s, r) => s + r.amountPaise, 0)
   if (total <= 0 || refundAmountPaise <= 0) return []
   const clamped = Math.min(refundAmountPaise, total)
@@ -108,11 +98,10 @@ export function computeProportionalReversal(
     remainder -= 1
   }
 
-  // Phase 3: proportional commission/tax share per negative STORE row (exact Σ
-  // via largest remainder over the STORE rows' own components, shares ≤ components
-  // because each reversed share ≤ its row amount).
+  // proportional commission share per negative STORE row (exact Σ via largest
+  // remainder over the STORE rows' own components, shares ≤ components because
+  // each reversed share ≤ its row amount).
   const commissionFloors = distributeComponent(positiveSplits, floors, 'commissionPaise')
-  const taxFloors = distributeComponent(positiveSplits, floors, 'taxPaise')
 
   return positiveSplits
     .map((r, i) => ({
@@ -120,20 +109,20 @@ export function computeProportionalReversal(
       beneficiary: r.beneficiary,
       amountPaise: -floors[i],
       commissionPaise: r.beneficiary === 'STORE' ? -(commissionFloors.get(i) ?? 0) : 0,
-      taxPaise: r.beneficiary === 'STORE' ? -(taxFloors.get(i) ?? 0) : r.beneficiary === 'TAX' ? -floors[i] : 0,
+      taxPaise: 0,
     }))
     .filter((r) => r.amountPaise !== 0)
 }
 
 /**
- * Distributes each positive STORE row's component (commission or tax)
- * proportionally to its reversed share (base/rowAmount), largest-remainder
- * exact. Returns index → component-paise for the negative rows.
+ * Distributes each positive STORE row's commission proportionally to its
+ * reversed share (base/rowAmount), largest-remainder exact. Returns
+ * index → commission-paise for the negative rows.
  */
 function distributeComponent(
-  positiveSplits: { beneficiary: string; amountPaise: number; commissionPaise?: number; taxPaise?: number }[],
+  positiveSplits: { beneficiary: string; amountPaise: number; commissionPaise?: number }[],
   bases: number[],
-  field: 'commissionPaise' | 'taxPaise',
+  field: 'commissionPaise',
 ): Map<number, number> {
   const out = new Map<number, number>()
   const rows = positiveSplits
@@ -161,24 +150,18 @@ function distributeComponent(
 
 /** Writes VOIDED adjustment rows for a cancelled leg + opens an APPROVED refund when the order was paid. */
 export async function voidStoreLeg(orderId: string, storeId: string): Promise<{ refundTotalPaise: number } | null> {
-  const order = await db.order.findUnique({ where: { id: orderId }, include: { items: true } })
+  const order = await db.order.findUnique({ where: { id: orderId } })
   if (!order) return null
   const ticket = await db.storeTicket.findFirst({ where: { orderId, storeId } })
   if (!ticket) return null
   const store = await db.store.findUnique({ where: { id: storeId } })
   if (!store) return null
 
-  const legTax = legTaxFromItems(
-    order.items.map((i) => ({ storeId: i.storeId, lineTotalPaise: i.lineTotalPaise, taxRatePct: i.taxRatePct })),
-    storeId,
-  )
   const reversal = computeLegReversal({
     orderSubtotalPaise: order.subtotalPaise,
     orderPlatformFeePaise: order.platformFeePaise,
     legSubtotalPaise: ticket.subtotalPaise,
-    legTaxPaise: legTax,
     storeCommissionPct: store.commissionPct,
-    storeDeliveryFeePaise: store.deliveryFeePaise,
     storeId,
   })
 
@@ -189,7 +172,7 @@ export async function voidStoreLeg(orderId: string, storeId: string): Promise<{ 
       beneficiary: r.beneficiary,
       amountPaise: r.amountPaise,
       commissionPaise: r.commissionPaise,
-      taxPaise: r.taxPaise,
+      taxPaise: 0,
       settlementStatus: 'VOIDED',
     })),
   })
@@ -236,7 +219,7 @@ export async function applyRefundToLedger(orderId: string, requestedAmountPaise:
     select: { id: true, storeId: true, beneficiary: true, amountPaise: true, commissionPaise: true, taxPaise: true },
   })
   const rows = computeProportionalReversal(
-    positive.map((p) => ({ ...p, beneficiary: p.beneficiary as 'STORE' | 'PLATFORM_COMMISSION' | 'DELIVERY_FEE' | 'TAX' })),
+    positive.map((p) => ({ ...p, beneficiary: p.beneficiary as 'STORE' | 'PLATFORM_COMMISSION' })),
     amount,
   )
   if (rows.length > 0) {
@@ -247,7 +230,7 @@ export async function applyRefundToLedger(orderId: string, requestedAmountPaise:
         beneficiary: r.beneficiary,
         amountPaise: r.amountPaise,
         commissionPaise: r.commissionPaise,
-        taxPaise: r.taxPaise,
+        taxPaise: 0,
         settlementStatus: 'REFUNDED',
       })),
     })

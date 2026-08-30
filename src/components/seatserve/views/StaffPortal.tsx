@@ -152,6 +152,8 @@ export default function StaffPortal({ go }: { go: (p: string) => void }) {
         </div>
       </section>
 
+      {user.role === 'STORE_MANAGER' && user.storeId && <KycCard storeId={user.storeId} />}
+
       {user.role === 'MALL_ADMIN' && (
         <section className="mt-8 rounded-2xl border border-border bg-card p-5">
           <h2 className="font-bold">Demo maintenance</h2>
@@ -167,5 +169,52 @@ export default function StaffPortal({ go }: { go: (p: string) => void }) {
         </section>
       )}
     </div>
+  )
+}
+
+// Phase 4 — merchant KYC submission (store onboarding). Only MASKED compliance
+// values are collected; the mall admin verifies before any payout can happen.
+function KycCard({ storeId }: { storeId: string }) {
+  const [gstin, setGstin] = useState('27AABCU9603R1ZM')
+  const [pan, setPan] = useState('ABCPA1234F')
+  const [bank, setBank] = useState('4821')
+  const [fssai, setFssai] = useState('10023456789012')
+  const [busy, setBusy] = useState(false)
+  const [status, setStatus] = useState<string | null>(null)
+
+  const submit = async () => {
+    setBusy(true)
+    try {
+      const res = await post<{ kycStatus: string }>(`/api/stores/${storeId}/kyc`, { gstin, panMasked: pan, bankMasked: bank, fssai })
+      setStatus(res.kycStatus)
+      toast.success('KYC submitted', { description: 'The mall admin reviews and verifies before payouts unlock.' })
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'KYC submission failed')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <section className="mt-8 rounded-2xl border border-border bg-card p-5" aria-label="KYC onboarding">
+      <h2 className="font-bold">Merchant KYC · payout onboarding</h2>
+      <p className="mt-1 text-xs leading-relaxed text-stone-500">
+        Settle-up requires verified compliance details. Only masked values are stored — the platform never keeps raw bank or PAN numbers.
+        {status && <span className="ml-1 font-bold text-orange-600">Current status: {status}</span>}
+      </p>
+      <div className="mt-3 grid gap-2 sm:grid-cols-2">
+        <input value={gstin} onChange={(e) => setGstin(e.target.value.toUpperCase())} placeholder="GSTIN (15 chars)" aria-label="GSTIN" className="rounded-xl border border-stone-300 bg-stone-50 px-3 py-2 text-sm outline-none focus:border-orange-400 focus:bg-white focus:ring-2 focus:ring-orange-200" />
+        <input value={pan} onChange={(e) => setPan(e.target.value.toUpperCase())} placeholder="PAN (10 chars)" aria-label="PAN" className="rounded-xl border border-stone-300 bg-stone-50 px-3 py-2 text-sm outline-none focus:border-orange-400 focus:bg-white focus:ring-2 focus:ring-orange-200" />
+        <input value={bank} onChange={(e) => setBank(e.target.value.replace(/\D/g, '').slice(0, 4))} placeholder="Bank a/c last 4" aria-label="Bank account last 4 digits" className="rounded-xl border border-stone-300 bg-stone-50 px-3 py-2 text-sm outline-none focus:border-orange-400 focus:bg-white focus:ring-2 focus:ring-orange-200" />
+        <input value={fssai} onChange={(e) => setFssai(e.target.value.replace(/\D/g, '').slice(0, 14))} placeholder="FSSAI (14 digits)" aria-label="FSSAI license" className="rounded-xl border border-stone-300 bg-stone-50 px-3 py-2 text-sm outline-none focus:border-orange-400 focus:bg-white focus:ring-2 focus:ring-orange-200" />
+      </div>
+      <button
+        onClick={submit}
+        disabled={busy}
+        className="mt-3 inline-flex items-center gap-2 rounded-full bg-gradient-to-b from-amber-500 to-orange-500 px-4 py-2 text-xs font-extrabold text-white shadow-md shadow-orange-500/25 transition hover:from-amber-600 hover:to-orange-600 disabled:opacity-50"
+      >
+        {busy ? 'Submitting…' : 'Submit KYC for review'}
+      </button>
+    </section>
   )
 }

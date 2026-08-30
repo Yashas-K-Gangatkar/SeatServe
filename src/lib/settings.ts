@@ -1,16 +1,19 @@
-// SeatServe — configurable business rules (settings table with safe defaults)
+// SeatServe — configurable business rules (settings table with safe defaults).
+// Platform fee is FIXED at 5% of the customer's total (owner decision) — not
+// settings-driven. The walk buffer (timing, not money) stays configurable.
 import { db } from '@/lib/db'
-import type { PlatformFeeConfig } from '@/lib/pricing'
-import { DEFAULT_PLATFORM } from '@/lib/pricing'
+import { PLATFORM_FEE_PCT, DEFAULT_WALK_BUFFER_MIN } from '@/lib/pricing'
 
 export interface AppSettings {
-  platformFee: PlatformFeeConfig
+  platformFeePct: number // fixed 5% — informational for clients
+  walkBufferMin: number
   orderingCutoffDefaultMinutes: number
-  paymentFeePct: number // gateway fee, informational until Phase 3
+  paymentFeePct: number // gateway fee, informational
 }
 
 const DEFAULTS: AppSettings = {
-  platformFee: DEFAULT_PLATFORM,
+  platformFeePct: PLATFORM_FEE_PCT,
+  walkBufferMin: DEFAULT_WALK_BUFFER_MIN,
   orderingCutoffDefaultMinutes: 30,
   paymentFeePct: 2,
 }
@@ -20,8 +23,8 @@ export async function getSettings(): Promise<AppSettings> {
     const rows = await db.appSetting.findMany()
     const map = new Map(rows.map((r) => [r.key, r.value]))
     const out: AppSettings = { ...DEFAULTS }
-    const pf = map.get('platform_fee')
-    if (pf) out.platformFee = { ...DEFAULT_PLATFORM, ...(JSON.parse(pf) as PlatformFeeConfig) }
+    const walk = map.get('walk_buffer_min')
+    if (walk) out.walkBufferMin = Number(JSON.parse(walk))
     const cutoff = map.get('ordering_cutoff_default_minutes')
     if (cutoff) out.orderingCutoffDefaultMinutes = Number(JSON.parse(cutoff))
     const fee = map.get('payment_fee_pct')

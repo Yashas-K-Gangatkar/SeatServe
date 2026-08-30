@@ -80,11 +80,10 @@ O=$(curl -s -X POST "$BASE/api/orders" -H 'Content-Type: application/json' \
 CODE=$(echo "$O" | jget "['data']['code']")
 TOTAL=$(echo "$O" | jget "['data']['breakdown']['totalPaise']")
 SUB=$(echo "$O" | jget "['data']['breakdown']['subtotalPaise']")
-DEL=$(echo "$O" | jget "['data']['breakdown']['deliveryFeePaise']")
 PLAT=$(echo "$O" | jget "['data']['breakdown']['platformFeePaise']")
 check "order created ($CODE)" "$([ -n "$CODE" ] && [ "$CODE" != "None" ] && echo 1 || echo 0)"
-SUM=$((SUB+DEL+PLAT))
-check "bill invariant subtotal+delivery+platform==total ($SUM==$TOTAL)" "$([ "$SUM" = "$TOTAL" ] && echo 1 || echo 0)"
+SUM=$((SUB+PLAT))
+check "bill invariant subtotal+platform==total ($SUM==$TOTAL)" "$([ "$SUM" = "$TOTAL" ] && echo 1 || echo 0)"
 
 echo "── Audit #1: unpaid orders cannot be advanced ──"
 TK_UNPAID=$(curl -s "$BASE/api/orders/$CODE" | python3 -c "
@@ -235,9 +234,8 @@ import sys,json
 d=json.load(sys.stdin)['data']
 leg=[s for s in d['stores'] if s['status']=='CANCELLED']
 print(leg[0]['subtotalPaise'] if leg else 0)")
-DELIVERY1=$(echo "$C" | jget "['data']['stores'][0]['deliveryFeePaise']")
-LEG_EXPECT=$((LEG_SUB + DELIVERY1 + PF3*LEG_SUB/SUB3))
-check "refund amount = leg + delivery + platform share ($LEG_AMT vs $LEG_EXPECT)" "$([ "$LEG_AMT" = "$LEG_EXPECT" ] && echo 1 || echo 0)"
+LEG_EXPECT=$(python3 -c "print($LEG_SUB + round($PF3 * $LEG_SUB / $SUB3))")
+check "refund amount = leg + platform share ($LEG_AMT vs $LEG_EXPECT)" "$([ "$LEG_AMT" = "$LEG_EXPECT" ] && echo 1 || echo 0)"
 PROC3=$(curl -s -b "$JARS/admin" -X POST "$BASE/api/admin/refunds/$(echo "$REF3" | jget "['id']")/action" -H 'Content-Type: application/json' -d '{"action":"PROCESS"}')
 check "leg refund processed → PARTIALLY_REFUNDED" "$([ "$(echo "$PROC3" | jget "['data']['order']['paymentStatus']")" = "PARTIALLY_REFUNDED" ] && echo 1 || echo 0)"
 
@@ -372,9 +370,8 @@ P3_TRACK=$(curl -s "$BASE/api/orders/$P3_CODE")
 P3_T0=$(echo "$P3_TRACK" | jget "['data']['stores'][0]['ticketId']")
 P3_T1=$(echo "$P3_TRACK" | jget "['data']['stores'][1]['ticketId']")
 P3_STORE0_SUB=$(echo "$P3" | jget "['data']['breakdown']['perStore'][0]['subtotalPaise']")
-P3_STORE0_FEE=$(echo "$P3" | jget "['data']['breakdown']['perStore'][0]['deliveryFeePaise']")
-P3_EXPECT_REFUND=$(python3 -c "print($P3_STORE0_SUB + $P3_STORE0_FEE + round($P3_PLATFORM * $P3_STORE0_SUB / $P3_SUBTOTAL))")
-check "expected leg refund math (leg + fee + platform share)" "$([ -n "$P3_EXPECT_REFUND" ] && [ "$P3_EXPECT_REFUND" != "None" ] && echo 1 || echo 0)"
+P3_EXPECT_REFUND=$(python3 -c "print($P3_STORE0_SUB + round($P3_PLATFORM * $P3_STORE0_SUB / $P3_SUBTOTAL))")
+check "expected leg refund math (leg + platform share, no delivery fee)" "$([ -n "$P3_EXPECT_REFUND" ] && [ "$P3_EXPECT_REFUND" != "None" ] && echo 1 || echo 0)"
 
 # cancel on an UNPAID order must refuse
 P3_UNPAID=$(p3_make_paidable "$AURORA_QR" "$POPCORN")

@@ -5,7 +5,7 @@ import { ok } from '@/lib/api-helpers'
 export async function GET() {
   const stores = await db.store.findMany({
     orderBy: { name: 'asc' },
-    select: { id: true, name: true, slug: true, emoji: true, tagline: true, isOpen: true, kycStatus: true, rating: true, deliveryFeePaise: true },
+    select: { id: true, name: true, slug: true, emoji: true, tagline: true, isOpen: true, kycStatus: true, rating: true },
   })
   return ok(stores)
 }

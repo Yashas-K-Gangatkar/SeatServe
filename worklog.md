@@ -161,3 +161,36 @@ Stage Summary:
 - Phase 3 COMPLETE and fully verified: multi-provider webhooks (SANDBOX_MOCK | RAZORPAY hex-HMAC | CASHFREE base64(ts+body) HMAC), linked-account/vendor split instruction builders, partial cancel with exact auto-refund, full/partial refunds, ledger-driven settlement batches (PENDING→PROCESSED+UTR, double-payout structurally impossible), R1–R5 reconciliation, admin SettlementPanel + SeatTrace UIs
 - 102 API + 73 unit tests green, tsc/lint clean, all user-reported bugs fixed and browser-verified
 - Production HTTP calls to gateways (checkout session creation, refund submission) documented as Phase 4 deployment work (needs real credentials)
+
+---
+Task ID: money-model + phase-3/4-complete
+Agent: Super Z (main)
+Task: User decisions — remove delivery fee, remove platform GST handling, fix platform fee at 5% of customer total; fix staff-login confusion; complete Phase 3 and Phase 4
+
+Work Log:
+- LOGIN: reproduced (asha@gmail.com → bare 401). Server-side logins all fine (rate limiter only ever locked a dummy rl-<runkey>@ratecheck.demo account). Root cause = typing Gmail-style addresses. Fixed StaffLogin 401 message: "NOT Gmail — tap a role chip, password demo1234"
+- MONEY MODEL (owner decision) — full refactor with per-step verification:
+  * pricing.ts rewritten: NO deliveryFeePaise anywhere, NO tax extraction (stores remit own GST — Product.taxRatePct kept as receipt info only), platform fee FIXED 5% of customer total via gross-up: total=round(sub/0.95), fee=total−sub (exactly 5% ±1 paisa). SplitRow = STORE×n + PLATFORM_COMMISSION (taxPaise legacy column, always 0)
+  * refunds.ts: leg reversal = legSubtotal + platformShare (no tax/delivery components); proportional reversal commission-only
+  * schema: dropped Store.deliveryFeePaise, Order.taxPaise, Order.deliveryFeePaise; added Store.kycDetail (JSON masked KYC snapshot); db push
+  * routes updated: orders, orders/[code], context (settings → {platformFeePct:5, walkBufferMin}), stores/[id] (commission only), stores route select
+  * UI: CheckoutSheet (Item total GST-incl-at-store / Platform fee 5% of total / Total to pay), SeatPage store header ("delivered to your seat"), Tracking bill, SettlementPanel (GST card removed), Admin labels, Landing copy
+  * tests rewritten: pricing.test.ts (5% gross-up cases), phase3.test.ts ledger math, audit-fixes.test.ts reversals; golden path bill invariant + refund math (round not floor); >100% commission guard test (tax removal changed boundary)
+  * verified LIVE: ₹600 + ₹31.58 = ₹631.58, fee = 5.000% of total
+- PHASE 3 FINISH — real gateway rails, env-activated (src/lib/payments/gateway-client.ts):
+  * Razorpay Route: create order WITH transfers (linked accounts from env or acct_<slug>), refund submission
+  * Cashfree Easy Split: create order WITH vendor splits (order_splits), refund submission (sandbox/production base by CASHFREE_ENV)
+  * POST /api/payments/session: SANDBOX_MOCK → {mode} (client keeps mock-pay); configured → real sandbox order + INITIATED Payment; providerRef echoed via gateway order id (webhook contract)
+  * refund PROCESS route: gateway-first (GATEWAY_REFUND_SUBMITTED audit), ledger only after acceptance
+  * NOT executed here: live HTTP to provider sandboxes (no keys/network in this environment) — honest limitation, documented
+- PHASE 4:
+  * PostgreSQL: Prisma 6 forbids env() provider → dual-schema approach: scripts/make-postgres-schema.mjs generates prisma/schema.postgres.prisma (byte-identical, provider swapped; VALIDATED with prisma validate for both dialects); bun run db:schema:pg / db:push:pg; docs/DEPLOYMENT.md migration steps
+  * KYC onboarding: POST /api/stores/[id]/kyc (STORE_MANAGER; GSTIN/PAN/FSSAI format-validated, PAN+bank stored MASKED) → PENDING; POST /api/admin/kyc/[storeId] (MALL_ADMIN VERIFY/REJECT, audited, realtime); settlement payout GATE (unverified stores skipped with reason — verified live: paid [Cinema Snacks, Pizza Corner], skipped Mithai (KYC pending) + Wrap House (no ledger)); UI: StaffPortal KYC form + Admin board Verify/Reject buttons
+  * security: next.config headers (CSP, X-Frame-Options DENY, nosniff, Referrer-Policy, Permissions-Policy); docs/SECURITY-REVIEW.md (threat model, 7 fixed findings, 7 honest open gaps)
+  * legal: docs/LEGAL-NOTES.md (money flow, marketplace classification, GST/TCS flags for CA, KYC design, pre-launch checklist)
+  * deployment: Dockerfile (multi-stage, standalone), .env.example, docs/DEPLOYMENT.md
+- FINAL VERIFICATION: 70/70 unit, 102/102 API, tsc 0, lint 0, fresh seed + server restart, browser: customer flow (bill → ₹231.58 pay → confirmation popup → tracking), admin board KYC statuses/buttons, console clean
+- README roadmap updated (Phase 3 ✅, Phase 4 ✅ demo-grade with honest scope)
+
+Stage Summary:
+- All four phases delivered within sandbox limits: Phase 3 rails are structurally complete and env-activated; Phase 4 artifacts (PG kit, KYC, security, legal, deploy) done; remaining real-world steps (provider keys, actual PG host, counsel sign-off) are documented, not hallucinated

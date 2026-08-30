@@ -185,13 +185,22 @@ TypeScript unions in `src/lib/types.ts` (they become real enums on PostgreSQL).
   *Note: PostgreSQL migration was planned here; the sandbox runtime is SQLite-only, so the
   schema stays provider-agnostic and the migration is a documented one-line provider swap
   with `db:push` in Phase 4 deployment. Admin CRUD beyond toggles moved to Phase 3.*
-- **Phase 3** — Razorpay Route / Cashfree Easy Split sandbox: real linked accounts, real
-  signed webhooks, partial store cancellation, full/partial refunds, settlement &
-  reconciliation reports, full admin CRUD (store onboarding), rate limiting, Playwright E2E.
-- **Phase 4** — production hardening, PostgreSQL migration, merchant KYC onboarding,
-  security review, legal & accounting review, deployment.
+- **Phase 3 ✅** — Razorpay Route / Cashfree Easy Split sandbox: multi-provider signed
+  webhooks (verifier-claims-event; hex HMAC for Razorpay, timestamp-bound base64 HMAC for
+  Cashfree), env-activated real rails (`/api/payments/session` creates real sandbox orders
+  with Route transfers / Easy Split vendor splits; refund PROCESS submits to the gateway
+  before writing ledger rows), customer partial cancel with exact auto-refund, full/partial
+  refunds, ledger-driven settlement batches (PENDING → PROCESSED + UTR), R1–R5 reconciliation,
+  admin settlement & reconciliation panel, anti-scam seat trace.
+- **Phase 4 ✅ (demo-grade)** — money model simplified per owner decision (NO delivery fee,
+  NO platform-held GST, platform fee FIXED at 5% of the customer total), PostgreSQL
+  migration kit (`bun run db:schema:pg` — generated schema variant, validated), merchant KYC
+  onboarding (masked submission → mall-admin review → payout gate in the settlement engine),
+  security review + hardening (CSP, X-Frame-Options, nosniff; docs/SECURITY-REVIEW.md),
+  legal & accounting notes (docs/LEGAL-NOTES.md), deployment kit (Dockerfile,
+  .env.example, docs/DEPLOYMENT.md).
 
-## Honest limitations (Phase 2)
+## Honest limitations (Phase 4 build)
 
 - **Single route SPA** — the sandbox gateway exposes one port; views are hash-routed
   (`#/seat/…`, `#/staff`, `#/kitchen/…`). In production the staff portal would be a separate

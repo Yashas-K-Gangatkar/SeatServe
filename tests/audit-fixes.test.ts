@@ -51,22 +51,20 @@ describe('audit fix #22 — cutoff display rounding', () => {
 })
 
 describe('audit fix #5 — leg reversal math', () => {
-  test('refund = legSubtotal + delivery + platformShare and rows sum to it', () => {
+  test('refund = legSubtotal + platformShare (no delivery fee, no tax) and rows sum to it', () => {
     const reversal = computeLegReversal({
       orderSubtotalPaise: 40000,
       orderPlatformFeePaise: 1200,
       legSubtotalPaise: 25000,
-      legTaxPaise: 1190,
       storeCommissionPct: 14,
-      storeDeliveryFeePaise: 2900,
       storeId: 'store1',
     })
     const sum = reversal.rows.reduce((s, r) => s + r.amountPaise, 0)
     expect(sum).toBe(-reversal.refundTotalPaise)
-    expect(reversal.refundTotalPaise).toBe(25000 + 2900 + Math.round((1200 * 25000) / 40000))
+    expect(reversal.refundTotalPaise).toBe(25000 + Math.round((1200 * 25000) / 40000))
     const storeRow = reversal.rows.find((r) => r.beneficiary === 'STORE')!
     const commission = Math.round((25000 * 14) / 100)
-    expect(storeRow.amountPaise).toBe(-(25000 - 1190 - commission))
+    expect(storeRow.amountPaise).toBe(-(25000 - commission))
   })
 
   test('all reversal rows are negative or zero', () => {
@@ -74,9 +72,7 @@ describe('audit fix #5 — leg reversal math', () => {
       orderSubtotalPaise: 10000,
       orderPlatformFeePaise: 500,
       legSubtotalPaise: 10000,
-      legTaxPaise: 476,
       storeCommissionPct: 10,
-      storeDeliveryFeePaise: 1900,
       storeId: 's',
     })
     for (const row of reversal.rows) expect(row.amountPaise).toBeLessThanOrEqual(0)
@@ -87,10 +83,8 @@ describe('audit fix #2 — proportional refund reversal', () => {
   const ledger = [
     { id: '1', storeId: 's1', beneficiary: 'STORE' as const, amountPaise: 12000 },
     { id: '2', storeId: 's2', beneficiary: 'STORE' as const, amountPaise: 8000 },
-    { id: '3', storeId: null, beneficiary: 'TAX' as const, amountPaise: 950 },
     { id: '4', storeId: null, beneficiary: 'PLATFORM_COMMISSION' as const, amountPaise: 2440 },
-    { id: '5', storeId: null, beneficiary: 'DELIVERY_FEE' as const, amountPaise: 4800 },
-  ] // Σ = 28190
+  ] // Σ = 22440
 
   test('adjustments are negative and sum exactly to the refund amount', () => {
     const amount = 10000
@@ -101,7 +95,7 @@ describe('audit fix #2 — proportional refund reversal', () => {
 
   test('clamps to the ledger total and stays exact at awkward paise', () => {
     const rows = computeProportionalReversal(ledger, 99999)
-    expect(rows.reduce((s, r) => s + r.amountPaise, 0)).toBe(-28190)
+    expect(rows.reduce((s, r) => s + r.amountPaise, 0)).toBe(-22440)
     const odd = computeProportionalReversal(ledger, 7)
     expect(odd.reduce((s, r) => s + r.amountPaise, 0)).toBe(-7)
   })

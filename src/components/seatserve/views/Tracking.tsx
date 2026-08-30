@@ -278,10 +278,8 @@ function TrackingInner({ code, go }: { code: string; go: (p: string) => void }) 
           <ReceiptText className="h-3.5 w-3.5" aria-hidden /> Bill
         </h2>
         <dl className="space-y-1 text-sm">
-          <div className="flex justify-between"><dt className="text-muted-foreground">Item total</dt><dd className="tabular">{rupees(order.totals.subtotalPaise)}</dd></div>
-          <div className="flex justify-between"><dt className="text-muted-foreground">GST included</dt><dd className="tabular">{rupees(order.totals.taxPaise)}</dd></div>
-          <div className="flex justify-between"><dt className="text-muted-foreground">Delivery fee</dt><dd className="tabular">{rupees(order.totals.deliveryFeePaise)}</dd></div>
-          <div className="flex justify-between"><dt className="text-muted-foreground">Platform fee</dt><dd className="tabular">{rupees(order.totals.platformFeePaise)}</dd></div>
+          <div className="flex justify-between"><dt className="text-muted-foreground">Item total (GST incl. at store)</dt><dd className="tabular">{rupees(order.totals.subtotalPaise)}</dd></div>
+          <div className="flex justify-between"><dt className="text-muted-foreground">Platform fee (5% of total)</dt><dd className="tabular">{rupees(order.totals.platformFeePaise)}</dd></div>
           <div className="flex justify-between border-t border-border pt-1.5 font-black"><dt>Total paid</dt><dd className="tabular text-orange-600">{rupees(order.totals.totalPaise)}</dd></div>
         </dl>
       </section>

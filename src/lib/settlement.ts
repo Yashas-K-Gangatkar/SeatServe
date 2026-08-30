@@ -110,6 +110,13 @@ export async function runSettlementBatch(mallId: string, storeIds?: string[]): P
   const now = new Date()
 
   for (const store of stores) {
+    // PHASE 4 KYC PAYOUT GATE: money can only move to a VERIFIED merchant.
+    // Unverified stores are skipped with an explicit reason — the ledger stays
+    // untouched and they appear in the report, not in the payout.
+    if (store.kycStatus !== 'VERIFIED') {
+      skipped.push(`${store.name} (KYC ${store.kycStatus.toLowerCase()})`)
+      continue
+    }
     const pendingRows = await db.split.findMany({
       where: { storeId: store.id, beneficiary: 'STORE', settlementStatus: 'PENDING', settlementId: null },
       select: { id: true, amountPaise: true, commissionPaise: true, taxPaise: true },

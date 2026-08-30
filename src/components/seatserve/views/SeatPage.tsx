@@ -163,7 +163,7 @@ export default function SeatPage({ qrToken, go }: { qrToken: string; go: (p: str
                     {!store.isOpen && <span className="rounded-full bg-red-100 px-2 py-0.5 text-[10px] font-bold text-red-700">CLOSED</span>}
                   </p>
                   <p className="mt-0.5 text-[11px] text-muted-foreground">
-                    ★ {store.rating.toFixed(1)} · prep ~{Math.max(...store.products.map((p) => p.prepEstimateMin), 0) + store.prepBufferMin} min · delivery {rupees(store.deliveryFeePaise)}
+                    ★ {store.rating.toFixed(1)} · prep ~{Math.max(...store.products.map((p) => p.prepEstimateMin), 0) + store.prepBufferMin} min · delivered to your seat
                   </p>
                 </div>
                 <ChevronDown className={`h-4 w-4 shrink-0 text-muted-foreground transition ${open ? '' : '-rotate-90'}`} aria-hidden />

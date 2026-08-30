@@ -15,8 +15,6 @@ import { rupees, timeHM, minAgo, StatusPill, LiveDot, Spinner, LoadError, EmptyS
 const BENEFICIARY_LABEL: Record<string, string> = {
   STORE: 'Stores (net)',
   PLATFORM_COMMISSION: 'Platform (commission + fee)',
-  DELIVERY_FEE: 'Delivery pool',
-  TAX: 'GST payable',
 }
 
 export default function Admin({ go }: { go: (p: string) => void }) {
@@ -58,6 +56,20 @@ function AdminBoard({ go, scopeRole }: { go: (p: string) => void; scopeRole: 'MA
     try {
       await patch(`/api/stores/${id}`, { isOpen })
       toast.success(`${name} ${isOpen ? 'opened' : 'closed'}`)
+    } catch (err) {
+      toast.error(err instanceof ApiError ? err.message : 'Failed')
+    } finally {
+      void load()
+    }
+  }
+
+  // Phase 4 — KYC review: verified stores unlock settlement payouts
+  const reviewKyc = async (storeId: string, name: string, action: 'VERIFY' | 'REJECT') => {
+    try {
+      const res = await post<{ kycStatus: string }>(`/api/admin/kyc/${storeId}`, { action })
+      toast.success(`${name}: KYC ${res.kycStatus.toLowerCase()}`, {
+        description: res.kycStatus === 'VERIFIED' ? 'Payouts unlocked for this store' : 'The store must resubmit their details',
+      })
     } catch (err) {
       toast.error(err instanceof ApiError ? err.message : 'Failed')
     } finally {
@@ -237,7 +249,7 @@ function AdminBoard({ go, scopeRole }: { go: (p: string) => void; scopeRole: 'MA
                 <div>
                   <p className="text-sm font-bold">
                     <span aria-hidden>{s.emoji}</span> {s.name}
-                    <span className={`ml-2 rounded-full px-2 py-0.5 text-[10px] font-bold ${s.kycStatus === 'VERIFIED' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-800'}`}>
+                    <span className={`ml-2 rounded-full px-2 py-0.5 text-[10px] font-bold ${s.kycStatus === 'VERIFIED' ? 'bg-emerald-100 text-emerald-700' : s.kycStatus === 'REJECTED' ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-800'}`}>
                       KYC {s.kycStatus}
                     </span>
                   </p>
@@ -246,6 +258,22 @@ function AdminBoard({ go, scopeRole }: { go: (p: string) => void; scopeRole: 'MA
                   </p>
                 </div>
                 <div className="flex items-center gap-2">
+                  {scopeRole === 'MALL_ADMIN' && s.kycStatus !== 'VERIFIED' && (
+                    <button
+                      onClick={() => reviewKyc(s.id, s.name, 'VERIFY')}
+                      className="rounded-full bg-emerald-600 px-3 py-1.5 text-[11px] font-bold text-white hover:bg-emerald-700"
+                    >
+                      Verify KYC
+                    </button>
+                  )}
+                  {scopeRole === 'MALL_ADMIN' && s.kycStatus === 'PENDING' && (
+                    <button
+                      onClick={() => reviewKyc(s.id, s.name, 'REJECT')}
+                      className="rounded-full border border-red-300 bg-red-50 px-3 py-1.5 text-[11px] font-bold text-red-700 hover:bg-red-100"
+                    >
+                      Reject
+                    </button>
+                  )}
                   <button
                     onClick={() => setExpandedStore(expandedStore === s.id ? null : s.id)}
                     className="rounded-full border border-border px-3 py-1.5 text-[11px] font-bold text-muted-foreground hover:bg-muted"

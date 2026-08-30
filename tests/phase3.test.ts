@@ -11,7 +11,7 @@ import {
   linkedAccountFor,
   vendorIdFor,
 } from '@/lib/payments/provider'
-import { computeBill, computeSplits, DEFAULT_PLATFORM, type StoreLineGroup } from '@/lib/pricing'
+import { computeBill, computeSplits, type StoreLineGroup } from '@/lib/pricing'
 import { computeLegReversal, computeProportionalReversal } from '@/lib/refunds'
 
 const SECRET = 'test_secret'
@@ -92,22 +92,22 @@ describe('ledger-driven settlement math', () => {
     {
       storeId: 'storeA',
       lines: [
-        { unitPricePaise: 20000, qty: 2, taxRatePct: 5 }, // 40000, tax ≈ 1905
-        { unitPricePaise: 15000, qty: 1, taxRatePct: 12 }, // 15000, tax ≈ 1607
+        { unitPricePaise: 20000, qty: 2, taxRatePct: 5 }, // 40000
+        { unitPricePaise: 15000, qty: 1, taxRatePct: 12 }, // 15000
       ],
       prepMinutes: [10, 8],
-      fees: { commissionPct: 12, deliveryFeePaise: 1900, prepBufferMin: 5 },
+      fees: { commissionPct: 12, prepBufferMin: 5 },
     },
     {
       storeId: 'storeB',
-      lines: [{ unitPricePaise: 8000, qty: 3, taxRatePct: 5 }], // 24000, tax ≈ 1143
+      lines: [{ unitPricePaise: 8000, qty: 3, taxRatePct: 5 }], // 24000
       prepMinutes: [6],
-      fees: { commissionPct: 10, deliveryFeePaise: 1900, prepBufferMin: 5 },
+      fees: { commissionPct: 10, prepBufferMin: 5 },
     },
   ]
 
-  test('STORE rows carry their own commission and tax; Σ splits === total', () => {
-    const bill = computeBill(groups, DEFAULT_PLATFORM)
+  test('STORE rows carry their own commission; Σ splits === total; no tax/delivery rows', () => {
+    const bill = computeBill(groups)
     const rows = computeSplits(bill)
     const total = rows.reduce((s, r) => s + r.amountPaise, 0)
     expect(total).toBe(bill.totalPaise)
@@ -116,38 +116,36 @@ describe('ledger-driven settlement math', () => {
     expect(storeRows).toHaveLength(2)
     const a = storeRows.find((r) => r.storeId === 'storeA')!
     const b = storeRows.find((r) => r.storeId === 'storeB')!
-    // storeA: subtotal 55000, commission 12% = 6600, tax = 1905+1607 = 3512 → net 44888
+    // storeA: subtotal 55000, commission 12% = 6600 → net 48400
     expect(a.commissionPaise).toBe(6600)
-    expect(a.amountPaise).toBe(55000 - 6600 - 3512)
-    // storeB: subtotal 24000, commission 10% = 2400, tax 1143 → net 20457
+    expect(a.amountPaise).toBe(55000 - 6600)
+    // storeB: subtotal 24000, commission 10% = 2400 → net 21600
     expect(b.commissionPaise).toBe(2400)
-    expect(b.amountPaise).toBe(24000 - 2400 - 1143)
-    // TAX row mirrors total tax
-    expect(rows.find((r) => r.beneficiary === 'TAX')!.taxPaise).toBe(bill.taxPaise)
+    expect(b.amountPaise).toBe(24000 - 2400)
+    // no platform-held GST, no delivery fee: exactly one platform row
+    expect(rows.filter((r) => r.beneficiary === 'PLATFORM_COMMISSION')).toHaveLength(1)
+    for (const r of rows) expect(r.taxPaise).toBe(0)
   })
 
-  test('leg reversal carries exact negative commission/tax', () => {
-    const bill = computeBill(groups, DEFAULT_PLATFORM)
+  test('leg reversal carries exact negative commission', () => {
+    const bill = computeBill(groups)
     const reversal = computeLegReversal({
       orderSubtotalPaise: bill.subtotalPaise,
       orderPlatformFeePaise: bill.platformFeePaise,
       legSubtotalPaise: 24000,
-      legTaxPaise: 1143,
       storeCommissionPct: 10,
-      storeDeliveryFeePaise: 1900,
       storeId: 'storeB',
     })
     const storeRow = reversal.rows.find((r) => r.beneficiary === 'STORE')!
-    expect(storeRow.amountPaise).toBe(-(24000 - 1143 - 2400))
+    expect(storeRow.amountPaise).toBe(-(24000 - 2400))
     expect(storeRow.commissionPaise).toBe(-2400)
-    expect(storeRow.taxPaise).toBe(-1143)
     // Σ negative rows === refund total
     const sum = reversal.rows.reduce((s, r) => s + r.amountPaise, 0)
     expect(sum).toBe(-reversal.refundTotalPaise)
   })
 
   test('proportional reversal: Σ negative commissions never exceeds positive; per-store net consistent', () => {
-    const bill = computeBill(groups, DEFAULT_PLATFORM)
+    const bill = computeBill(groups)
     const rows = computeSplits(bill)
     const refund = Math.floor(bill.totalPaise * 0.37) // awkward fraction on purpose
     const neg = computeProportionalReversal(rows, refund)
@@ -171,13 +169,15 @@ describe('ledger-driven settlement math', () => {
     }
   })
 
-  test('full refund distributes tax reversal onto TAX rows exactly', () => {
-    const bill = computeBill(groups, DEFAULT_PLATFORM)
+  test('full refund reverses the entire ledger exactly', () => {
+    const bill = computeBill(groups)
     const rows = computeSplits(bill)
     const neg = computeProportionalReversal(rows, bill.totalPaise)
-    const taxReversal = neg.filter((r) => r.beneficiary === 'TAX').reduce((s, r) => s + Math.abs(r.amountPaise), 0)
-    expect(taxReversal).toBe(bill.taxPaise)
-    const taxFieldReversal = neg.filter((r) => r.beneficiary === 'TAX').reduce((s, r) => s + Math.abs(r.taxPaise), 0)
-    expect(taxFieldReversal).toBe(bill.taxPaise)
+    const sumNeg = neg.reduce((s, r) => s + r.amountPaise, 0)
+    expect(sumNeg).toBe(-bill.totalPaise)
+    // commission reversal never exceeds commission charged
+    const posCommission = rows.filter((r) => r.beneficiary === 'STORE').reduce((s, r) => s + r.commissionPaise, 0)
+    const negCommission = neg.filter((r) => r.beneficiary === 'STORE').reduce((s, r) => s + Math.abs(r.commissionPaise), 0)
+    expect(negCommission).toBeLessThanOrEqual(posCommission)
   })
 })

@@ -29,7 +29,6 @@ export interface StoreData {
   isOpen: boolean
   kycStatus: string
   rating: number
-  deliveryFeePaise: number
   prepBufferMin: number
   products: ProductData[]
 }
@@ -48,18 +47,16 @@ export interface ContextResponse {
   } | null
   stores: StoreData[]
   screenSeats: { code: string; qrToken: string }[]
-  settings: { platformFee: { platformFeePct: number; platformFeeMinPaise: number; platformFeeMaxPaise: number; walkBufferMin: number }; paymentFeePct: number }
+  settings: { platformFeePct: number; walkBufferMin: number; paymentFeePct: number }
   serverTime: string
 }
 
 export interface BillBreakdown {
   subtotalPaise: number
-  taxPaise: number
-  deliveryFeePaise: number
   platformFeePaise: number
   totalPaise: number
   prepEstimateMinutes: number
-  perStore: { storeId: string; subtotalPaise: number; taxPaise: number; commissionPaise: number; storeNetPaise: number; deliveryFeePaise: number }[]
+  perStore: { storeId: string; subtotalPaise: number; commissionPaise: number; storeNetPaise: number }[]
 }
 
 export interface OrderCreateResponse {
@@ -110,7 +107,7 @@ export interface TrackingResponse {
   completedAt: string | null
   location: { mall: string; cinema: string; screen: string; seat: string }
   show: { movieTitle: string; startsAt: string; cutoffMinutesUntil: number | null } | null
-  totals: { subtotalPaise: number; taxPaise: number; deliveryFeePaise: number; platformFeePaise: number; totalPaise: number }
+  totals: { subtotalPaise: number; platformFeePaise: number; totalPaise: number }
   customer: { name: string | null; phone: string | null }
   stores: TrackingStore[]
   payment: { method: string; status: string; amountPaise: number; methodDetail: string | null; providerRef: string } | null

@@ -13,13 +13,13 @@ async function main() {
       seatId: seat.id,
       status: 'PENDING_PAYMENT',
       paymentStatus: 'PENDING',
-      subtotalPaise: 100, taxPaise: 5, deliveryFeePaise: 0, platformFeePaise: 0, totalPaise: 100,
+      subtotalPaise: 100, platformFeePaise: 5, totalPaise: 105,
       items: { create: [{ productId: prod.id, storeId: prod.storeId, nameSnapshot: 'x', unitPricePaise: 100, qty: 1, taxRatePct: 5, lineTotalPaise: 100 }] },
       tickets: { create: [{ storeId: prod.storeId, ticketCode: 'TK-PROBE2', status: 'NEW', subtotalPaise: 100, prepEtaMinutes: 10 }] },
       splits: {
         create: [
-          { store: { connect: { id: prod.storeId } }, beneficiary: 'STORE', amountPaise: 95, commissionPaise: 0, taxPaise: 5, settlementStatus: 'PENDING' },
-          { beneficiary: 'TAX', amountPaise: 5, commissionPaise: 0, taxPaise: 5, settlementStatus: 'PENDING' },
+          { store: { connect: { id: prod.storeId } }, beneficiary: 'STORE', amountPaise: 100, commissionPaise: 0, taxPaise: 0, settlementStatus: 'PENDING' },
+          { beneficiary: 'PLATFORM_COMMISSION', amountPaise: 5, commissionPaise: 0, taxPaise: 0, settlementStatus: 'PENDING' },
         ],
       },
     },

@@ -30,7 +30,7 @@ export type PaymentMethod = (typeof PAYMENT_METHODS)[number]
 export const PAYMENT_STATUSES = ['INITIATED', 'SUCCESS', 'FAILED'] as const
 export type PaymentStatus = (typeof PAYMENT_STATUSES)[number]
 
-export const SPLIT_BENEFICIARIES = ['STORE', 'PLATFORM_COMMISSION', 'DELIVERY_FEE', 'TAX'] as const
+export const SPLIT_BENEFICIARIES = ['STORE', 'PLATFORM_COMMISSION'] as const
 export type SplitBeneficiary = (typeof SPLIT_BENEFICIARIES)[number]
 
 export const KYC_STATUSES = ['PENDING', 'VERIFIED', 'REJECTED'] as const

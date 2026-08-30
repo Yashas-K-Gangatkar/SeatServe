@@ -53,8 +53,6 @@ export async function GET(_request: Request, { params }: { params: Promise<{ cod
     show: show ? { movieTitle: show.movieTitle, startsAt: show.startsAt, cutoffMinutesUntil: cutoff?.minutesUntilCutoff ?? null } : null,
     totals: {
       subtotalPaise: order.subtotalPaise,
-      taxPaise: order.taxPaise,
-      deliveryFeePaise: order.deliveryFeePaise,
       platformFeePaise: order.platformFeePaise,
       totalPaise: order.totalPaise,
     },

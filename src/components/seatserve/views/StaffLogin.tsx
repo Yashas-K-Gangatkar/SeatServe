@@ -39,7 +39,17 @@ export default function StaffLogin({ go }: { go: (p: string) => void }) {
       toast.success(`Welcome back, ${me.name}`, { description: `${ROLE_LABELS[me.role]} · scoped console` })
       go('#/staff')
     } catch (error) {
-      setErr(error instanceof ApiError ? error.message : 'Sign-in failed — try again')
+      // the #1 real-world login failure: typing a gmail-style address — the
+      // demo emails are @seatserve.demo / @aurora.demo etc. Make the recovery
+      // obvious instead of a bare 401.
+      const status = error instanceof ApiError ? error.status : 0
+      setErr(
+        status === 401
+          ? 'Invalid email or password. Demo tip: these are NOT Gmail addresses — tap a role chip below to fill the exact email, then sign in (password: demo1234).'
+          : error instanceof ApiError
+            ? error.message
+            : 'Sign-in failed — try again',
+      )
     } finally {
       setBusy(false)
     }

@@ -1,30 +1,15 @@
 // SeatServe — pricing & split-ledger invariants
+// Money model: NO delivery fee · NO platform-held GST · platform fee fixed at
+// 5% of the TOTAL the customer pays (gross-up).
 import { describe, test, expect } from 'bun:test'
-import { taxComponentPaise, priceLine, computeBill, computeSplits, platformFeePaise, rupees, DEFAULT_PLATFORM } from '../src/lib/pricing'
+import { priceLine, computeBill, computeSplits, platformFeePaise, rupees, PLATFORM_FEE_PCT } from '../src/lib/pricing'
 
-const fees = (commissionPct: number, deliveryFeePaise: number, prepBufferMin = 8) => ({ commissionPct, deliveryFeePaise, prepBufferMin })
-
-describe('taxComponentPaise (GST extracted from inclusive price)', () => {
-  test('5% GST on ₹180 → ₹8.57 = 857 paise', () => {
-    expect(taxComponentPaise(18000, 5)).toBe(857)
-  })
-  test('zero tax', () => {
-    expect(taxComponentPaise(10000, 0)).toBe(0)
-  })
-  test('rejects negative/float amounts', () => {
-    expect(() => taxComponentPaise(-1, 5)).toThrow()
-    expect(() => taxComponentPaise(1.5, 5)).toThrow()
-  })
-  test('rejects rate outside 0..100', () => {
-    expect(() => taxComponentPaise(100, 120)).toThrow()
-  })
-})
+const fees = (commissionPct: number, prepBufferMin = 8) => ({ commissionPct, prepBufferMin })
 
 describe('priceLine', () => {
-  test('line total and tax', () => {
+  test('line total is unit × qty', () => {
     const line = priceLine({ unitPricePaise: 25000, qty: 2, taxRatePct: 5 })
     expect(line.lineTotalPaise).toBe(50000)
-    expect(line.taxPaise).toBe(2381)
   })
   test('rejects qty 0 and floats', () => {
     expect(() => priceLine({ unitPricePaise: 100, qty: 0, taxRatePct: 5 })).toThrow()
@@ -38,7 +23,7 @@ describe('computeBill + computeSplits — the ledger invariant', () => {
       {
         storeId: 's1',
         prepMinutes: [5, 4],
-        fees: fees(12, 1900),
+        fees: fees(12),
         lines: [
           { unitPricePaise: 18000, qty: 1, taxRatePct: 5 },
           { unitPricePaise: 14000, qty: 2, taxRatePct: 5 },
@@ -52,35 +37,39 @@ describe('computeBill + computeSplits — the ledger invariant', () => {
 
   test('multi-store: splits sum exactly to total, store nets are consistent', () => {
     const bill = computeBill([
-      { storeId: 's1', prepMinutes: [5], fees: fees(12, 1900), lines: [{ unitPricePaise: 18000, qty: 1, taxRatePct: 5 }] },
-      { storeId: 's2', prepMinutes: [14], fees: fees(14, 2900), lines: [{ unitPricePaise: 25000, qty: 2, taxRatePct: 5 }] },
-      { storeId: 's3', prepMinutes: [3], fees: fees(10, 1900), lines: [{ unitPricePaise: 8000, qty: 3, taxRatePct: 12 }] },
+      { storeId: 's1', prepMinutes: [5], fees: fees(12), lines: [{ unitPricePaise: 18000, qty: 1, taxRatePct: 5 }] },
+      { storeId: 's2', prepMinutes: [14], fees: fees(14), lines: [{ unitPricePaise: 25000, qty: 2, taxRatePct: 5 }] },
+      { storeId: 's3', prepMinutes: [3], fees: fees(10), lines: [{ unitPricePaise: 8000, qty: 3, taxRatePct: 12 }] },
     ])
     const splits = computeSplits(bill)
     const sum = splits.reduce((s, r) => s + r.amountPaise, 0)
     expect(sum).toBe(bill.totalPaise)
 
-    // store net = subtotal − tax − commission (individually)
+    // store net = subtotal − commission (no delivery fee, no platform-held tax)
     for (const ps of bill.perStore) {
       const commission = Math.round((ps.subtotalPaise * { s1: 12, s2: 14, s3: 10 }[ps.storeId]!) / 100)
-      expect(ps.storeNetPaise).toBe(ps.subtotalPaise - ps.taxPaise - commission)
+      expect(ps.storeNetPaise).toBe(ps.subtotalPaise - commission)
     }
 
-    // total = subtotal + delivery + platform fee
-    expect(bill.totalPaise).toBe(bill.subtotalPaise + bill.deliveryFeePaise + bill.platformFeePaise)
+    // total = subtotal + platform fee
+    expect(bill.totalPaise).toBe(bill.subtotalPaise + bill.platformFeePaise)
+
+    // exactly one STORE row per store + one PLATFORM_COMMISSION row
+    expect(splits.filter((r) => r.beneficiary === 'STORE')).toHaveLength(3)
+    expect(splits.filter((r) => r.beneficiary === 'PLATFORM_COMMISSION')).toHaveLength(1)
   })
 
-  test('delivery fee accumulates per store', () => {
+  test('no delivery fee exists anywhere in the bill', () => {
     const bill = computeBill([
-      { storeId: 'a', prepMinutes: [5], fees: fees(12, 1900), lines: [{ unitPricePaise: 10000, qty: 1, taxRatePct: 5 }] },
-      { storeId: 'b', prepMinutes: [5], fees: fees(12, 2900), lines: [{ unitPricePaise: 10000, qty: 1, taxRatePct: 5 }] },
+      { storeId: 'a', prepMinutes: [5], fees: fees(12), lines: [{ unitPricePaise: 10000, qty: 1, taxRatePct: 5 }] },
+      { storeId: 'b', prepMinutes: [5], fees: fees(12), lines: [{ unitPricePaise: 10000, qty: 1, taxRatePct: 5 }] },
     ])
-    expect(bill.deliveryFeePaise).toBe(4800)
+    expect(bill.totalPaise).toBe(bill.subtotalPaise + bill.platformFeePaise)
   })
 
   test('prep estimate uses slowest item + load + buffer + walk', () => {
     const bill = computeBill([
-      { storeId: 'a', prepMinutes: [14, 4], fees: fees(12, 1900, 12), lines: [{ unitPricePaise: 10000, qty: 3, taxRatePct: 5 }, { unitPricePaise: 10000, qty: 1, taxRatePct: 5 }] },
+      { storeId: 'a', prepMinutes: [14, 4], fees: fees(12, 12), lines: [{ unitPricePaise: 10000, qty: 3, taxRatePct: 5 }, { unitPricePaise: 10000, qty: 1, taxRatePct: 5 }] },
     ])
     // slowest 14 + extra units 2*2 + buffer 12 + walk 6 = 36
     expect(bill.prepEstimateMinutes).toBe(36)
@@ -88,7 +77,7 @@ describe('computeBill + computeSplits — the ledger invariant', () => {
 
   test('commission can never exceed store subtotal', () => {
     expect(() =>
-      computeBill([{ storeId: 'a', prepMinutes: [5], fees: fees(100, 1900), lines: [{ unitPricePaise: 10000, qty: 1, taxRatePct: 5 }] }]),
+      computeBill([{ storeId: 'a', prepMinutes: [5], fees: fees(150), lines: [{ unitPricePaise: 10000, qty: 1, taxRatePct: 5 }] }]),
     ).toThrow()
   })
 
@@ -97,11 +86,22 @@ describe('computeBill + computeSplits — the ledger invariant', () => {
   })
 })
 
-describe('platformFeePaise (configurable convenience fee)', () => {
-  test('3% of subtotal, bounded by min and max', () => {
-    expect(platformFeePaise(10000, DEFAULT_PLATFORM)).toBe(500) // 3% of ₹100 = ₹3 → min ₹5
-    expect(platformFeePaise(1000000, DEFAULT_PLATFORM)).toBe(2500) // 3% of ₹10,000 = ₹300 → max ₹25
-    expect(platformFeePaise(50000, DEFAULT_PLATFORM)).toBe(1500) // 3% of ₹500 = ₹15
+describe('platformFeePaise — fixed 5% of the customer total', () => {
+  test('fee is exactly 5% of the final total (gross-up), within one paisa', () => {
+    expect(PLATFORM_FEE_PCT).toBe(5)
+    const fee = platformFeePaise(10000) // ₹100 food
+    const total = 10000 + fee
+    expect(Math.abs(fee / total - 0.05)).toBeLessThanOrEqual(0.0005)
+    // worked example: total = round(10000/0.95) = 10526, fee = 526
+    expect(fee).toBe(526)
+    expect(total).toBe(10526)
+  })
+  test('bigger cart stays proportional; zero subtotal → zero fee', () => {
+    const fee = platformFeePaise(500000) // ₹5,000 food
+    const total = 500000 + fee
+    expect(total).toBe(Math.round(500000 / 0.95))
+    expect(Math.abs(fee / total - 0.05)).toBeLessThanOrEqual(0.0005)
+    expect(platformFeePaise(0)).toBe(0)
   })
 })
 

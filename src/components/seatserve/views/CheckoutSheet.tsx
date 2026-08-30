@@ -8,6 +8,7 @@ import { useMemo, useState } from 'react'
 import { Loader2, Lock, ShieldCheck, TriangleAlert, Timer, Store as StoreIcon, ChevronDown, CheckCircle2, Copy } from 'lucide-react'
 import { toast } from 'sonner'
 import { post, ApiError } from '@/lib/client/api'
+import { platformFeePaise } from '@/lib/pricing'
 import { useCart } from '@/lib/client/cart'
 import { rupees } from '../ui-bits'
 import type { ContextResponse, OrderCreateResponse } from '@/lib/client/types'
@@ -40,13 +41,13 @@ export function CheckoutSheet({
   const [placedOrder, setPlacedOrder] = useState<OrderCreateResponse | null>(null)
 
   const selection = useMemo(() => {
-    const rows: { storeId: string; storeName: string; emoji: string | null; deliveryFeePaise: number; items: { id: string; name: string; qty: number; pricePaise: number; note: string }[] }[] = []
+    const rows: { storeId: string; storeName: string; emoji: string | null; items: { id: string; name: string; qty: number; pricePaise: number; note: string }[] }[] = []
     for (const store of ctx.stores) {
       const items = store.products
         .map((p) => ({ id: p.id, name: p.name, qty: cart.lines[p.id]?.qty ?? 0, pricePaise: p.pricePaise, note: cart.lines[p.id]?.note ?? '' }))
         .filter((i) => i.qty > 0)
       if (items.length > 0) {
-        rows.push({ storeId: store.id, storeName: store.name, emoji: store.emoji, deliveryFeePaise: store.deliveryFeePaise, items })
+        rows.push({ storeId: store.id, storeName: store.name, emoji: store.emoji, items })
       }
     }
     return rows
@@ -54,10 +55,10 @@ export function CheckoutSheet({
 
   const itemCount = selection.reduce((s, r) => s + r.items.reduce((x, i) => x + i.qty, 0), 0)
   const subtotal = selection.reduce((s, r) => s + r.items.reduce((x, i) => x + i.qty * i.pricePaise, 0), 0)
-  const deliveryFees = selection.reduce((s, r) => s + r.deliveryFeePaise, 0)
-  const pf = ctx.settings.platformFee
-  const platformFee = Math.min(Math.max(Math.round((subtotal * pf.platformFeePct) / 100), pf.platformFeeMinPaise), pf.platformFeeMaxPaise)
-  const estimatedTotal = subtotal + deliveryFees + platformFee
+  // money model: NO delivery fee (stores are next door); platform fee is a fixed
+  // 5% of the final total — mirror the server's exact gross-up formula
+  const platformFee = platformFeePaise(subtotal)
+  const estimatedTotal = subtotal + platformFee
 
   // Audit fix #32: the estimate used a hardcoded "+12 min". It now mirrors the
   // server's real formula (slowest item + 2 min per extra unit + store buffer
@@ -73,7 +74,7 @@ export function CheckoutSheet({
       const extraUnits = r.items.reduce((sum, i) => sum + i.qty - 1, 0)
       maxPrep = Math.max(maxPrep, slowest + extraUnits * 2 + store.prepBufferMin)
     }
-    return maxPrep + ctx.settings.platformFee.walkBufferMin
+    return maxPrep + ctx.settings.walkBufferMin
   }, [selection, ctx])
 
   const placeOrder = async () => {
@@ -146,10 +147,9 @@ export function CheckoutSheet({
             <div className="rounded-2xl border border-border bg-card p-4 text-sm" aria-label="Bill breakdown">
               <h3 className="mb-2 text-xs font-extrabold uppercase tracking-wider text-muted-foreground">Bill details</h3>
               <dl className="space-y-1.5">
-                <div className="flex justify-between"><dt className="text-muted-foreground">Item total (GST incl.)</dt><dd className="tabular">{rupees(subtotal)}</dd></div>
-                <div className="flex justify-between"><dt className="text-muted-foreground">Delivery · {selection.length} store{selection.length === 1 ? '' : 's'}</dt><dd className="tabular">{rupees(deliveryFees)}</dd></div>
-                <div className="flex justify-between"><dt className="text-muted-foreground">Platform fee ({pf.platformFeePct}%)</dt><dd className="tabular">{rupees(platformFee)}</dd></div>
-                <div className="mt-2 flex justify-between border-t border-border pt-2 text-base font-black"><dt>Estimated total</dt><dd className="text-orange-600 tabular">{rupees(estimatedTotal)}</dd></div>
+                <div className="flex justify-between"><dt className="text-muted-foreground">Item total (GST incl. at store)</dt><dd className="tabular">{rupees(subtotal)}</dd></div>
+                <div className="flex justify-between"><dt className="text-muted-foreground">Platform fee (5% of total)</dt><dd className="tabular">{rupees(platformFee)}</dd></div>
+                <div className="mt-2 flex justify-between border-t border-border pt-2 text-base font-black"><dt>Total to pay</dt><dd className="text-orange-600 tabular">{rupees(estimatedTotal)}</dd></div>
               </dl>
               <p className="mt-1 text-[10px] text-muted-foreground">Final bill is computed server-side at placement.</p>
               <p className="mt-2 flex items-center gap-1.5 text-[11px] text-muted-foreground">
