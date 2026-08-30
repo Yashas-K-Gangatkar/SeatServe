@@ -14,8 +14,21 @@ export async function GET(request: Request) {
   // session wins over query param: runners are pinned to themselves
   const runnerId = user.role === 'RUNNER' ? (user.runnerId ?? undefined) : (url.searchParams.get('runnerId') ?? undefined)
 
+  // Audit fix #16: the queue used to be PLATFORM-WIDE — a runner in Mumbai saw
+  // and could claim ready tickets in Pune. Scope everything to the caller's mall:
+  //   RUNNER      → the mall of their own delivery zone
+  //   MALL_ADMIN  → their mall
+  let mallId: string | null = null
+  if (user.role === 'RUNNER') {
+    const runner = await db.runner.findUnique({ where: { id: user.runnerId ?? '' }, include: { zone: true } })
+    mallId = runner?.zone?.mallId ?? null
+  } else {
+    mallId = user.mallId ?? null
+  }
+  const mallScope = { order: { mallId: mallId ?? '__none__' } }
+
   const readyTickets = await db.storeTicket.findMany({
-    where: { status: 'READY_FOR_PICKUP' },
+    where: { status: 'READY_FOR_PICKUP', ...mallScope },
     include: {
       store: { select: { name: true, emoji: true } },
       order: { include: { seat: { include: { screen: { include: { cinema: true } } } }, showtime: true } },
@@ -24,11 +37,15 @@ export async function GET(request: Request) {
     orderBy: { readyAt: 'asc' },
   })
 
-  const runners = await db.runner.findMany({ where: { isOnDuty: true }, orderBy: { name: 'asc' } })
+  // only runners belonging to this mall's zones
+  const runners = await db.runner.findMany({
+    where: { isOnDuty: true, zone: { mallId: mallId ?? '__none__' } },
+    orderBy: { name: 'asc' },
+  })
 
   const myRuns = runnerId
     ? await db.deliveryRun.findMany({
-        where: { runnerId, status: { in: ['ASSIGNED', 'PICKED_UP'] } },
+        where: { runnerId, status: { in: ['ASSIGNED', 'PICKED_UP'] }, ticket: { ...mallScope } },
         include: {
           ticket: {
             include: {
@@ -67,6 +84,7 @@ export async function GET(request: Request) {
   })
 
   return ok({
+    mallId, // caller's mall scope (for the token-gated runners:<mallId> room)
     runners: runners.map((r) => ({ id: r.id, name: r.name, rating: r.rating })),
     activeRunnerId: runnerId ?? null,
     queue: readyTickets.map(mapTicket),

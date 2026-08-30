@@ -9,7 +9,9 @@ import { audit } from '@/lib/audit'
 import { emitToRooms } from '@/lib/realtime'
 
 const bodySchema = z.object({
-  isAvailable: z.boolean(),
+  isAvailable: z.boolean().optional(),
+  // Audit fix #44 (CRUD increment): mall admin / store manager can reprice items
+  pricePaise: z.number().int().min(100).max(10_000_00).optional(),
 })
 
 export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -27,16 +29,23 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
     return fail('Your account is not authorized for this store', 403)
   }
 
-  await db.product.update({ where: { id }, data: { isAvailable: parsed.data.isAvailable } })
+  const data: { isAvailable?: boolean; pricePaise?: number } = {}
+  if (parsed.data.isAvailable !== undefined) data.isAvailable = parsed.data.isAvailable
+  if (parsed.data.pricePaise !== undefined) data.pricePaise = parsed.data.pricePaise
+  if (Object.keys(data).length === 0) return fail('Nothing to update', 422)
+
+  await db.product.update({ where: { id }, data })
   await audit({
     actorRole: user.role,
     actorRef: user.email ?? user.id,
-    action: parsed.data.isAvailable ? 'PRODUCT_AVAILABLE' : 'PRODUCT_SOLD_OUT',
+    action: parsed.data.isAvailable === false ? 'PRODUCT_SOLD_OUT' : parsed.data.isAvailable === true ? 'PRODUCT_AVAILABLE' : parsed.data.pricePaise !== undefined ? 'PRODUCT_REPRICED' : 'PRODUCT_UPDATED',
     entityType: 'Product',
     entityId: id,
-    meta: { name: product.name, store: product.store.name },
+    mallId: product.store.mallId,
+    meta: { name: product.name, store: product.store.name, ...(parsed.data.pricePaise !== undefined ? { pricePaise: parsed.data.pricePaise, previousPaise: product.pricePaise } : {}) },
   })
-  await emitToRooms({ rooms: ['admin'], event: 'product:update', data: { productId: id, isAvailable: parsed.data.isAvailable } })
+  await emitToRooms({ rooms: [`admin:${product.store.mallId}`], event: 'product:update', data: { productId: id, isAvailable: data.isAvailable ?? product.isAvailable } })
 
-  return ok({ id, isAvailable: parsed.data.isAvailable })
+  const fresh = await db.product.findUnique({ where: { id }, select: { id: true, isAvailable: true, pricePaise: true } })
+  return ok(fresh)
 }

@@ -9,6 +9,9 @@ export interface AuditEntry {
   entityId: string
   meta?: unknown
   orderId?: string
+  /** Denormalized tenant scope so /api/audit can filter exactly by mall even
+   *  for events that carry no orderId (store/product/auth events). */
+  mallId?: string | null
 }
 
 export async function audit(entry: AuditEntry): Promise<void> {
@@ -22,6 +25,7 @@ export async function audit(entry: AuditEntry): Promise<void> {
         entityId: entry.entityId,
         meta: entry.meta === undefined ? null : JSON.stringify(entry.meta),
         orderId: entry.orderId ?? null,
+        mallId: entry.mallId ?? null,
       },
     })
   } catch (err) {

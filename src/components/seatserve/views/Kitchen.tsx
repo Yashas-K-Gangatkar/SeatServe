@@ -138,7 +138,8 @@ function KitchenDashboard({ storeSlugOrId, canSwitch, go }: { storeSlugOrId: str
   const advance = async (ticket: KitchenTicket, to: string) => {
     setActing(ticket.ticketId)
     try {
-      await post(`/api/kitchen/tickets/${ticket.ticketId}/status`, { to, actorRole: 'KITCHEN_STAFF', actorRef: data?.store.name })
+      // identity comes from the session cookie — the client sends nothing else
+      await post(`/api/kitchen/tickets/${ticket.ticketId}/status`, { to })
       toast.success(`${ticket.ticketCode} → ${to.replaceAll('_', ' ').toLowerCase()}`)
     } catch (err) {
       toast.error(err instanceof ApiError ? err.message : 'Update failed')
@@ -150,7 +151,7 @@ function KitchenDashboard({ storeSlugOrId, canSwitch, go }: { storeSlugOrId: str
   const toggleStore = async () => {
     if (!data) return
     try {
-      await patch(`/api/stores/${data.store.id}`, { isOpen: !data.store.isOpen, actorRole: 'STORE_MANAGER', actorRef: data.store.name })
+      await patch(`/api/stores/${data.store.id}`, { isOpen: !data.store.isOpen })
       toast.success(data.store.isOpen ? 'Store closed — menu shows as unavailable' : 'Store open')
     } catch (err) {
       toast.error(err instanceof ApiError ? err.message : 'Failed')
@@ -217,8 +218,9 @@ function KitchenDashboard({ storeSlugOrId, canSwitch, go }: { storeSlugOrId: str
             className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-[11px] font-bold ${busyMode ? 'border-orange-400 bg-orange-100 text-orange-700' : 'border-stone-300 bg-white text-stone-500 hover:bg-stone-50'}`}
             aria-pressed={busyMode}
           >
-            <Flame className="h-3.5 w-3.5" aria-hidden /> {busyMode ? 'Busy mode +10m ON' : 'Busy mode +10m'}
+            <Flame className="h-3.5 w-3.5" aria-hidden /> {busyMode ? 'Busy view +10m ON' : 'Busy view +10m'}
           </button>
+          <span className="sr-only">Busy mode is a local display preference only — it does not change promised times for customers or the runner queue.</span>
           <button
             onClick={toggleStore}
             className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-[11px] font-bold ${data.store.isOpen ? 'border-stone-300 bg-white text-stone-500 hover:bg-stone-50' : 'border-red-300 bg-red-50 text-red-700'}`}

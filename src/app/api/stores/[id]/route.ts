@@ -10,6 +10,9 @@ import { emitToRooms } from '@/lib/realtime'
 
 const bodySchema = z.object({
   isOpen: z.boolean().optional(),
+  // Audit fix #44 (CRUD increment): commission % and delivery fee are editable
+  commissionPct: z.number().min(0).max(50).optional(),
+  deliveryFeePaise: z.number().int().min(0).max(100_000).optional(),
 })
 
 export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -27,19 +30,41 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
     return fail('Your account is not authorized for this store', 403)
   }
 
-  if (parsed.data.isOpen !== undefined) {
-    await db.store.update({ where: { id }, data: { isOpen: parsed.data.isOpen } })
+  const data: { isOpen?: boolean; commissionPct?: number; deliveryFeePaise?: number } = {}
+  if (parsed.data.isOpen !== undefined) data.isOpen = parsed.data.isOpen
+  if (parsed.data.commissionPct !== undefined) data.commissionPct = parsed.data.commissionPct
+  if (parsed.data.deliveryFeePaise !== undefined) data.deliveryFeePaise = parsed.data.deliveryFeePaise
+
+  if (data.isOpen !== undefined) {
+    await db.store.update({ where: { id }, data: { isOpen: data.isOpen } })
     await audit({
       actorRole: user.role,
       actorRef: user.email ?? user.id,
-      action: parsed.data.isOpen ? 'STORE_OPENED' : 'STORE_CLOSED',
+      action: data.isOpen ? 'STORE_OPENED' : 'STORE_CLOSED',
       entityType: 'Store',
       entityId: id,
+      mallId: store.mallId,
       meta: { name: store.name },
     })
-    await emitToRooms({ rooms: ['admin'], event: 'store:update', data: { storeId: id, isOpen: parsed.data.isOpen } })
+    await emitToRooms({ rooms: [`admin:${store.mallId}`], event: 'store:update', data: { storeId: id, isOpen: data.isOpen } })
+  }
+  if (data.commissionPct !== undefined || data.deliveryFeePaise !== undefined) {
+    await db.store.update({ where: { id }, data })
+    await audit({
+      actorRole: user.role,
+      actorRef: user.email ?? user.id,
+      action: 'STORE_UPDATED',
+      entityType: 'Store',
+      entityId: id,
+      mallId: store.mallId,
+      meta: {
+        name: store.name,
+        ...(data.commissionPct !== undefined ? { commissionPct: data.commissionPct, previousPct: store.commissionPct } : {}),
+        ...(data.deliveryFeePaise !== undefined ? { deliveryFeePaise: data.deliveryFeePaise, previousPaise: store.deliveryFeePaise } : {}),
+      },
+    })
   }
 
   const updated = await db.store.findUnique({ where: { id } })
-  return ok({ id, isOpen: updated?.isOpen })
+  return ok({ id, isOpen: updated?.isOpen, commissionPct: updated?.commissionPct, deliveryFeePaise: updated?.deliveryFeePaise })
 }

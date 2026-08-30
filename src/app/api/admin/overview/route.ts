@@ -29,6 +29,19 @@ export async function GET(request: Request) {
         : null
   const scopeLabel = user.role === 'MALL_ADMIN' ? 'Mall-wide' : user.role === 'CINEMA_MANAGER' ? 'Your cinema only' : 'Your store only'
 
+  // resolved mall for the token-gated realtime room (admin:<mallId>);
+  // CINEMA_MANAGER has no mallId column — resolve from their cinema
+  let realtimeMallId: string | null = null
+  if (user.role === 'MALL_ADMIN' || user.role === 'RUNNER') realtimeMallId = user.mallId
+  else if (user.role === 'CINEMA_MANAGER' && user.cinemaId) {
+    const cinema = await db.cinema.findUnique({ where: { id: user.cinemaId }, select: { mallId: true } })
+    realtimeMallId = cinema?.mallId ?? null
+  } else if (user.role === 'STORE_MANAGER' && user.storeId) {
+    const store = await db.store.findUnique({ where: { id: user.storeId }, select: { mallId: true } })
+    realtimeMallId = store?.mallId ?? null
+  }
+  const mallName = realtimeMallId ? (await db.mall.findUnique({ where: { id: realtimeMallId }, select: { name: true } }))?.name ?? null : null
+
   const [orders, liveOrders, stores, recentAudit] = await Promise.all([
     db.order.findMany({ where: { placedAt: { gte: since }, ...orderScope }, include: { tickets: true, payments: true, refunds: true } }),
     db.order.findMany({
@@ -56,10 +69,16 @@ export async function GET(request: Request) {
   const orderIds = orders.map((o) => o.id)
 
   // scope-follower queries (tickets/refunds/runs/splits ride on scoped orders)
-  const [tickets, runs, refunds, splits] = await Promise.all([
+  const [tickets, allTickets, runs, refunds, splits, storeSplitSums] = await Promise.all([
     db.storeTicket.findMany({
       where: { createdAt: { gte: since }, acceptedAt: { not: null }, readyAt: { not: null }, orderId: { in: orderIds } },
       select: { acceptedAt: true, readyAt: true, storeId: true, status: true, subtotalPaise: true },
+    }),
+    // Audit fix #8: "ordersLast24h" counted only tickets that were already
+    // accepted AND ready — brand-new tickets were invisible. Count them all.
+    db.storeTicket.findMany({
+      where: { createdAt: { gte: since }, orderId: { in: orderIds } },
+      select: { storeId: true, status: true },
     }),
     db.deliveryRun.findMany({
       where: { assignedAt: { gte: since }, pickedUpAt: { not: null }, deliveredAt: { not: null }, ticket: { orderId: { in: orderIds } } },
@@ -70,11 +89,17 @@ export async function GET(request: Request) {
       include: { order: { select: { code: true, totalPaise: true } } },
       orderBy: { createdAt: 'desc' },
     }),
-    db.split.groupBy({ by: ['beneficiary'], _sum: { amountPaise: true }, where: { order: { id: { in: orderIds } } , settlementStatus: 'PENDING' } }),
+    db.split.groupBy({ by: ['beneficiary'], _sum: { amountPaise: true }, where: { order: { id: { in: orderIds } }, settlementStatus: 'PENDING' } }),
+    // Audit fix #7: net per-store sales come from the ledger itself —
+    // STORE rows minus their negative refund/void adjustments.
+    db.split.groupBy({ by: ['storeId'], _sum: { amountPaise: true }, where: { orderId: { in: orderIds }, beneficiary: 'STORE' } }),
   ])
 
+  // Audit fix #7: refunded money is NOT sales. KPIs are net of refunds
+  // (Order.refundedPaise is the ledger-verified processed amount).
   const paidOrders = orders.filter((o) => o.paymentStatus === 'PAID' || o.paymentStatus === 'REFUNDED' || o.paymentStatus === 'PARTIALLY_REFUNDED')
-  const salesPaise = paidOrders.reduce((s, o) => s + o.totalPaise, 0)
+  const salesPaise = paidOrders.reduce((s, o) => s + o.totalPaise - o.refundedPaise, 0)
+  const refundedPaiseTotal = paidOrders.reduce((s, o) => s + o.refundedPaise, 0)
   const aovPaise = paidOrders.length > 0 ? Math.round(salesPaise / paidOrders.length) : 0
 
   const prepSamples = tickets.map((t) => (new Date(t.readyAt!).getTime() - new Date(t.acceptedAt!).getTime()) / 60_000)
@@ -84,8 +109,8 @@ export async function GET(request: Request) {
   const avgDeliveryMin = deliverySamples.length ? Math.round(deliverySamples.reduce((a, b) => a + b, 0) / deliverySamples.length) : null
 
   const perStore = stores.map((s) => {
-    const storeTickets = tickets.filter((t) => t.storeId === s.id)
-    const sales = paidOrders.reduce((sum, o) => sum + o.tickets.filter((t) => t.storeId === s.id).reduce((x, t) => x + t.subtotalPaise, 0), 0)
+    const storeTickets = allTickets.filter((t) => t.storeId === s.id)
+    const netStorePaise = storeSplitSums.find((r) => r.storeId === s.id)?._sum.amountPaise ?? 0
     return {
       id: s.id,
       name: s.name,
@@ -93,7 +118,7 @@ export async function GET(request: Request) {
       isOpen: s.isOpen,
       kycStatus: s.kycStatus,
       ordersLast24h: storeTickets.length,
-      salesPaise: sales,
+      salesPaise: Math.max(0, netStorePaise),
       liveTickets: storeTickets.filter((t) => !['DELIVERED', 'CANCELLED'].includes(t.status)).length,
       products: s.products,
     }
@@ -106,15 +131,18 @@ export async function GET(request: Request) {
       mallId: user.mallId,
       cinemaId: user.cinemaId,
       storeId: user.storeId,
+      realtimeMallId,
+      mallName,
     },
     window: { since, label: 'last 24 hours' },
     kpis: {
       salesPaise,
+      refundedPaise: refundedPaiseTotal,
       ordersCount: paidOrders.length,
       aovPaise,
       avgPrepMin,
       avgDeliveryMin,
-      cancellations: orders.filter((o) => o.status === 'CANCELLED').length,
+      cancellations: orders.filter((o) => o.status === 'CANCELLED' || o.status === 'PARTIALLY_CANCELLED').length,
       refundsOpen: refunds.filter((r) => r.status === 'REQUESTED' || r.status === 'APPROVED').length,
     },
     liveOrders: liveOrders.map((o) => ({

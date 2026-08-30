@@ -14,12 +14,12 @@ import { timeHM, minAgo, StatusPill, LiveDot, Spinner, LoadError, EmptyState } f
 export default function Runner({ runnerId, go, onRouteChange }: { runnerId?: string; go: (p: string) => void; onRouteChange?: () => void }) {
   return (
     <StaffGate roles={['RUNNER', 'MALL_ADMIN']} go={go} consoleName="Runner console">
-      {() => <RunnerConsole runnerId={runnerId} go={go} onRouteChange={onRouteChange} />}
+      {(user) => <RunnerConsole role={user.role} runnerId={runnerId} go={go} onRouteChange={onRouteChange} />}
     </StaffGate>
   )
 }
 
-function RunnerConsole({ runnerId, go, onRouteChange }: { runnerId?: string; go: (p: string) => void; onRouteChange?: () => void }) {
+function RunnerConsole({ role, runnerId, go, onRouteChange }: { role: string; runnerId?: string; go: (p: string) => void; onRouteChange?: () => void }) {
   const [data, setData] = useState<RunnerResponse | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
@@ -43,7 +43,8 @@ function RunnerConsole({ runnerId, go, onRouteChange }: { runnerId?: string; go:
   }, [load])
 
   usePolling(load, 5000)
-  useRealtime(['runners'], () => void load())
+  // mall-scoped runner room (token-gated) — known once the console has loaded
+  useRealtime(data?.mallId ? [`runners:${data.mallId}`] : [], () => void load())
 
   const claim = async (ticketId: string) => {
     setActing(ticketId)
@@ -61,7 +62,8 @@ function RunnerConsole({ runnerId, go, onRouteChange }: { runnerId?: string; go:
   const move = async (ticketId: string, to: 'PICKED_UP' | 'DELIVERED') => {
     setActing(ticketId)
     try {
-      await post(`/api/runner/tickets/${ticketId}/status`, { to, actorRole: 'RUNNER' })
+      // identity comes from the session cookie — the client sends nothing else
+      await post(`/api/runner/tickets/${ticketId}/status`, { to })
       toast.success(to === 'PICKED_UP' ? 'Picked up — deliver to seat' : 'Delivered — nice work')
     } catch (err) {
       toast.error(err instanceof ApiError ? err.message : 'Update failed')
@@ -104,16 +106,26 @@ function RunnerConsole({ runnerId, go, onRouteChange }: { runnerId?: string; go:
           <LiveDot connected={online} />
         </div>
         <div className="mt-3 flex flex-wrap gap-2">
-          {data.runners.map((r) => (
-            <button
-              key={r.id}
-              onClick={() => selectRunner(r.id)}
-              className={`rounded-full border px-3 py-1.5 text-[11px] font-bold transition ${data.activeRunnerId === r.id ? 'border-emerald-400 bg-emerald-50 text-emerald-700' : 'border-stone-300 bg-white text-stone-500 hover:bg-stone-50'}`}
-              aria-pressed={data.activeRunnerId === r.id}
-            >
-              {r.name} ★{r.rating.toFixed(1)}
-            </button>
-          ))}
+          {/* Audit fix #34: RUNNER could tap another runner's chip and the URL
+              changed, but the server pins data to the session runner — the UI
+              showed a wrong "active" runner. Only the mall admin (front-desk
+              coordination) sees the switcher; runners are always themselves. */}
+          {role === 'MALL_ADMIN' &&
+            data.runners.map((r) => (
+              <button
+                key={r.id}
+                onClick={() => selectRunner(r.id)}
+                className={`rounded-full border px-3 py-1.5 text-[11px] font-bold transition ${data.activeRunnerId === r.id ? 'border-emerald-400 bg-emerald-50 text-emerald-700' : 'border-stone-300 bg-white text-stone-500 hover:bg-stone-50'}`}
+                aria-pressed={data.activeRunnerId === r.id}
+              >
+                {r.name} ★{r.rating.toFixed(1)}
+              </button>
+            ))}
+          {role === 'RUNNER' && me && (
+            <span className="rounded-full border border-emerald-400 bg-emerald-50 px-3 py-1.5 text-[11px] font-bold text-emerald-700">
+              {me.name} ★{me.rating.toFixed(1)}
+            </span>
+          )}
           <span className="rounded-full border border-stone-300 bg-white px-3 py-1.5 text-[11px] text-stone-500">On duty today</span>
         </div>
       </header>

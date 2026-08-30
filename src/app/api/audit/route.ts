@@ -8,15 +8,16 @@ export async function GET(request: Request) {
   if ('error' in auth) return auth.error
   const user = auth.user
 
-  // Scope: order-bound events via the order's mall/cinema. Store/product-level
-  // events carry no orderId — included for MALL_ADMIN (sandbox has one mall;
-  // Phase 4 adds a denormalized mallId column to AuditLog for exact scoping).
+  // Audit fix #19: exact mall scoping via the denormalized AuditLog.mallId.
+  // The old filter leaked other malls' Store/Product events when a second mall
+  // existed ("sandbox has one mall" assumption). The OR keeps order-bound rows
+  // matchable even if an old row predates the mallId column.
   const scopeWhere =
     user.role === 'MALL_ADMIN'
       ? {
           OR: [
-            { order: { mallId: user.mallId ?? '__none__' } },
-            { order: null, entityType: { in: ['Store', 'Product'] } },
+            { mallId: user.mallId ?? '__none__' },
+            { mallId: null, order: { mallId: user.mallId ?? '__none__' } },
           ],
         }
       : { order: { screen: { cinemaId: user.cinemaId ?? '__none__' } } }

@@ -32,18 +32,25 @@ cd mini-services/realtime-service && bun run dev   # socket.io :3003 + internal 
 
 ## The 60-second demo
 
-1. Open **`/?qr=A3-F12`** (or the landing page → *Customer · Seat F-12*).
+Seat QR tokens are **random capabilities** (audit hardening), so the demo entry seat is
+resolved dynamically: open `/` and tap *Customer · demo seat*, or read the current tokens
+from `GET /api/demo/entry` (sandbox-only helper for scripts/CI).
+
+1. Open **`/?qr=<token from /api/demo/entry>`** (or the landing page → *Customer · demo seat*).
 2. Add items from 2–3 stores to one cart → **View cart** → bill breakdown → **Continue to pay**.
 3. Mock payment sheet: UPI / Card / Netbanking. There is a **“simulate failure”** switch.
 4. After capture you land on **live tracking** — one ticket per store, each with its own status.
 5. Open **Kitchen consoles** (left nav on landing page): tickets arrive in realtime with a
    chime; advance `Accept → Preparing → Ready for pickup`.
 6. Open the **Runner console**: pick up, deliver. Watch tracking update live.
-7. **Admin board**: KPIs, live orders, refund requests, pending settlement ledger, audit trail.
+7. **Admin board**: KPIs (net of refunds), live orders, refund inbox with
+   **Approve / Process / Reject** actions, settlement ledger, audit trail.
 8. **QR generator**: printable seat-QR sheets; every code opens that exact seat on a phone.
+9. **Second mall** (isolation proof): `Nexora Mall · Pune` — its seat shows ONLY Dosa Junction,
+   its staff sees zero Aurora orders. Cross-mall ordering is rejected with **409**.
 
 Reset the demo from the **staff portal** (mall admin sign-in → “Reset demo data”) or
-`POST /api/simulator/reset` with a mall-admin session.
+`POST /api/simulator/reset` with a mall-admin session (wipes all sessions — you re-login).
 
 ## Two portals, one platform (Phase 2)
 
@@ -57,11 +64,12 @@ Reset the demo from the **staff portal** (mall admin sign-in → “Reset demo d
 
 | Role | Email | Scope |
 |---|---|---|
-| Mall Admin | `asha@seatserve.demo` | All 4 stores, all screens, reset & QR |
+| Mall Admin (Aurora) | `asha@seatserve.demo` | All 4 Aurora stores, all screens, refunds, reset & QR |
+| Mall Admin (Nexora) | `meera@nexora.demo` | Second mall — must see ZERO Aurora data (isolation proof) |
 | Cinema Manager | `vikram@aurora.demo` | Wing A cinema only (orders, QR for its screens) |
 | Store Manager | `manager@cinema-snacks.demo` (+ 1 per store) | Own store only |
 | Kitchen Staff | `kitchen@cinema-snacks.demo` (+ 1 per store) | Own store's tickets only |
-| Runner | `ravi@runner.demo` / `sana@runner.demo` | Own delivery runs only |
+| Runner | `ravi@runner.demo` / `sana@runner.demo` / `kiran@runner.demo` | Own delivery runs, own mall only |
 
 **How tenant isolation works** — the session user carries `mallId / cinemaId / storeId /
 runnerId`; every staff API derives its Prisma filters from the **session**, never from query
@@ -69,6 +77,15 @@ params. A cook requesting another store's tickets gets **403** (not a hidden but
 runner advancing someone else's run gets **403**; the cinema manager's admin board only
 contains their cinema's orders. Same code serves N malls × N cinemas × N stores — it's data,
 not new code per tenant.
+
+**Cross-mall isolation (audit round)** — with the second seed mall this is now *proven*, not
+assumed: `/api/context` returns only the seat's mall's stores; `POST /api/orders` rejects
+products from another mall (409); the runner queue is scoped via the runner's zone's mall;
+`AuditLog.mallId` makes audit scoping exact; and realtime staff rooms are **mall-scoped AND
+token-gated** (`admin:<mallId>`, `runners:<mallId>`, `store:<storeId>` — tokens minted by
+`/api/realtime/token` after session checks, verified HMAC-side by the socket hub; order
+rooms stay open because the unguessable order code is the capability). Login is rate-limited
+(5 failures / 10 min per email+IP, in-memory sandbox limiter).
 
 Security mechanics: scrypt-hashed passwords (per-user salt, timing-safe verify); sessions
 are opaque 32-byte tokens in an **httpOnly, SameSite=Lax** cookie — only the SHA-256 hash is
@@ -82,6 +99,7 @@ Audit log records LOGIN / LOGIN_FAILED and every staff action with the session-d
 | `DATABASE_URL` | `file:/home/z/my-project/db/custom.db` | SQLite (dev). PostgreSQL in Phase 2+. |
 | `PAYMENT_WEBHOOK_SECRET` | `sandbox_webhook_secret_dev_only` | HMAC-SHA256 secret shared with the (mock) gateway. **Set a real secret before exposing webhooks.** |
 | `REALTIME_EMIT_URL` | `http://127.0.0.1:3004/emit` | Internal emit bus of the realtime service. |
+| `REALTIME_ROOM_SECRET` | `sandbox_room_secret_dev_only` | HMAC secret for staff realtime room tokens (shared by API + socket hub). |
 | `INTERNAL_BASE_URL` | `http://localhost:3000` | Used by the mock gateway to call our public webhook endpoint. |
 
 ## API surface
@@ -92,7 +110,10 @@ Audit log records LOGIN / LOGIN_FAILED and every staff action with the session-d
 | GET | `/api/context?qr=` | QR resolution → seat, showtime, cutoff, stores, settings |
 | POST | `/api/orders` | multi-store order; server-side cutoff/availability/money math |
 | GET | `/api/orders/[code]` | tracking payload (statuses, runner, payment, refunds) |
-| POST | `/api/orders/[code]/support` | refund/help request (deduped per order) |
+| POST | `/api/orders/[code]/support` | refund/help request (paid orders only, capped at refundable balance, deduped) |
+| POST | `/api/admin/refunds/[id]/action` | finance actioning: APPROVE / REJECT / PROCESS — writes negative ledger rows, updates `refundedPaise` |
+| POST | `/api/realtime/token` | staff-only HMAC room tokens for the token-gated socket rooms |
+| GET | `/api/demo/entry` | sandbox-only: current demo seat tokens (they are random capabilities) |
 | POST | `/api/payments/mock-pay` | **sandbox** gateway; idempotency-key enforced |
 | POST | `/api/payments/webhook` | HMAC-verified, dedupe-keyed event processor |
 | POST | `/api/auth/login` · GET `/api/auth/me` · POST `/api/auth/logout` | staff session (httpOnly cookie) |

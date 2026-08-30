@@ -23,9 +23,14 @@ export async function rollStaleShowtimes(screenId?: string): Promise<void> {
   const now = new Date()
   const scope = screenId ? { screenId } : {}
 
-  // 1 · reopenable shows that have already started → roll ahead
+  // 1 · reopenable shows that have already started → roll ahead.
+  // Audit fix #42: shows referenced by EXISTING ORDERS are NOT rolled —
+  // rewriting startsAt under a placed order corrupted its history (tracking
+  // pages started promising a different movie/time than the one ordered).
+  // Orderless shows roll as before; order-holders keep their real show and
+  // the showtime picker (#20) directs new orders to the next open show.
   const stale = await db.showtime.findMany({
-    where: { demoAutoRoll: true, isActive: true, startsAt: { lt: now }, ...scope },
+    where: { demoAutoRoll: true, isActive: true, startsAt: { lt: now }, orders: { none: {} }, ...scope },
     select: { id: true },
   })
   if (stale.length > 0) {

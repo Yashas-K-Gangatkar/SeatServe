@@ -25,13 +25,25 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
 
   const ticket = await db.storeTicket.findUnique({
     where: { id },
-    include: { order: true, store: true, deliveryRun: { include: { runner: true } } },
+    include: { order: true, store: true, deliveryRun: { include: { runner: { include: { zone: true } } } } },
   })
   if (!ticket) return fail('Ticket not found', 404)
 
   // tenant isolation: a runner can only advance their own assigned runs
   if (user.role === 'RUNNER' && ticket.deliveryRun?.runnerId !== user.runnerId) {
     return fail('This run is not assigned to you', 403)
+  }
+  // Audit fix #17: mall admin could advance ANY ticket platform-wide —
+  // pin them to their own mall.
+  if (user.role === 'MALL_ADMIN' && ticket.order.mallId !== (user.mallId ?? '__none__')) {
+    return fail('This ticket is outside your mall', 403)
+  }
+
+  // Audit fix #1 (family): no staff route may advance an UNPAID order's
+  // delivery leg — payment must be captured first (the only exception is
+  // cancellation, which the kitchen route handles).
+  if (ticket.order.paymentStatus !== 'PAID') {
+    return fail('Payment for this order is not captured yet', 409)
   }
 
   const allowed: Partial<Record<TicketStatus, string[]>> = {
@@ -44,13 +56,19 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   }
 
   const now = new Date()
+  // Audit fix #25: optimistic transition guard — the status must still be
+  // `from` at write time, otherwise two concurrent presses interleave.
+  const guard = await db.storeTicket.updateMany({ where: { id, status: from }, data: { status: to } })
+  if (guard.count === 0) {
+    return fail(`Ticket already moved on — it is no longer ${from}`, 409)
+  }
   if (to === 'PICKED_UP') {
-    await db.storeTicket.update({ where: { id }, data: { status: 'PICKED_UP', pickedUpAt: now } })
+    await db.storeTicket.update({ where: { id }, data: { pickedUpAt: now } })
     if (ticket.deliveryRun) {
       await db.deliveryRun.update({ where: { id: ticket.deliveryRun.id }, data: { status: 'PICKED_UP', pickedUpAt: now } })
     }
   } else {
-    await db.storeTicket.update({ where: { id }, data: { status: 'DELIVERED', deliveredAt: now } })
+    await db.storeTicket.update({ where: { id }, data: { deliveredAt: now } })
     if (ticket.deliveryRun) {
       await db.deliveryRun.update({ where: { id: ticket.deliveryRun.id }, data: { status: 'DELIVERED', deliveredAt: now } })
     }
@@ -70,10 +88,11 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     entityType: 'StoreTicket',
     entityId: ticket.id,
     orderId: ticket.orderId,
+    mallId: ticket.order.mallId,
     meta: { ticketCode: ticket.ticketCode },
   })
   await emitToRooms({
-    rooms: [`order:${ticket.order.code}`, `store:${ticket.storeId}`, 'runners', 'admin'],
+    rooms: [`order:${ticket.order.code}`, `store:${ticket.storeId}`, `runners:${ticket.order.mallId}`, `admin:${ticket.order.mallId}`],
     event: 'ticket:status',
     data: { ticketId: ticket.id, status: to, orderCode: ticket.order.code },
   })

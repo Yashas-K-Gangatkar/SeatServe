@@ -27,6 +27,17 @@ export default function SeatPage({ qrToken, go }: { qrToken: string; go: (p: str
       const data = await get<ContextResponse>(`/api/context?qr=${encodeURIComponent(qrToken)}`)
       setCtx(data)
       cart.switchSeat(qrToken)
+      // Audit fix #40: localStorage cart lines could reference products that
+      // are now sold out / stores that closed — the customer only found out
+      // when the SERVER rejected the whole order. Prune stale lines on load.
+      const availableIds = new Set(
+        data.stores.flatMap((s) => (s.isOpen ? s.products.filter((p) => p.isAvailable).map((p) => p.id) : [])),
+      )
+      const stale = Object.keys(cart.lines).filter((id) => !availableIds.has(id))
+      if (stale.length > 0) {
+        for (const id of stale) cart.remove(id)
+        toast.info('Some items were removed — sold out or store closed', { duration: 3000 })
+      }
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Failed to load menu')
     } finally {
@@ -152,7 +163,7 @@ export default function SeatPage({ qrToken, go }: { qrToken: string; go: (p: str
                     {!store.isOpen && <span className="rounded-full bg-red-100 px-2 py-0.5 text-[10px] font-bold text-red-700">CLOSED</span>}
                   </p>
                   <p className="mt-0.5 text-[11px] text-muted-foreground">
-                    ★ {store.rating.toFixed(1)} · prep ~{store.prepBufferMin + 8} min · delivery {rupees(store.deliveryFeePaise)}
+                    ★ {store.rating.toFixed(1)} · prep ~{Math.max(...store.products.map((p) => p.prepEstimateMin), 0) + store.prepBufferMin} min · delivery {rupees(store.deliveryFeePaise)}
                   </p>
                 </div>
                 <ChevronDown className={`h-4 w-4 shrink-0 text-muted-foreground transition ${open ? '' : '-rotate-90'}`} aria-hidden />

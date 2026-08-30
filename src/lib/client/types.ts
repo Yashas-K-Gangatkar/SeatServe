@@ -162,6 +162,7 @@ export interface RunnerQueueItem {
 }
 
 export interface RunnerResponse {
+  mallId: string | null
   runners: { id: string; name: string; rating: number }[]
   activeRunnerId: string | null
   queue: RunnerQueueItem[]
@@ -187,7 +188,7 @@ export interface RunnerResponse {
 }
 
 export interface AdminOverview {
-  scope: { role: string; label: string; mallId: string | null; cinemaId: string | null; storeId: string | null }
+  scope: { role: string; label: string; mallId: string | null; cinemaId: string | null; storeId: string | null; realtimeMallId: string | null; mallName: string | null }
   window: { since: string; label: string }
   kpis: {
     salesPaise: number

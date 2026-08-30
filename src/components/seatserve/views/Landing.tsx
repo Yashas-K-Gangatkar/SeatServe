@@ -2,38 +2,37 @@
 
 // SeatServe — landing / demo hub (#/)
 // Customer app front door (no login — seat QR flow) + staff portal entry.
+// Seat QR tokens are RANDOM capabilities now (audit fix #15), so the demo
+// entry seat is resolved from /api/demo/entry instead of a hardcoded token.
+import { useEffect, useState } from 'react'
 import { Clapperboard, LockKeyhole, QrCode, Search, Info } from 'lucide-react'
+import { get } from '@/lib/client/api'
 import { rupees } from '../ui-bits'
 
-const CONSOLES = [
-  {
-    href: '#/seat/A3-F12',
-    icon: QrCode,
-    title: 'Customer · Seat F-12',
-    sub: 'Scan-to-order menu, cart across stores, mock UPI/Card payment, live tracking',
-    tint: 'text-orange-500 bg-orange-100',
-    tag: 'START HERE',
-  },
-  {
-    href: '#/track',
-    icon: Search,
-    title: 'Track an order',
-    sub: 'Enter your order code (e.g. SS-7HYVEV) for per-store live status',
-    tint: 'text-emerald-600 bg-emerald-100',
-    tag: 'CUSTOMER',
-  },
-  {
-    href: '#/staff',
-    icon: LockKeyhole,
-    title: 'Staff portal',
-    sub: 'Kitchen · Runner · Cinema · Mall admin — sign-in required, every console scoped by role',
-    tint: 'text-violet-600 bg-violet-100',
-    tag: 'STAFF LOGIN',
-  },
-]
+interface DemoEntry {
+  aurora: { qrToken: string; seat: string; screen: string; mall: string } | null
+  auroraBlocked: { qrToken: string; seat: string; screen: string } | null
+  nexora: { qrToken: string; seat: string; screen: string; mall: string } | null
+}
+
+function useDemoEntry(): DemoEntry | null {
+  const [entry, setEntry] = useState<DemoEntry | null>(null)
+  useEffect(() => {
+    let cancelled = false
+    void get<DemoEntry>('/api/demo/entry')
+      .then((d) => {
+        if (!cancelled) setEntry(d)
+      })
+      .catch(() => undefined)
+    return () => {
+      cancelled = true
+    }
+  }, [])
+  return entry
+}
 
 const DEMO_STEPS = [
-  'Open “Customer · Seat F-12” (or scan a QR from the generator page).',
+  'Open “Customer · demo seat” (or scan a QR from the generator page).',
   'Add items from 2–3 different stores to ONE cart, then pay (mock UPI).',
   'You land on live tracking — each store has its own status ticket.',
   'Sign in to the staff portal as a cook (e.g. kitchen@pizza-corner.demo) — only their tickets appear.',
@@ -41,6 +40,50 @@ const DEMO_STEPS = [
 ]
 
 export default function SeatLanding({ go }: { go: (path: string) => void }) {
+  const entry = useDemoEntry()
+  const seatToken = entry?.aurora?.qrToken ?? null
+  const seatLabel = entry?.aurora ? `Seat ${entry.aurora.seat}` : 'Demo seat'
+  const nexoraToken = entry?.nexora?.qrToken ?? null
+
+  const consoles = [
+    {
+      href: seatToken ? `#/seat/${seatToken}` : null,
+      icon: QrCode,
+      title: `Customer · ${seatLabel}`,
+      sub: 'Scan-to-order menu, cart across stores, mock UPI/Card payment, live tracking',
+      tint: 'text-orange-500 bg-orange-100',
+      tag: 'START HERE',
+    },
+    ...(nexoraToken
+      ? [
+          {
+            href: `#/seat/${nexoraToken}` as string | null,
+            icon: QrCode,
+            title: `Customer · ${entry?.nexora?.mall} ${entry?.nexora?.seat}`,
+            sub: 'SECOND MALL — same platform, isolated stores, proves multi-tenancy',
+            tint: 'text-sky-600 bg-sky-100',
+            tag: 'ISOLATION',
+          },
+        ]
+      : []),
+    {
+      href: '#/track',
+      icon: Search,
+      title: 'Track an order',
+      sub: 'Enter your order code (e.g. SS-7HYVEV) for per-store live status',
+      tint: 'text-emerald-600 bg-emerald-100',
+      tag: 'CUSTOMER',
+    },
+    {
+      href: '#/staff',
+      icon: LockKeyhole,
+      title: 'Staff portal',
+      sub: 'Kitchen · Runner · Cinema · Mall admin — sign-in required, every console scoped by role',
+      tint: 'text-violet-600 bg-violet-100',
+      tag: 'STAFF LOGIN',
+    },
+  ]
+
   return (
     <div className="mx-auto w-full max-w-5xl px-4 pb-16 pt-10 sm:px-6">
       {/* hero */}
@@ -59,10 +102,11 @@ export default function SeatLanding({ go }: { go: (path: string) => void }) {
         </p>
         <div className="mt-6 flex flex-wrap items-center gap-3">
           <button
-            onClick={() => go('#/seat/A3-F12')}
-            className="inline-flex items-center gap-2 rounded-full bg-gradient-to-b from-amber-500 to-orange-500 px-5 py-3 text-sm font-extrabold text-white shadow-lg shadow-orange-500/30 transition hover:from-amber-600 hover:to-orange-600 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-orange-500"
+            onClick={() => seatToken && go(`#/seat/${seatToken}`)}
+            disabled={!seatToken}
+            className="inline-flex items-center gap-2 rounded-full bg-gradient-to-b from-amber-500 to-orange-500 px-5 py-3 text-sm font-extrabold text-white shadow-lg shadow-orange-500/30 transition hover:from-amber-600 hover:to-orange-600 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-orange-500 disabled:opacity-50"
           >
-            <QrCode className="h-4 w-4" aria-hidden /> Open seat F-12
+            <QrCode className="h-4 w-4" aria-hidden /> Open {seatLabel}
           </button>
           <button
             onClick={() => go('#/staff/login')}
@@ -76,12 +120,13 @@ export default function SeatLanding({ go }: { go: (path: string) => void }) {
       {/* consoles */}
       <section aria-label="Demo consoles">
         <h2 className="mb-3 text-sm font-bold uppercase tracking-wider text-muted-foreground">Two apps, one platform</h2>
-        <div className="grid gap-3 sm:grid-cols-3">
-          {CONSOLES.map((c) => (
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          {consoles.map((c) => (
             <a
-              key={c.href}
-              href={c.href}
-              className="group relative overflow-hidden rounded-2xl border border-stone-200 bg-white p-5 transition hover:-translate-y-0.5 hover:border-orange-300 hover:shadow-lg hover:shadow-orange-500/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-orange-400"
+              key={c.title}
+              href={c.href ?? '#'}
+              aria-disabled={!c.href}
+              className={`group relative overflow-hidden rounded-2xl border border-stone-200 bg-white p-5 transition hover:-translate-y-0.5 hover:border-orange-300 hover:shadow-lg hover:shadow-orange-500/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-orange-400 ${c.href ? '' : 'pointer-events-none opacity-50'}`}
             >
               <div className="flex items-start justify-between gap-3">
                 <span className={`inline-flex h-11 w-11 items-center justify-center rounded-xl ${c.tint} transition group-hover:scale-105`}>

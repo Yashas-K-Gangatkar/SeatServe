@@ -20,13 +20,25 @@ export async function POST(request: Request, { params }: { params: Promise<{ cod
   const order = await db.order.findUnique({ where: { code: code.toUpperCase() } })
   if (!order) return fail('Order not found', 404)
 
+  // Audit fix #6: refund requests were possible on UNPAID orders (nothing to
+  // refund) and for ANY amount — even more than the order total.
+  if (order.paymentStatus !== 'PAID' && order.paymentStatus !== 'PARTIALLY_REFUNDED') {
+    return fail('This order has no captured payment to refund', 409)
+  }
+  const maxRefundable = order.totalPaise - order.refundedPaise
+  if (maxRefundable <= 0) return fail('This order is already fully refunded', 409)
+  const requested = parsed.data.requestedAmountPaise ?? maxRefundable
+  if (requested > maxRefundable) {
+    return fail(`Refund amount cannot exceed the refundable balance (₹${(maxRefundable / 100).toFixed(2)})`, 422)
+  }
+
   const openCount = await db.refund.count({ where: { orderId: order.id, status: { in: ['REQUESTED', 'APPROVED'] } } })
   if (openCount > 0) return fail('A support request for this order is already open. Our team is on it.', 409)
 
   const refund = await db.refund.create({
     data: {
       orderId: order.id,
-      amountPaise: parsed.data.requestedAmountPaise ?? order.totalPaise,
+      amountPaise: Math.max(1, requested),
       reason: parsed.data.reason,
       detail: parsed.data.detail ?? null,
       status: 'REQUESTED',
@@ -40,9 +52,10 @@ export async function POST(request: Request, { params }: { params: Promise<{ cod
     entityType: 'Refund',
     entityId: refund.id,
     orderId: order.id,
+    mallId: order.mallId,
     meta: { reason: refund.reason, amountPaise: refund.amountPaise },
   })
-  await emitToRooms({ rooms: ['admin'], event: 'order:update', data: { code: order.code, refundRequested: true } })
+  await emitToRooms({ rooms: [`admin:${order.mallId}`], event: 'order:update', data: { code: order.code, refundRequested: true } })
 
   return ok({ refundId: refund.id, status: refund.status, message: 'Request received. Refunds are processed by the finance desk.' }, 201)
 }

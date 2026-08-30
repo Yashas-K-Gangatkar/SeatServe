@@ -17,7 +17,9 @@ export function cutoffInfo(startsAt: Date, cutoffMinutes: number, now: Date = ne
   return {
     orderingOpen: msUntilCutoff > 0,
     cutoffAt: cutoff,
-    minutesUntilCutoff: Math.max(0, Math.floor(msUntilCutoff / 60_000)),
+    // Audit fix #22: floor() showed "0m left" for up to 59 seconds while the
+    // window was still open — ceil() only shows 0 when it is actually over.
+    minutesUntilCutoff: Math.max(0, Math.ceil(msUntilCutoff / 60_000)),
     minutesUntilShow: Math.max(0, Math.floor((startsAt.getTime() - now.getTime()) / 60_000)),
   }
 }

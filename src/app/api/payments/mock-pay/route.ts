@@ -51,22 +51,37 @@ export async function POST(request: Request) {
   if (!order) return fail('Order not found', 404)
   if (order.paymentStatus === 'PAID') return fail('This order is already paid', 409)
   if (order.status === 'CANCELLED') return fail('This order was cancelled', 409)
-  const activePayment = order.payments.find((p) => p.status === 'INITIATED')
-  if (activePayment) return fail('A payment attempt is already in progress for this order', 409)
 
-  const providerRef = generatePaymentRef()
-  await db.payment.create({
-    data: {
-      orderId: order.id,
-      provider: 'SANDBOX_MOCK',
-      method,
-      amountPaise: order.totalPaise,
-      status: 'INITIATED',
-      providerRef,
-      idempotencyKey,
-      methodDetail: methodDetail ?? null,
-    },
+  // Audit fix #4/#9: a crashed gateway attempt left the INITIATED payment row
+  // forever — every later retry got 409 "attempt already in progress" and the
+  // order was deadlocked. Attempts older than 10 minutes are expired first.
+  await db.payment.updateMany({
+    where: { orderId: order.id, status: 'INITIATED', createdAt: { lt: new Date(Date.now() - 10 * 60_000) } },
+    data: { status: 'FAILED', failureReason: 'Expired — payment attempt abandoned after 10 minutes' },
   })
+
+  // Audit fix #23: two concurrent submits with different idempotency keys both
+  // passed the active-attempt check and created TWO payments. The check and
+  // the create now run inside one serialized transaction (SQLite writes are
+  // serialized inside a transaction).
+  const providerRef = generatePaymentRef()
+  const created = await db.$transaction(async (tx) => {
+    const active = await tx.payment.findFirst({ where: { orderId: order.id, status: 'INITIATED' } })
+    if (active) return null
+    return tx.payment.create({
+      data: {
+        orderId: order.id,
+        provider: 'SANDBOX_MOCK',
+        method,
+        amountPaise: order.totalPaise,
+        status: 'INITIATED',
+        providerRef,
+        idempotencyKey,
+        methodDetail: methodDetail ?? null,
+      },
+    })
+  })
+  if (!created) return fail('A payment attempt is already in progress for this order', 409)
 
   // ── gateway simulation ────────────────────────────────────────────
   // The "gateway" builds the event, signs it, and POSTs it to our webhook.

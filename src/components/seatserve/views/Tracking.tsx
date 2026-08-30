@@ -195,7 +195,7 @@ function TrackingInner({ code, go }: { code: string; go: (p: string) => void }) 
                 ))}
               </ul>
 
-              {!cancelled && (
+              {!cancelled ? (
                 <ol className="mt-4 flex items-center" aria-label="Delivery progress">
                   {STEPS.map((step, i) => {
                     const done = i <= idx
@@ -221,6 +221,10 @@ function TrackingInner({ code, go }: { code: string; go: (p: string) => void }) 
                     )
                   })}
                 </ol>
+              ) : (
+                <p className="mt-3 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-xs font-bold text-red-700" role="status">
+                  Cancelled by the store — this leg will not be prepared. A refund for this part is handled by the finance desk.
+                </p>
               )}
 
               {store.deliveryRun && (

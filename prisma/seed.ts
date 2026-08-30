@@ -9,7 +9,7 @@
  */
 import { PrismaClient } from '@prisma/client'
 import { computeBill, DEFAULT_PLATFORM, type StoreLineGroup } from '../src/lib/pricing'
-import { generateTicketCode, generatePaymentRef } from '../src/lib/ids'
+import { generateTicketCode, generatePaymentRef, generateQrToken } from '../src/lib/ids'
 import { hashPassword } from '../src/lib/auth'
 
 type DB = PrismaClient
@@ -48,8 +48,15 @@ export async function seedDemoData(db: DB): Promise<void> {
     data: { name: 'Aurora Mall', city: 'Mumbai', address: 'Linking Road, Bandra West, Mumbai 400050' },
   })
 
+  // SECOND MALL — proves multi-mall isolation end-to-end (orders, context,
+  // runner queue, admin scoping are all tested across the mall boundary).
+  const mall2 = await db.mall.create({
+    data: { name: 'Nexora Mall', city: 'Pune', address: 'Nagar Road, Yerawada, Pune 411006' },
+  })
+
   const zoneA = await db.deliveryZone.create({ data: { mallId: mall.id, name: 'Zone A · Wing A (Screens 1–3)' } })
   const zoneB = await db.deliveryZone.create({ data: { mallId: mall.id, name: 'Zone B · Wing B (Screens 4–6)' } })
+  const zoneN = await db.deliveryZone.create({ data: { mallId: mall2.id, name: 'Zone N · Nexora levels 1–3' } })
 
   const cinemaA = await db.cinema.create({
     data: { mallId: mall.id, name: 'Aurora Cineplex — Wing A', wing: 'A' },
@@ -61,20 +68,24 @@ export async function seedDemoData(db: DB): Promise<void> {
   const ROWS = ['A', 'B', 'C', 'D', 'E', 'F']
   const COLS = 12
 
-  async function createScreen(cinemaId: string, wingLetter: string, screenNum: number, name: string) {
+  // QR tokens are RANDOM (10 chars, confusion-free alphabet) — a printed QR is
+  // a capability: being able to guess another seat's token would let anyone
+  // order to / read that seat. Deterministic A1-A1-style tokens were removed
+  // in the logical-mistake fix round for exactly that reason.
+  async function createScreen(cinemaId: string, screenNum: number, name: string, rows = ROWS, cols = COLS) {
     return db.screen.create({
       data: {
         cinemaId,
         name,
-        seatRows: ROWS.length,
-        seatCols: COLS,
+        seatRows: rows.length,
+        seatCols: cols,
         seats: {
-          create: ROWS.flatMap((row, r) =>
-            Array.from({ length: COLS }, (_, c) => ({
+          create: rows.flatMap((row, r) =>
+            Array.from({ length: cols }, (_, c) => ({
               code: `${row}-${c + 1}`,
               rowLabel: row,
               seatNumber: c + 1,
-              qrToken: `${wingLetter}${screenNum}-${row}${c + 1}`,
+              qrToken: generateQrToken(),
             })),
           ),
         },
@@ -83,12 +94,17 @@ export async function seedDemoData(db: DB): Promise<void> {
     })
   }
 
-  const screen1 = await createScreen(cinemaA.id, 'A', 1, 'Screen 1')
-  const screen2 = await createScreen(cinemaA.id, 'A', 2, 'Screen 2')
-  const screen3 = await createScreen(cinemaA.id, 'A', 3, 'Screen 3')
-  const screen4 = await createScreen(cinemaB.id, 'B', 4, 'Screen 4')
-  const screen5 = await createScreen(cinemaB.id, 'B', 5, 'Screen 5')
-  const screen6 = await createScreen(cinemaB.id, 'B', 6, 'Screen 6')
+  const screen1 = await createScreen(cinemaA.id, 1, 'Screen 1')
+  const screen2 = await createScreen(cinemaA.id, 2, 'Screen 2')
+  const screen3 = await createScreen(cinemaA.id, 3, 'Screen 3')
+  const screen4 = await createScreen(cinemaB.id, 4, 'Screen 4')
+  const screen5 = await createScreen(cinemaB.id, 5, 'Screen 5')
+  const screen6 = await createScreen(cinemaB.id, 6, 'Screen 6')
+
+  const cinemaN = await db.cinema.create({
+    data: { mallId: mall2.id, name: 'Nexora Cinemas', wing: 'N' },
+  })
+  const screenN1 = await createScreen(cinemaN.id, 1, 'Nexora Screen 1', ['A', 'B', 'C', 'D'], 8)
 
   // Showtimes — Screen 1 starts in 20 min ⇒ 30-min cutoff already passed (blocked demo,
   // demoAutoRoll=false keeps it permanently demonstrable via the demo-roll guardian)
@@ -101,6 +117,7 @@ export async function seedDemoData(db: DB): Promise<void> {
   await st(screen4.id, 'RRR: Encore', 'Telugu', hours(2.5))
   await st(screen5.id, 'Jawan Returns', 'Hindi', hours(4))
   await st(screen6.id, '3 Idiots — Classic Night', 'Hindi', hours(2))
+  await st(screenN1.id, 'Kantara Chapter 2', 'Kannada (dub. Hindi)', hours(2.5))
 
   // ── stores & products ────────────────────────────────────────────
   const snacks = await db.store.create({
@@ -164,14 +181,16 @@ export async function seedDemoData(db: DB): Promise<void> {
     },
   })
 
-  type P = { storeId: string; name: string; description: string; category: string; pricePaise: number; prepEstimateMin: number; isVeg: boolean; allergens?: string }
+  type P = { storeId: string; name: string; description: string; category: string; pricePaise: number; prepEstimateMin: number; isVeg: boolean; allergens?: string; taxRatePct?: number }
+  // GST classes (India, restaurant/confectionery): packaged-beverage drinks 12%,
+  // most hot food / sweets 5%. Flagged in the audit — everything was 5% before.
   const products: P[] = [
     { storeId: snacks.id, name: 'Salted Popcorn (L)', description: 'Classic theatre popcorn, popped fresh', category: 'Popcorn', pricePaise: 18000, prepEstimateMin: 5, isVeg: true },
     { storeId: snacks.id, name: 'Butter Popcorn (L)', description: 'Extra butter, extra happiness', category: 'Popcorn', pricePaise: 22000, prepEstimateMin: 5, isVeg: true, allergens: 'dairy' },
     { storeId: snacks.id, name: 'Nachos with Cheese', description: 'Crunchy totopos + warm cheese dip', category: 'Snacks', pricePaise: 24000, prepEstimateMin: 7, isVeg: true, allergens: 'dairy, gluten' },
-    { storeId: snacks.id, name: 'Cold Coffee', description: 'Iced, frothy, slightly sweet', category: 'Beverages', pricePaise: 14000, prepEstimateMin: 4, isVeg: true, allergens: 'dairy' },
+    { storeId: snacks.id, name: 'Cold Coffee', description: 'Iced, frothy, slightly sweet', category: 'Beverages', pricePaise: 14000, prepEstimateMin: 4, isVeg: true, allergens: 'dairy', taxRatePct: 12 },
     { storeId: snacks.id, name: 'Samosa (2 pc)', description: 'Spiced potato, crisp pastry', category: 'Snacks', pricePaise: 7000, prepEstimateMin: 6, isVeg: true },
-    { storeId: snacks.id, name: 'Masala Chai', description: 'Cutting chai, ginger forward', category: 'Beverages', pricePaise: 8000, prepEstimateMin: 4, isVeg: true },
+    { storeId: snacks.id, name: 'Masala Chai', description: 'Cutting chai, ginger forward', category: 'Beverages', pricePaise: 8000, prepEstimateMin: 4, isVeg: true, taxRatePct: 12 },
     { storeId: pizza.id, name: 'Margherita (10")', description: 'Tomato, mozzarella, basil', category: 'Pizza', pricePaise: 25000, prepEstimateMin: 14, isVeg: true, allergens: 'dairy, gluten' },
     { storeId: pizza.id, name: 'Farmhouse (10")', description: 'Capsicum, onion, corn, paneer', category: 'Pizza', pricePaise: 32000, prepEstimateMin: 15, isVeg: true, allergens: 'dairy, gluten' },
     { storeId: pizza.id, name: 'Paneer Tikka Pizza', description: 'Smoky paneer tikka chunks', category: 'Pizza', pricePaise: 33000, prepEstimateMin: 15, isVeg: true, allergens: 'dairy, gluten' },
@@ -183,9 +202,32 @@ export async function seedDemoData(db: DB): Promise<void> {
     { storeId: mithai.id, name: 'Gulab Jamun (2 pc)', description: 'Warm, rose-scented syrup', category: 'Sweets', pricePaise: 8000, prepEstimateMin: 3, isVeg: true, allergens: 'dairy, nuts' },
     { storeId: mithai.id, name: 'Rasmalai (2 pc)', description: 'Saffron milk, pistachio', category: 'Sweets', pricePaise: 12000, prepEstimateMin: 3, isVeg: true, allergens: 'dairy, nuts' },
     { storeId: mithai.id, name: 'Kaju Katli (250g)', description: 'Silver-leafed cashew fudge', category: 'Sweets', pricePaise: 28000, prepEstimateMin: 4, isVeg: true, allergens: 'nuts' },
-    { storeId: mithai.id, name: 'Filter Coffee', description: 'Dabara-tumbler, strong', category: 'Beverages', pricePaise: 7000, prepEstimateMin: 5, isVeg: true, allergens: 'dairy' },
+    { storeId: mithai.id, name: 'Filter Coffee', description: 'Dabara-tumbler, strong', category: 'Beverages', pricePaise: 7000, prepEstimateMin: 5, isVeg: true, allergens: 'dairy', taxRatePct: 12 },
   ]
   for (const p of products) await db.product.create({ data: p })
+
+  // ── second-mall store (Nexora · Pune) ────────────────────────────
+  const dosa = await db.store.create({
+    data: {
+      mallId: mall2.id,
+      name: 'Dosa Junction',
+      slug: 'dosa-junction',
+      tagline: 'Crisp dosas, filter kaapi, Pune style',
+      emoji: '🥞',
+      prepBufferMin: 9,
+      deliveryFeePaise: 1900,
+      commissionPct: 11,
+      kycStatus: 'VERIFIED',
+      bankRefMasked: 'XXXX5510',
+      rating: 4.6,
+    },
+  })
+  const dosaProducts: P[] = [
+    { storeId: dosa.id, name: 'Masala Dosa', description: 'Classic potato-filled crisp dosa', category: 'Dosa', pricePaise: 12000, prepEstimateMin: 10, isVeg: true, allergens: 'gluten, dairy' },
+    { storeId: dosa.id, name: 'Cheese Burst Dosa', description: 'Molten cheese, spicy chutney', category: 'Dosa', pricePaise: 16000, prepEstimateMin: 12, isVeg: true, allergens: 'gluten, dairy' },
+    { storeId: dosa.id, name: 'Mysore Filter Kaapi', description: 'Bold South-Indian coffee', category: 'Beverages', pricePaise: 6000, prepEstimateMin: 5, isVeg: true, allergens: 'dairy', taxRatePct: 12 },
+  ]
+  for (const p of dosaProducts) await db.product.create({ data: p })
 
   // ── runners & users ──────────────────────────────────────────────
   // Phase 2: every staff user gets a demo password + tenant scope.
@@ -196,6 +238,7 @@ export async function seedDemoData(db: DB): Promise<void> {
   const r1 = await db.runner.create({ data: { name: 'Ravi Kumar', phone: '+91 98200 11111', zoneId: zoneA.id, rating: 4.8 } })
   const r2 = await db.runner.create({ data: { name: 'Sana Sheikh', phone: '+91 98200 22222', zoneId: zoneB.id, rating: 4.9 } })
   await db.runner.create({ data: { name: 'Arjun Das', phone: '+91 98200 33333', zoneId: zoneA.id, rating: 4.6, isOnDuty: false } })
+  const rN = await db.runner.create({ data: { name: 'Kiran Patil', phone: '+91 98200 44444', zoneId: zoneN.id, rating: 4.7 } })
 
   await db.user.create({ data: { name: 'Asha Rao', phone: '+91 90000 00001', email: 'asha@seatserve.demo', role: 'MALL_ADMIN', mallId: mall.id, passwordHash: demoHash } })
   await db.user.create({ data: { name: 'Vikram Mehta', phone: '+91 90000 00002', email: 'vikram@aurora.demo', role: 'CINEMA_MANAGER', mallId: mall.id, cinemaId: cinemaA.id, passwordHash: demoHash } })
@@ -206,6 +249,12 @@ export async function seedDemoData(db: DB): Promise<void> {
   await db.user.create({ data: { name: 'Ravi Kumar', phone: '+91 90000 00003', email: 'ravi@runner.demo', role: 'RUNNER', runnerId: r1.id, mallId: mall.id, passwordHash: demoHash } })
   await db.user.create({ data: { name: 'Sana Sheikh', phone: '+91 90000 00004', email: 'sana@runner.demo', role: 'RUNNER', runnerId: r2.id, mallId: mall.id, passwordHash: demoHash } })
   await db.user.create({ data: { name: 'Priya Sharma', phone: '+91 90000 00005', role: 'CUSTOMER' } })
+
+  // second-mall staff — their boards must show NOTHING from Aurora
+  await db.user.create({ data: { name: 'Meera Iyer', phone: '+91 91000 00001', email: 'meera@nexora.demo', role: 'MALL_ADMIN', mallId: mall2.id, passwordHash: demoHash } })
+  await db.user.create({ data: { name: 'Dosa Junction Manager', phone: '+91 91000 00002', email: 'manager@dosa-junction.demo', role: 'STORE_MANAGER', storeId: dosa.id, passwordHash: demoHash } })
+  await db.user.create({ data: { name: 'Dosa Junction Kitchen', phone: '+91 91000 00003', email: 'kitchen@dosa-junction.demo', role: 'KITCHEN_STAFF', storeId: dosa.id, passwordHash: demoHash } })
+  await db.user.create({ data: { name: 'Kiran Patil', phone: '+91 91000 00004', email: 'kiran@runner.demo', role: 'RUNNER', runnerId: rN.id, mallId: mall2.id, passwordHash: demoHash } })
 
   // ── settings ─────────────────────────────────────────────────────
   await db.appSetting.create({ data: { key: 'platform_fee', value: JSON.stringify(DEFAULT_PLATFORM) } })
@@ -323,6 +372,19 @@ export async function seedDemoData(db: DB): Promise<void> {
           settlementStatus: done ? 'SETTLED' : 'PENDING',
         },
       })
+      if (done) {
+        // consistent demo ledger: settled splits get a real Settlement row
+        await db.settlement.create({
+          data: {
+            storeId: g.store.id,
+            amountPaise: storeBill.storeNetPaise,
+            periodStart: new Date(opts.placedAt.getTime() - 3600_000),
+            periodEnd: new Date(opts.placedAt.getTime() + 3600_000),
+            status: 'PROCESSED',
+            utr: `UTR${generatePaymentRef().slice(-12).toUpperCase()}`,
+          },
+        })
+      }
     }
 
     const commissionTotal = bill.perStore.reduce((s, p) => s + p.commissionPaise, 0)
@@ -365,7 +427,7 @@ export async function seedDemoData(db: DB): Promise<void> {
         store: snacks,
         items: [
           { name: 'Salted Popcorn (L)', unitPricePaise: 18000, qty: 1, taxRatePct: 5, prepEstimateMin: 5 },
-          { name: 'Cold Coffee', unitPricePaise: 14000, qty: 1, taxRatePct: 5, prepEstimateMin: 4 },
+          { name: 'Cold Coffee', unitPricePaise: 14000, qty: 1, taxRatePct: 12, prepEstimateMin: 4 },
         ],
       },
     ],

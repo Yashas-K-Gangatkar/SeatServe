@@ -59,6 +59,23 @@ export function CheckoutSheet({
   const platformFee = Math.min(Math.max(Math.round((subtotal * pf.platformFeePct) / 100), pf.platformFeeMinPaise), pf.platformFeeMaxPaise)
   const estimatedTotal = subtotal + deliveryFees + platformFee
 
+  // Audit fix #32: the estimate used a hardcoded "+12 min". It now mirrors the
+  // server's real formula (slowest item + 2 min per extra unit + store buffer
+  // + walk buffer) over the ACTUAL cart selection.
+  const estDeliveryMin = useMemo(() => {
+    const allProducts = ctx.stores.flatMap((s) => s.products)
+    let maxPrep = 0
+    for (const r of selection) {
+      const store = ctx.stores.find((s) => s.id === r.storeId)
+      if (!store) continue
+      const preps = r.items.map((i) => allProducts.find((p) => p.id === i.id)?.prepEstimateMin ?? 8)
+      const slowest = Math.max(...preps, 0)
+      const extraUnits = r.items.reduce((sum, i) => sum + i.qty - 1, 0)
+      maxPrep = Math.max(maxPrep, slowest + extraUnits * 2 + store.prepBufferMin)
+    }
+    return maxPrep + ctx.settings.platformFee.walkBufferMin
+  }, [selection, ctx])
+
   const placeOrder = async () => {
     if (!ctx.showtime?.cutoff.orderingOpen) {
       toast.error('Ordering is closed for this show')
@@ -132,10 +149,11 @@ export function CheckoutSheet({
                 <div className="flex justify-between"><dt className="text-muted-foreground">Item total (GST incl.)</dt><dd className="tabular">{rupees(subtotal)}</dd></div>
                 <div className="flex justify-between"><dt className="text-muted-foreground">Delivery · {selection.length} store{selection.length === 1 ? '' : 's'}</dt><dd className="tabular">{rupees(deliveryFees)}</dd></div>
                 <div className="flex justify-between"><dt className="text-muted-foreground">Platform fee ({pf.platformFeePct}%)</dt><dd className="tabular">{rupees(platformFee)}</dd></div>
-                <div className="mt-2 flex justify-between border-t border-border pt-2 text-base font-black"><dt>Total</dt><dd className="text-orange-600 tabular">{rupees(estimatedTotal)}</dd></div>
+                <div className="mt-2 flex justify-between border-t border-border pt-2 text-base font-black"><dt>Estimated total</dt><dd className="text-orange-600 tabular">{rupees(estimatedTotal)}</dd></div>
               </dl>
+              <p className="mt-1 text-[10px] text-muted-foreground">Final bill is computed server-side at placement.</p>
               <p className="mt-2 flex items-center gap-1.5 text-[11px] text-muted-foreground">
-                <Timer className="h-3 w-3" aria-hidden /> Est. delivery ~{Math.max(...ctx.stores.map((s) => s.prepBufferMin), 0) + 12} min · ordering closes {ctx.showtime ? new Date(ctx.showtime.cutoff.cutoffAt).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }) : '—'}
+                <Timer className="h-3 w-3" aria-hidden /> Est. delivery ~{estDeliveryMin} min · ordering closes {ctx.showtime ? new Date(ctx.showtime.cutoff.cutoffAt).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }) : '—'}
               </p>
             </div>
 
@@ -151,7 +169,7 @@ export function CheckoutSheet({
               className="mt-4 flex w-full items-center justify-center gap-2 rounded-full bg-gradient-to-b from-amber-500 to-orange-500 py-3.5 text-sm font-extrabold text-white shadow-md shadow-orange-500/30 hover:from-amber-600 hover:to-orange-600 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-orange-500 disabled:opacity-50"
             >
               {placing ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : <Lock className="h-4 w-4" aria-hidden />}
-              Continue to pay {rupees(estimatedTotal)}
+              Continue to pay ~{rupees(estimatedTotal)}
             </button>
             <p className="mt-2 text-center text-[11px] text-muted-foreground">Sandbox demo — you will see a mock payment sheet, no real money moves.</p>
           </div>
@@ -177,12 +195,15 @@ export function PaymentSheet({ order, onClose }: { order: PlacedOrder | null; on
   const [vpa, setVpa] = useState('priya@okhdfcbank')
   const [card, setCard] = useState('4242 4242 4242 4242')
   const [failure, setFailure] = useState(false)
-  const [phase, setPhase] = useState<'form' | 'processing' | 'failed'>('form')
+  const [phase, setPhase] = useState<'form' | 'processing' | 'failed' | 'unknown'>('form')
   const [failMsg, setFailMsg] = useState('')
 
   if (!order) return null
 
   const pay = async () => {
+    // Audit fix #10: double-tapping "Pay" used to fire two concurrent payment
+    // attempts. One attempt at a time, and a fresh idempotency key per attempt.
+    if (phase !== 'form') return
     setPhase('processing')
     // a touch of theatre — real gateways take a few seconds
     await new Promise((r) => setTimeout(r, 1600))
@@ -205,6 +226,13 @@ export function PaymentSheet({ order, onClose }: { order: PlacedOrder | null; on
       toast.success('Payment successful', { description: `Order ${order.code} · ${rupees(order.totalPaise)}` })
       onClose(true)
     } catch (err) {
+      // Audit fix #33: a network drop mid-payment does NOT mean failure — the
+      // webhook may still capture. Never lie about the money state.
+      const status = err instanceof ApiError ? err.status : 0
+      if (status === 0 || status >= 500) {
+        setPhase('unknown')
+        return
+      }
       setFailMsg(err instanceof ApiError ? err.message : 'Payment failed')
       setPhase('failed')
     }
@@ -228,6 +256,22 @@ export function PaymentSheet({ order, onClose }: { order: PlacedOrder | null; on
               <Loader2 className="h-8 w-8 animate-spin text-orange-500" aria-hidden />
               <p className="text-sm font-semibold">Contacting bank{method === 'UPI' ? ' (UPI)' : ''}…</p>
               <p className="text-xs text-muted-foreground">Do not close this window</p>
+            </div>
+          ) : phase === 'unknown' ? (
+            <div className="py-4" role="alert">
+              <div className="flex items-start gap-3 rounded-2xl border border-amber-300 bg-amber-50 p-4">
+                <TriangleAlert className="mt-0.5 h-5 w-5 shrink-0 text-amber-500" aria-hidden />
+                <div>
+                  <p className="text-sm font-bold text-amber-900">We could not confirm your payment</p>
+                  <p className="mt-1 text-xs text-amber-800/90">
+                    The connection dropped while the payment was being processed. Do NOT pay again — check the order status
+                    first; if it shows PAID the money went through, otherwise retry from there.
+                  </p>
+                </div>
+              </div>
+              <button onClick={() => onClose(false)} className="mt-4 w-full rounded-full bg-gradient-to-b from-amber-500 to-orange-500 py-3 text-sm font-extrabold text-white shadow-md shadow-orange-500/30 hover:from-amber-600 hover:to-orange-600">
+                Check order status
+              </button>
             </div>
           ) : phase === 'failed' ? (
             <div className="py-4" role="alert">

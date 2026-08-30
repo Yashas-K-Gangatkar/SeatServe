@@ -5,7 +5,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { ChevronLeft, IndianRupee, Receipt, Timer, Truck, CircleSlash, Wallet, ScrollText, ChevronDown, ChevronUp } from 'lucide-react'
 import { toast } from 'sonner'
-import { get, patch, ApiError } from '@/lib/client/api'
+import { get, patch, post, ApiError } from '@/lib/client/api'
 import { useRealtime, usePolling, useOnline } from '@/lib/client/realtime'
 import type { AdminOverview } from '@/lib/client/types'
 import StaffGate from '../StaffGate'
@@ -50,11 +50,12 @@ function AdminBoard({ go, scopeRole }: { go: (p: string) => void; scopeRole: 'MA
   }, [load])
 
   usePolling(load, 6000)
-  useRealtime(['admin'], () => void load())
+  // mall-scoped admin room (token-gated) — known once the overview has loaded
+  useRealtime(data?.scope?.realtimeMallId ? [`admin:${data.scope.realtimeMallId}`] : [], () => void load())
 
   const toggleStore = async (id: string, isOpen: boolean, name: string) => {
     try {
-      await patch(`/api/stores/${id}`, { isOpen, actorRole: 'MALL_ADMIN', actorRef: 'Admin board' })
+      await patch(`/api/stores/${id}`, { isOpen })
       toast.success(`${name} ${isOpen ? 'opened' : 'closed'}`)
     } catch (err) {
       toast.error(err instanceof ApiError ? err.message : 'Failed')
@@ -65,10 +66,23 @@ function AdminBoard({ go, scopeRole }: { go: (p: string) => void; scopeRole: 'MA
 
   const toggleProduct = async (id: string, isAvailable: boolean, name: string) => {
     try {
-      await patch(`/api/products/${id}`, { isAvailable, actorRole: 'MALL_ADMIN', actorRef: 'Admin board' })
+      await patch(`/api/products/${id}`, { isAvailable })
       toast.success(`${name} ${isAvailable ? 'back in stock' : 'marked sold out'}`)
     } catch (err) {
       toast.error(err instanceof ApiError ? err.message : 'Failed')
+    } finally {
+      void load()
+    }
+  }
+
+  // Audit fix #2 UI: the refund inbox used to be read-only ("lands in Phase 3")
+  // while money dead-ended in REQUESTED. The finance desk can now act.
+  const refundAction = async (refundId: string, action: 'APPROVE' | 'REJECT' | 'PROCESS', code: string) => {
+    try {
+      await post(`/api/admin/refunds/${refundId}/action`, { action })
+      toast.success(`Refund ${action.toLowerCase()}d for ${code}`)
+    } catch (err) {
+      toast.error(err instanceof ApiError ? err.message : 'Refund action failed')
     } finally {
       void load()
     }
@@ -106,7 +120,11 @@ function AdminBoard({ go, scopeRole }: { go: (p: string) => void; scopeRole: 'MA
       <header className="flex items-start justify-between gap-2">
         <div>
           <p className="text-[10px] font-extrabold tracking-[0.18em] text-amber-600">
-            {data.scope.role === 'MALL_ADMIN' ? 'MALL ADMIN · AURORA MALL' : data.scope.role === 'CINEMA_MANAGER' ? 'CINEMA MANAGER · YOUR CINEMA' : 'STORE MANAGER · YOUR STORE'}
+            {data.scope.role === 'MALL_ADMIN'
+              ? `MALL ADMIN · ${(data.scope.mallName ?? 'MALL').toUpperCase()}`
+              : data.scope.role === 'CINEMA_MANAGER'
+                ? `CINEMA MANAGER · ${(data.scope.mallName ?? 'MALL').toUpperCase()}`
+                : `STORE MANAGER · ${(data.scope.mallName ?? 'MALL').toUpperCase()}`}
           </p>
           <h1 className="mt-1 text-2xl font-black tracking-tight sm:text-3xl">Operations board</h1>
           <p className="text-xs text-muted-foreground">Rolling window: {data.window.label}</p>
@@ -137,12 +155,42 @@ function AdminBoard({ go, scopeRole }: { go: (p: string) => void; scopeRole: 'MA
       {data.kpis.refundsOpen > 0 && (
         <section className="mt-4 rounded-2xl border border-amber-300 bg-amber-50 p-4" role="status">
           <p className="text-sm font-bold text-amber-900">{data.kpis.refundsOpen} open refund/support request{data.kpis.refundsOpen === 1 ? '' : 's'}</p>
-          <ul className="mt-2 space-y-1.5">
-            {data.refunds.filter((r) => r.status === 'REQUESTED' || r.status === 'APPROVED').map((r) => (
-              <li key={r.id} className="text-xs text-amber-800">
-                <b>{r.code}</b> · {r.reason.replaceAll('_', ' ').toLowerCase()} · {rupees(r.amountPaise)} · {r.status} (processing lands in Phase 3)
-              </li>
-            ))}
+          <ul className="mt-2 space-y-2">
+            {data.refunds
+              .filter((r) => r.status === 'REQUESTED' || r.status === 'APPROVED')
+              .map((r) => (
+                <li key={r.id} className="text-xs text-amber-800">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <span>
+                      <b>{r.code}</b> · {r.reason.replaceAll('_', ' ').toLowerCase()} · {rupees(r.amountPaise)} · {r.status}
+                    </span>
+                    {scopeRole === 'MALL_ADMIN' && (
+                      <span className="flex gap-1.5">
+                        {r.status === 'REQUESTED' && (
+                          <button
+                            onClick={() => refundAction(r.id, 'APPROVE', r.code)}
+                            className="rounded-full border border-emerald-300 bg-emerald-50 px-2.5 py-1 text-[10px] font-bold text-emerald-700 hover:bg-emerald-100"
+                          >
+                            Approve
+                          </button>
+                        )}
+                        <button
+                          onClick={() => refundAction(r.id, 'PROCESS', r.code)}
+                          className="rounded-full bg-gradient-to-b from-amber-500 to-orange-500 px-2.5 py-1 text-[10px] font-bold text-white shadow-sm hover:from-amber-600 hover:to-orange-600"
+                        >
+                          Process refund
+                        </button>
+                        <button
+                          onClick={() => refundAction(r.id, 'REJECT', r.code)}
+                          className="rounded-full border border-red-300 bg-white px-2.5 py-1 text-[10px] font-bold text-red-600 hover:bg-red-50"
+                        >
+                          Reject
+                        </button>
+                      </span>
+                    )}
+                  </div>
+                </li>
+              ))}
           </ul>
         </section>
       )}

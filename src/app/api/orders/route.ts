@@ -3,7 +3,7 @@
 import { z } from 'zod'
 import { db } from '@/lib/db'
 import { ok, fail, parseBody } from '@/lib/api-helpers'
-import { cutoffInfo } from '@/lib/cutoff'
+import { pickCurrentShow } from '@/lib/showtime'
 import { computeBill, computeSplits, type StoreLineGroup } from '@/lib/pricing'
 import { getSettings } from '@/lib/settings'
 import { generateOrderCode, generateTicketCode } from '@/lib/ids'
@@ -45,10 +45,14 @@ export async function POST(request: Request) {
   })
 
   const now = new Date()
-  const show = screenShowtimes.find((s) => new Date(s.startsAt).getTime() > now.getTime() - 3 * 3600_000) ?? null
+  // Audit fix #20: pick the earliest show whose cutoff is STILL OPEN (falls
+  // back to the blocked-state demo show inside the 3h window) — never an
+  // already-started show while a later orderable show exists.
+  const picked = pickCurrentShow(screenShowtimes, now)
+  const show = picked.show
   if (!show) return fail('No active showtime for this screen right now.', 409)
 
-  const info = cutoffInfo(new Date(show.startsAt), show.orderCutoffMinutes, now)
+  const info = picked.info!
   if (!info.orderingOpen) {
     return fail(
       `Ordering is closed for this show. The cutoff was ${info.cutoffAt.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}.`,
@@ -56,13 +60,19 @@ export async function POST(request: Request) {
     )
   }
 
-  // validate items
+  // validate items — availability, store openness AND same-mall isolation
+  // (Audit fix #12: a seat in Mall A could previously order from a store in
+  // Mall B because the store's mallId was never compared to the seat's mall.)
+  const mallId = seat.screen.cinema.mallId
   const productIds = items.map((i) => i.productId)
   const products = await db.product.findMany({ where: { id: { in: productIds } }, include: { store: true } })
   const byId = new Map(products.map((p) => [p.id, p]))
   for (const item of items) {
     const p = byId.get(item.productId)
     if (!p) return fail(`Unknown product: ${item.productId}`, 404)
+    if (p.store.mallId !== mallId) {
+      return fail(`"${p.name}" is from a store outside this mall and cannot be delivered to your seat.`, 409)
+    }
     if (!p.isAvailable) return fail(`"${p.name}" is sold out right now.`, 409)
     if (!p.store.isOpen) return fail(`${p.store.name} is closed right now.`, 409)
   }
@@ -152,6 +162,7 @@ export async function POST(request: Request) {
     entityType: 'Order',
     entityId: order.id,
     orderId: order.id,
+    mallId: order.mallId,
     meta: { code, totalPaise: bill.totalPaise, stores: [...groupsMap.keys()] },
   })
 

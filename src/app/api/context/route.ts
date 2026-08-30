@@ -2,7 +2,7 @@
 // The QR endpoint: resolves a printed seat QR to everything the customer page needs.
 import { db } from '@/lib/db'
 import { ok, fail } from '@/lib/api-helpers'
-import { cutoffInfo } from '@/lib/cutoff'
+import { pickCurrentShow } from '@/lib/showtime'
 import { getSettings } from '@/lib/settings'
 import { rollStaleShowtimes } from '@/lib/demo-roll'
 
@@ -31,13 +31,19 @@ export async function GET(request: Request) {
   })
 
   const now = new Date()
-  const upcoming = showtimes.filter((s) => new Date(s.startsAt).getTime() > now.getTime() - 3 * 3600_000)
-  const currentShow = upcoming[0] ?? null
+  // Audit fix #20: same selection rule as /api/orders so the UI can never
+  // advertise a show the order API would reject (and vice versa).
+  const picked = pickCurrentShow(showtimes, now)
+  const currentShow = picked.show
+  const cutoff = picked.info
 
   const settings = await getSettings()
-  const cutoff = currentShow ? cutoffInfo(new Date(currentShow.startsAt), currentShow.orderCutoffMinutes, now) : null
 
+  // Audit fix #13: return ONLY stores inside the seat's mall. The old query
+  // returned every store on the platform (cross-mall leak — and with the
+  // second seed mall it would have let an Aurora seat order from Nexora).
   const stores = await db.store.findMany({
+    where: { mallId: seat.screen.cinema.mallId },
     orderBy: { name: 'asc' },
     include: { products: { orderBy: [{ category: 'asc' }, { name: 'asc' }] } },
   })

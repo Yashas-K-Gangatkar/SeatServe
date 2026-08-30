@@ -90,14 +90,15 @@ export async function processWebhookEvent(rawBody: string, signature: string): P
       entityType: 'Payment',
       entityId: payment.id,
       orderId: payment.orderId,
+      mallId: payment.order.mallId,
       meta: { providerRef: payment.providerRef, amountPaise: payment.amountPaise, method: event.method },
     })
 
-    // fanout: customer room, each store room, admin
+    // fanout: customer room, each store room, mall-scoped admin room
     await emitToRooms({ rooms: [`order:${payment.order.code}`], event: 'order:paid', data: { code: payment.order.code } })
     for (const t of tickets) {
       await emitToRooms({
-        rooms: [`store:${t.storeId}`, 'admin'],
+        rooms: [`store:${t.storeId}`, `admin:${payment.order.mallId}`],
         event: 'ticket:new',
         data: { ticketId: t.id, orderCode: payment.order.code, storeName: t.store.name },
       })
@@ -106,6 +107,11 @@ export async function processWebhookEvent(rawBody: string, signature: string): P
   }
 
   if (event.type === 'payment.failed') {
+    // Audit fix #3: a failure event arriving AFTER the money was captured must
+    // NEVER flip the order back to FAILED (it used to corrupt PAID orders).
+    if (alreadyPaid || payment.status === 'SUCCESS') {
+      return { ok: true, outcome: 'already_paid', eventId: event.eventId, orderCode: payment.order.code }
+    }
     await db.payment.update({
       where: { id: payment.id },
       data: { status: 'FAILED', failureReason: event.failureReason ?? 'Payment declined by bank' },
@@ -118,6 +124,7 @@ export async function processWebhookEvent(rawBody: string, signature: string): P
       entityType: 'Payment',
       entityId: payment.id,
       orderId: payment.orderId,
+      mallId: payment.order.mallId,
       meta: { providerRef: payment.providerRef, reason: event.failureReason },
     })
     await emitToRooms({ rooms: [`order:${payment.order.code}`], event: 'order:update', data: { code: payment.order.code, paymentStatus: 'FAILED' } })

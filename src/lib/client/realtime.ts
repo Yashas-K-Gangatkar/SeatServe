@@ -25,6 +25,40 @@ export interface RealtimeState {
   reconnecting: boolean
 }
 
+/** Staff rooms require an HMAC room token (audit fix #18). Order rooms are public. */
+function isStaffRoom(room: string): boolean {
+  return room.startsWith('admin:') || room.startsWith('runners:') || room.startsWith('store:')
+}
+
+// token cache: room → { token, expMs } with a 30s refresh margin
+const roomTokenCache = new Map<string, { token: string; expMs: number }>()
+
+async function roomAuthToken(room: string, retry = true): Promise<string | null> {
+  if (!isStaffRoom(room)) return null
+  const cached = roomTokenCache.get(room)
+  if (cached && cached.expMs > Date.now() + 30_000) return cached.token
+  try {
+    const res = await fetch('/api/realtime/token', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ room }),
+      cache: 'no-store',
+    })
+    const json = (await res.json()) as { ok: boolean; data?: { token: string; expiresIn: number } }
+    if (!json.ok || !json.data) {
+      if (retry) {
+        roomTokenCache.delete(room)
+        return roomAuthToken(room, false)
+      }
+      return null
+    }
+    roomTokenCache.set(room, { token: json.data.token, expMs: Date.now() + json.data.expiresIn * 1000 })
+    return json.data.token
+  } catch {
+    return null
+  }
+}
+
 /** Subscribe to rooms; `onEvent` fires for every domain event. Callback kept in a ref (no re-subscribe). */
 export function useRealtime(rooms: string[], onEvent?: (event: string, data: unknown) => void): RealtimeState {
   const [connected, setConnected] = useState(false)
@@ -36,31 +70,52 @@ export function useRealtime(rooms: string[], onEvent?: (event: string, data: unk
   const roomsKey = rooms.join(',')
 
   useEffect(() => {
+    let cancelled = false
     const s = getSocket()
+    const joined = new Set<string>()
+
+    const joinRoom = async (room: string) => {
+      const token = await roomAuthToken(room)
+      if (cancelled || joined.has(room)) return
+      joined.add(room)
+      // staff rooms: { room, token } — public rooms: legacy bare string
+      if (token) s.emit('subscribe', { room, token })
+      else s.emit('subscribe', room)
+    }
+
     const onConnect = () => {
       setConnected(true)
       setReconnecting(false)
-      for (const room of roomsKey.split(',').filter(Boolean)) s.emit('subscribe', room)
+      for (const room of roomsKey.split(',').filter(Boolean)) void joinRoom(room)
     }
     const onDisconnect = () => {
       setConnected(false)
+      joined.clear()
     }
     const onReconnectAttempt = () => setReconnecting(true)
+    // server refused our staff-room token — drop cache; next connect retries fresh
+    const onDenied = (payload: { room?: string }) => {
+      if (payload?.room) roomTokenCache.delete(payload.room)
+      if (payload?.room && s.connected) void joinRoom(payload.room)
+    }
     const onDomain = (event: string, data: unknown) => cbRef.current?.(event, data)
 
     s.on('connect', onConnect)
     s.on('disconnect', onDisconnect)
+    s.on('subscribe:denied', onDenied)
     s.io.on('reconnect_attempt', onReconnectAttempt)
     const events = ['ticket:new', 'ticket:status', 'order:paid', 'order:update', 'run:assigned', 'run:update', 'store:update', 'product:update']
     for (const e of events) s.on(e, (data: unknown) => onDomain(e, data))
     if (s.connected) onConnect()
 
     return () => {
+      cancelled = true
       s.off('connect', onConnect)
       s.off('disconnect', onDisconnect)
+      s.off('subscribe:denied', onDenied)
       s.io.off('reconnect_attempt', onReconnectAttempt)
       for (const e of events) s.off(e)
-      for (const room of roomsKey.split(',').filter(Boolean)) s.emit('unsubscribe', room)
+      for (const room of joined) s.emit('unsubscribe', room)
     }
   }, [roomsKey])
 
