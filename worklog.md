@@ -73,3 +73,17 @@ Stage Summary:
 - Phase 2 COMPLETE: staff portal live at #/staff/login (demo1234), customer app still login-free, every staff API session-scoped with server-enforced 403s, 49 unit + 48 API tests green, lint clean, browser-verified end-to-end
 - Multi-tenancy answer delivered: same code serves N malls/cinemas/stores — role + scope columns drive all filters; new tenants are seed data, not new code
 - Known deferrals (documented): PostgreSQL swap (sandbox is SQLite-only), Playwright E2E + rate limiting + full admin CRUD → Phase 3, invite/password flows → Phase 4
+
+---
+Task ID: audit-1
+Agent: Super Z (main)
+Task: Full self-audit — find all logical mistakes in the codebase (user challenge)
+
+Work Log:
+- Re-read every API route, domain lib, schema, seed, realtime service, and key views from disk
+- Compiled 44-item logical mistake list, grouped: Money/Payments (11), Multi-tenancy (8), Cutoff (3), Races (4), Auth (4), Frontend (7), Data hygiene (5), Requirement gaps (2)
+- Critical findings: cross-mall ordering possible (orders route never validates store.mallId vs seat mall; /api/context returns all stores); predictable + leaked seat QR tokens; unauthenticated socket.io rooms; ticket state machine role boundaries not enforced server-side; unpaid orders can reach status PAID via kitchen API; refund workflow dead-ends (no actioning API); payment.failed-after-captured corrupts state; stale INITIATED payment deadlock; cancelled tickets keep full settlement splits; wrong showtime selection blocks orderable customers; KPI counts refunded orders as sales
+
+Stage Summary:
+- Audit delivered to user; awaiting user's verdict on which findings are valid/missed before fixing
+- Proposed priority: critical block = items 12-17 (multi-tenancy) + 1-8 (payments)
