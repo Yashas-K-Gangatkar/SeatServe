@@ -117,3 +117,57 @@ body {
   .print-hide { display: none !important; }
   .print-area { display: block !important; }
 }
+
+/* ───────────────── thermal receipt (post-payment bill) ───────────────── */
+/* Paper bill sliding out of a POS slot — no machine body, no hands.       */
+
+@keyframes receipt-slide {
+  0% { transform: translateY(-98%); }
+  70% { transform: translateY(0); }
+  82% { transform: translateY(-4px); }  /* the little feed jiggle */
+  100% { transform: translateY(0); }
+}
+.receipt-anim { animation: receipt-slide 1.5s cubic-bezier(0.22, 0.8, 0.36, 1) both; }
+
+@keyframes slot-led {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.25; }
+}
+.slot-led { animation: slot-led 0.9s ease-in-out infinite; }
+
+/* torn zigzag bottom edge of the receipt paper */
+.receipt-zigzag { position: relative; }
+.receipt-zigzag::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -9px;
+  height: 9px;
+  background:
+    linear-gradient(-45deg, #ffffff 5.5px, transparent 0),
+    linear-gradient(45deg, #ffffff 5.5px, transparent 0);
+  background-size: 11px 9px;
+  background-position: left bottom;
+  background-repeat: repeat-x;
+}
+
+/* faint thermal-paper tint + printed-ink feel */
+.receipt-paper {
+  background: linear-gradient(180deg, #ffffff 0%, #fffefb 82%, #fdf8ec 100%);
+  color: #292524;
+  box-shadow: 0 24px 44px -18px rgba(120, 84, 30, 0.38), 0 2px 6px rgba(120, 84, 30, 0.12);
+}
+
+/* fake barcode — irregular stripe rhythm, single gradient layer */
+.receipt-barcode {
+  background-image: repeating-linear-gradient(90deg,
+    #292524 0 2px, transparent 2px 4px,
+    #292524 4px 5px, transparent 5px 10px,
+    #292524 10px 13px, transparent 13px 15px,
+    #292524 15px 16px, transparent 16px 21px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .receipt-anim, .slot-led { animation: none; }
+}

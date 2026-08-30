@@ -4,7 +4,7 @@
 // The payment sheet talks to POST /api/orders (server computes money) and then
 // POST /api/payments/mock-pay (sandbox gateway). No card/UPI secrets are ever sent —
 // only a masked display string (e.g. "•••• 4242") the server may store for receipts.
-import { useMemo, useState } from 'react'
+import { useMemo, useRef, useState, useEffect } from 'react'
 import { Loader2, Lock, ShieldCheck, TriangleAlert, Timer, Store as StoreIcon, ChevronDown, CheckCircle2, Copy } from 'lucide-react'
 import { toast } from 'sonner'
 import { post, ApiError } from '@/lib/client/api'
@@ -12,6 +12,7 @@ import { platformFeePaise } from '@/lib/pricing'
 import { useCart } from '@/lib/client/cart'
 import { rupees } from '../ui-bits'
 import type { ContextResponse, OrderCreateResponse } from '@/lib/client/types'
+import PaperReceipt, { type ReceiptData } from './PaperReceipt'
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet'
 import { Input } from '@/components/ui/input'
 import { Switch } from '@/components/ui/switch'
@@ -178,6 +179,20 @@ export function CheckoutSheet({
 
       <PaymentSheet
         order={placedOrder ? { code: placedOrder.code, totalPaise: placedOrder.breakdown.totalPaise } : null}
+        receipt={{
+          seatCode: ctx.seat.code,
+          screenName: ctx.screen.name,
+          cinemaName: ctx.cinema.name,
+          movie: ctx.showtime?.movieTitle,
+          groups: selection.map((r) => ({
+            storeName: r.storeName,
+            emoji: r.emoji,
+            items: r.items.map((i) => ({ name: i.name, qty: i.qty, lineTotalPaise: i.qty * i.pricePaise })),
+          })),
+          subtotalPaise: subtotal,
+          platformFeePaise: platformFee,
+          totalPaise: estimatedTotal,
+        }}
         onClose={(paid) => {
           if (paid) cart.clear()
           const order = placedOrder
@@ -190,13 +205,29 @@ export function CheckoutSheet({
   )
 }
 
-export function PaymentSheet({ order, onClose }: { order: PlacedOrder | null; onClose: (paid: boolean) => void }) {
+export function PaymentSheet({
+  order,
+  onClose,
+  receipt,
+}: {
+  order: PlacedOrder | null
+  onClose: (paid: boolean) => void
+  /** optional itemized bill — the printed paper receipt after paying */
+  receipt?: ReceiptData
+}) {
   const [method, setMethod] = useState<Method>('UPI')
   const [vpa, setVpa] = useState('priya@okhdfcbank')
   const [card, setCard] = useState('4242 4242 4242 4242')
   const [failure, setFailure] = useState(false)
   const [phase, setPhase] = useState<'form' | 'processing' | 'failed' | 'unknown' | 'paid'>('form')
   const [failMsg, setFailMsg] = useState('')
+  const [paidDetail, setPaidDetail] = useState('')
+  const sheetScrollRef = useRef<HTMLDivElement>(null)
+
+  // when the receipt prints, make sure the slot + paper top are in view
+  useEffect(() => {
+    if (phase === 'paid') sheetScrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' })
+  }, [phase])
 
   if (!order) return null
 
@@ -226,6 +257,7 @@ export function PaymentSheet({ order, onClose }: { order: PlacedOrder | null; on
       // Order confirmed — show the tracking code BEFORE navigating so the
       // customer can copy/share it (it is the only way back to this order).
       toast.success('Payment successful', { description: `Order ${order.code} · ${rupees(order.totalPaise)}` })
+      setPaidDetail(methodDetail)
       setPhase('paid')
     } catch (err) {
       // Audit fix #33: a network drop mid-payment does NOT mean failure — the
@@ -242,7 +274,7 @@ export function PaymentSheet({ order, onClose }: { order: PlacedOrder | null; on
 
   return (
     <Sheet open onOpenChange={(v) => !v && phase !== 'processing' && onClose(false)}>
-      <SheetContent side="bottom" className="mx-auto w-full max-w-md rounded-t-3xl border-border bg-popover p-0 sm:left-1/2 sm:-translate-x-1/2 sm:right-auto">
+      <SheetContent ref={sheetScrollRef} side="bottom" className="mx-auto max-h-[92dvh] w-full max-w-md overflow-y-auto kitchen-scroll rounded-t-3xl border-border bg-popover p-0 sm:left-1/2 sm:-translate-x-1/2 sm:right-auto">
         <SheetHeader className="p-5 pb-0">
           <SheetTitle className="flex items-center gap-2 text-left">
             {phase === 'paid' ? (
@@ -263,11 +295,18 @@ export function PaymentSheet({ order, onClose }: { order: PlacedOrder | null; on
 
         <div className="px-5 pb-6 pt-4">
           {phase === 'paid' ? (
-            <div className="py-2" role="status">
-              <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-center">
-                <p className="text-sm font-bold text-emerald-800">Payment received — your order is in the kitchens</p>
-                <p className="mt-3 text-[11px] font-bold uppercase tracking-wider text-emerald-700/80">Your tracking number</p>
-                <p className="mt-1 select-all text-3xl font-black tracking-[0.14em] text-stone-900">{order.code}</p>
+            <div className="py-1" role="status">
+              {/* the printed bill — thermal paper sliding out of the slot */}
+              {receipt ? (
+                <PaperReceipt data={receipt} orderCode={order.code} paidLine={`PAID — ${method}${paidDetail ? ` ${paidDetail}` : ''}`} />
+              ) : (
+                <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-center">
+                  <p className="text-sm font-bold text-emerald-800">Payment received — your order is in the kitchens</p>
+                  <p className="mt-3 text-[11px] font-bold uppercase tracking-wider text-emerald-700/80">Your tracking number</p>
+                  <p className="mt-1 select-all text-3xl font-black tracking-[0.14em] text-stone-900">{order.code}</p>
+                </div>
+              )}
+              <div className="mt-4 flex items-center justify-center gap-2 print-hide">
                 <button
                   onClick={async () => {
                     try {
@@ -277,20 +316,20 @@ export function PaymentSheet({ order, onClose }: { order: PlacedOrder | null; on
                       toast.error('Copy failed — long-press the code to copy it')
                     }
                   }}
-                  className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-stone-900 px-4 py-2 text-xs font-extrabold text-white hover:bg-stone-800"
+                  className="inline-flex items-center gap-1.5 rounded-full border border-stone-300 bg-white px-4 py-2 text-xs font-extrabold text-stone-700 hover:bg-stone-50"
                 >
                   <Copy className="h-3.5 w-3.5" aria-hidden /> Copy tracking number
                 </button>
-                <p className="mt-3 text-[11px] leading-relaxed text-emerald-800/80">
-                  Save or share this code — anyone who has it can follow this order on the Track your order screen, like a parcel tracking number.
-                </p>
               </div>
               <button
                 onClick={() => onClose(true)}
-                className="mt-4 w-full rounded-full bg-gradient-to-b from-amber-500 to-orange-500 py-3.5 text-sm font-extrabold text-white shadow-md shadow-orange-500/30 hover:from-amber-600 hover:to-orange-600"
+                className="mt-3 w-full rounded-full bg-gradient-to-b from-amber-500 to-orange-500 py-3.5 text-sm font-extrabold text-white shadow-md shadow-orange-500/30 hover:from-amber-600 hover:to-orange-600 print-hide"
               >
                 Track my order
               </button>
+              <p className="mt-2 text-center text-[11px] leading-relaxed text-stone-500 print-hide">
+                Anyone who has the tracking number can follow this order — like a parcel.
+              </p>
             </div>
           ) : phase === 'processing' ? (
             <div className="flex flex-col items-center gap-3 py-10" role="status" aria-live="polite">

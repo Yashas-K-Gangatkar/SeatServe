@@ -300,6 +300,22 @@ function TrackingInner({ code, go }: { code: string; go: (p: string) => void }) 
       {retryOpen && (
         <PaymentSheet
           order={{ code: order.code, totalPaise: order.totals.totalPaise }}
+          receipt={{
+            seatCode: order.location.seat,
+            screenName: order.location.screen,
+            cinemaName: order.location.cinema,
+            movie: order.show?.movieTitle,
+            groups: order.stores
+              .filter((s) => s.status !== 'CANCELLED')
+              .map((s) => ({
+                storeName: s.storeName,
+                emoji: s.emoji,
+                items: s.items.map((i) => ({ name: i.name, qty: i.qty, lineTotalPaise: i.lineTotalPaise })),
+              })),
+            subtotalPaise: order.totals.subtotalPaise,
+            platformFeePaise: order.totals.platformFeePaise,
+            totalPaise: order.totals.totalPaise,
+          }}
           onClose={() => {
             setRetryOpen(false)
             void load()
