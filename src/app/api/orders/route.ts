@@ -145,8 +145,10 @@ export async function POST(request: Request) {
         }),
       },
       splits: {
+        // nested create: Split.store is a RELATION — connect it (scalar storeId
+        // is rejected by Prisma here); platform rows omit it (FK stays null)
         create: computeSplits(bill).map((s) => ({
-          storeId: s.storeId,
+          ...(s.storeId ? { store: { connect: { id: s.storeId } } } : {}),
           beneficiary: s.beneficiary,
           amountPaise: s.amountPaise,
           commissionPaise: s.commissionPaise,

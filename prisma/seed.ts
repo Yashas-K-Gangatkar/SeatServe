@@ -369,6 +369,9 @@ export async function seedDemoData(db: DB): Promise<void> {
           storeId: g.store.id,
           beneficiary: 'STORE',
           amountPaise: storeBill.storeNetPaise,
+          // Phase 3: STORE rows carry their own commission & tax (ledger-driven settlement)
+          commissionPaise: storeBill.commissionPaise,
+          taxPaise: storeBill.taxPaise,
           settlementStatus: done ? 'SETTLED' : 'PENDING',
         },
       })
@@ -399,16 +402,38 @@ export async function seedDemoData(db: DB): Promise<void> {
       })
     }
 
-    await db.payment.create({
+    const seedRef = generatePaymentRef()
+    const payment = await db.payment.create({
       data: {
         orderId: order.id,
         provider: 'SANDBOX_MOCK',
         method: 'UPI',
         amountPaise: bill.totalPaise,
         status: 'SUCCESS',
-        providerRef: generatePaymentRef(),
+        providerRef: seedRef,
         idempotencyKey: `seed_${opts.code}`,
         methodDetail: 'priya@okhdfcbank',
+      },
+    })
+    // Phase 3: every captured payment must have a signature-valid captured event
+    // (reconciliation R5) — synthesize the gateway event the webhook would have
+    // recorded. Raw body is stored; the signature header is never persisted.
+    await db.paymentEvent.create({
+      data: {
+        provider: 'SANDBOX_MOCK',
+        eventType: 'payment.captured',
+        dedupeKey: `seed_captured_${opts.code}`,
+        signatureValid: true,
+        payload: JSON.stringify({
+          eventId: `seed_captured_${opts.code}`,
+          type: 'payment.captured',
+          provider: 'SANDBOX_MOCK',
+          providerRef: seedRef,
+          method: 'UPI',
+          methodDetail: 'priya@okhdfcbank',
+        }),
+        paymentId: payment.id,
+        processedAt: opts.placedAt,
       },
     })
     return order

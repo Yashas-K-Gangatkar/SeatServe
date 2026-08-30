@@ -82,7 +82,8 @@ export function legTaxFromItems(items: { storeId: string; lineTotalPaise: number
  */
 export function computeProportionalReversal(
   positiveSplits: {
-    id: string
+    /** DB rows carry their row id; pure SplitRow (computeSplits) may omit it — never used positionally-independent */
+    id?: string
     storeId: string | null
     beneficiary: 'STORE' | 'PLATFORM_COMMISSION' | 'DELIVERY_FEE' | 'TAX'
     amountPaise: number

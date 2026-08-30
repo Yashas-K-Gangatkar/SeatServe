@@ -39,7 +39,8 @@ export async function processNormalizedEvent(event: NormalizedPaymentEvent, rawB
     await db.paymentEvent.create({
       data: {
         provider: event.provider,
-        eventType: event.rawType,
+        // normalized type — raw provider event name stays in `payload` + audit meta
+        eventType: event.type,
         dedupeKey: event.eventId,
         signatureValid: true,
         payload: rawBody,
@@ -52,7 +53,9 @@ export async function processNormalizedEvent(event: NormalizedPaymentEvent, rawB
   await db.paymentEvent.create({
     data: {
       provider: event.provider,
-      eventType: event.rawType,
+      // normalized type — provider-agnostic invariant checks (R5) depend on it;
+      // the provider's own event name stays visible in `payload` + audit meta
+      eventType: event.type,
       dedupeKey: event.eventId,
       signatureValid: true,
       payload: rawBody,

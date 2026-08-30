@@ -18,12 +18,12 @@ async function main() {
       tickets: { create: [{ storeId: prod.storeId, ticketCode: 'TK-PROBE2', status: 'NEW', subtotalPaise: 100, prepEtaMinutes: 10 }] },
       splits: {
         create: [
-          { storeId: prod.storeId, beneficiary: 'STORE', amountPaise: 95, commissionPaise: 0, taxPaise: 5, settlementStatus: 'PENDING' },
-          { storeId: null, beneficiary: 'TAX', amountPaise: 5, commissionPaise: 0, taxPaise: 5, settlementStatus: 'PENDING' },
+          { store: { connect: { id: prod.storeId } }, beneficiary: 'STORE', amountPaise: 95, commissionPaise: 0, taxPaise: 5, settlementStatus: 'PENDING' },
+          { beneficiary: 'TAX', amountPaise: 5, commissionPaise: 0, taxPaise: 5, settlementStatus: 'PENDING' },
         ],
       },
     },
-    include: { tickets: true, items: true },
+    include: { tickets: true, items: true, splits: true },
   })
   console.log('created', order.code, order.splits ? 'with splits' : '')
   await db.order.delete({ where: { code: 'SS-PROBE2' } })

@@ -390,8 +390,8 @@ check "double cancel same leg → 409" "$([ "$P3_DOUBLE" = "409" ] && echo 1 || 
 
 # remaining leg continues: accept → prepare → then cancel must refuse
 # (T1 is the Pizza Corner leg → use its own cook k1; k0 would get 403)
-curl -s -b "$JARS/k1" -X POST "$BASE/api/kitchen/tickets/$P3_T1/status" -H 'Content-Type: application/json' -d '{"status":"ACCEPTED"}' > /dev/null
-curl -s -b "$JARS/k1" -X POST "$BASE/api/kitchen/tickets/$P3_T1/status" -H 'Content-Type: application/json' -d '{"status":"PREPARING"}' > /dev/null
+curl -s -b "$JARS/k1" -X POST "$BASE/api/kitchen/tickets/$P3_T1/status" -H 'Content-Type: application/json' -d '{"to":"ACCEPTED"}' > /dev/null
+curl -s -b "$JARS/k1" -X POST "$BASE/api/kitchen/tickets/$P3_T1/status" -H 'Content-Type: application/json' -d '{"to":"PREPARING"}' > /dev/null
 P3_LATE=$(code -X POST "$BASE/api/orders/$P3_CODE/cancel-leg" -H 'Content-Type: application/json' -d "{\"ticketId\":\"$P3_T1\"}")
 check "cancel after PREPARING → 409" "$([ "$P3_LATE" = "409" ] && echo 1 || echo 0)"
 
