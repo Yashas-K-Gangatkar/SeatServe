@@ -4,8 +4,9 @@
 // Realtime via socket.io + 4s polling fallback. Per-store status timelines,
 // runner leg, payment state (incl. retry), refund/help entry.
 import { useCallback, useEffect, useState } from 'react'
-import { Check, ChefHat, Bike, PackageCheck, CircleHelp, ChevronLeft, MapPin, CreditCard, ReceiptText } from 'lucide-react'
-import { get, ApiError } from '@/lib/client/api'
+import { Check, ChefHat, Bike, PackageCheck, CircleHelp, ChevronLeft, MapPin, CreditCard, ReceiptText, XCircle } from 'lucide-react'
+import { toast } from 'sonner'
+import { get, post, ApiError } from '@/lib/client/api'
 import { useRealtime, usePolling } from '@/lib/client/realtime'
 import type { TrackingResponse } from '@/lib/client/types'
 import { rupees, timeHM, StatusPill, RUN_STATUS_LABEL, Spinner, LoadError, EmptyState } from '../ui-bits'
@@ -174,6 +175,8 @@ function TrackingInner({ code, go }: { code: string; go: (p: string) => void }) 
         {order.stores.map((store) => {
           const idx = stepIndex(store.status)
           const cancelled = store.status === 'CANCELLED'
+          // Phase 3 partial cancel: possible while the kitchen hasn't started
+          const canCancelLeg = !cancelled && order.payment && !awaitingPayment && (store.status === 'NEW' || store.status === 'ACCEPTED') && !store.deliveryRun
           return (
             <article key={store.ticketId} className="rounded-2xl border border-border bg-card p-4">
               <div className="flex items-center justify-between gap-2">
@@ -233,6 +236,8 @@ function TrackingInner({ code, go }: { code: string; go: (p: string) => void }) 
                   {RUN_STATUS_LABEL[store.deliveryRun.status] ?? store.deliveryRun.status} · {store.deliveryRun.runner} · {store.deliveryRun.dropLabel}
                 </p>
               )}
+
+              {canCancelLeg && <CancelLegButton orderCode={order.code} ticketId={store.ticketId} storeName={store.storeName} onChanged={load} />}
             </article>
           )
         })}
@@ -274,5 +279,62 @@ function TrackingInner({ code, go }: { code: string; go: (p: string) => void }) 
           }}
         />
       )}    </div>
+  )
+}
+
+// Phase 3 partial cancel — customer-initiated, two-tap confirm (money action).
+function CancelLegButton({ orderCode, ticketId, storeName, onChanged }: { orderCode: string; ticketId: string; storeName: string; onChanged: () => void }) {
+  const [confirming, setConfirming] = useState(false)
+  const [busy, setBusy] = useState(false)
+
+  const cancel = async () => {
+    setBusy(true)
+    try {
+      const res = await post<{ refundTotalPaise: number; remainingStores: string[] }>(`/api/orders/${orderCode}/cancel-leg`, { ticketId })
+      toast.success(
+        res.refundTotalPaise > 0
+          ? `${storeName} cancelled — ${rupees(res.refundTotalPaise)} refund on its way`
+          : `${storeName} cancelled`,
+      )
+      onChanged()
+    } catch (err) {
+      toast.error(err instanceof ApiError ? err.message : 'Could not cancel')
+    } finally {
+      setBusy(false)
+      setConfirming(false)
+    }
+  }
+
+  if (!confirming) {
+    return (
+      <button
+        onClick={() => setConfirming(true)}
+        className="mt-3 flex w-full items-center justify-center gap-1.5 rounded-xl border border-stone-300 bg-white py-2 text-[11px] font-bold text-stone-500 hover:bg-stone-50"
+      >
+        <XCircle className="h-3.5 w-3.5" aria-hidden /> Cancel {storeName} (auto refund)
+      </button>
+    )
+  }
+  return (
+    <div className="mt-3 rounded-xl border border-red-200 bg-red-50 p-3" role="alertdialog" aria-label={`Confirm cancelling ${storeName}`}>
+      <p className="text-xs font-bold text-red-800">
+        Cancel {storeName}? You'll be refunded that store's food + its delivery fee share. Your other stores are unaffected.
+      </p>
+      <div className="mt-2 flex gap-2">
+        <button
+          onClick={cancel}
+          disabled={busy}
+          className="flex-1 rounded-full bg-red-600 py-2 text-[11px] font-extrabold text-white hover:bg-red-700 disabled:opacity-50"
+        >
+          {busy ? 'Cancelling…' : 'Yes, cancel it'}
+        </button>
+        <button
+          onClick={() => setConfirming(false)}
+          className="flex-1 rounded-full border border-stone-300 bg-white py-2 text-[11px] font-bold text-stone-600 hover:bg-stone-50"
+        >
+          Keep it
+        </button>
+      </div>
+    </div>
   )
 }

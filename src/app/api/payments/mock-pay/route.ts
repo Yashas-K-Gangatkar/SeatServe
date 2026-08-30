@@ -13,7 +13,7 @@ import { ok, fail, parseBody } from '@/lib/api-helpers'
 import { isPaymentMethod } from '@/lib/types'
 import { generatePaymentRef, generateEventId } from '@/lib/ids'
 import { signPayload, webhookSecret } from '@/lib/webhook-sig'
-import { processWebhookEvent } from '@/lib/payment-webhook'
+import { processWebhookRequest } from '@/lib/payment-webhook'
 
 const bodySchema = z.object({
   orderCode: z.string().min(4),
@@ -97,7 +97,7 @@ export async function POST(request: Request) {
   const raw = JSON.stringify(event)
   const signature = signPayload(raw, webhookSecret())
 
-  let result: Awaited<ReturnType<typeof processWebhookEvent>>
+  let result: Awaited<ReturnType<typeof processWebhookRequest>>
   try {
     // call ourselves exactly like an external gateway would (same endpoint, same header)
     const base = process.env.INTERNAL_BASE_URL ?? 'http://localhost:3000'
@@ -110,13 +110,13 @@ export async function POST(request: Request) {
     })
     const json = (await webhookResponse.json()) as { ok: boolean; data?: unknown; error?: string }
     if (json.ok && json.data) {
-      result = json.data as Awaited<ReturnType<typeof processWebhookEvent>>
+      result = json.data as Awaited<ReturnType<typeof processWebhookRequest>>
     } else {
       result = { ok: false, status: webhookResponse.status, error: json.error ?? 'webhook error' }
     }
   } catch {
     // network hiccup during self-call: process locally with the SAME verified path
-    result = await processWebhookEvent(raw, signature)
+    result = await processWebhookRequest(new Headers({ 'X-SeatServe-Signature': signature }), raw)
   }
 
   if (!result.ok) return fail(`Webhook rejected: ${result.error}`, result.status)

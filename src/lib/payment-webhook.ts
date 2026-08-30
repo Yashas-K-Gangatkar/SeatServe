@@ -1,45 +1,34 @@
 // SeatServe — payment webhook processing (shared by the real webhook route and
-// the sandbox gateway loop). Signature verification + duplicate-event protection
-// + state transitions + realtime fanout. This is Phase 3's exact production shape;
-// only the provider changes (SANDBOX_MOCK → RAZORPAY/CASHFREE).
+// the sandbox gateway loop). Phase 3: signature verification is delegated to the
+// provider adapters (SANDBOX_MOCK | RAZORPAY | CASHFREE — see lib/payments/
+// provider.ts); this module owns duplicate-event protection + state transitions
+// + realtime fanout, and works on NORMALIZED events so the money logic never
+// sees provider specifics.
 
 import { db } from '@/lib/db'
-import { verifySignature, webhookSecret } from '@/lib/webhook-sig'
 import { audit } from '@/lib/audit'
 import { emitToRooms } from '@/lib/realtime'
-
-export interface WebhookEventShape {
-  eventId: string
-  type: 'payment.captured' | 'payment.failed'
-  provider: string
-  providerRef: string
-  method?: string
-  methodDetail?: string
-  failureReason?: string
-}
+import { verifyWebhookMultiProvider, type NormalizedPaymentEvent } from '@/lib/payments/provider'
 
 export type ProcessResult =
   | { ok: true; outcome: 'captured' | 'failed' | 'duplicate' | 'already_paid'; eventId: string; orderCode?: string }
   | { ok: false; status: number; error: string }
 
-export async function processWebhookEvent(rawBody: string, signature: string): Promise<ProcessResult> {
-  // 1) authenticate the caller — never trust the payload without a valid signature
-  if (!verifySignature(rawBody, signature, webhookSecret())) {
-    return { ok: false, status: 401, error: 'Invalid webhook signature' }
+/**
+ * Full webhook pipeline for an incoming request: provider signature
+ * verification → normalization → state processing.
+ */
+export async function processWebhookRequest(headers: Headers, rawBody: string): Promise<ProcessResult> {
+  const verified = verifyWebhookMultiProvider(headers, rawBody)
+  if (!verified.ok || !verified.normalized) {
+    return { ok: false, status: verified.status ?? 401, error: verified.error ?? 'Invalid webhook signature' }
   }
+  return processNormalizedEvent(verified.normalized, rawBody)
+}
 
-  // 2) parse
-  let event: WebhookEventShape
-  try {
-    event = JSON.parse(rawBody) as WebhookEventShape
-  } catch {
-    return { ok: false, status: 400, error: 'Webhook body is not valid JSON' }
-  }
-  if (!event.eventId || !event.type || !event.providerRef) {
-    return { ok: false, status: 422, error: 'Webhook missing eventId/type/providerRef' }
-  }
-
-  // 3) duplicate-webhook protection — dedupeKey is unique; replays are no-ops
+/** State machine for a verified event (idempotent by eventId). */
+export async function processNormalizedEvent(event: NormalizedPaymentEvent, rawBody: string): Promise<ProcessResult> {
+  // 1) duplicate-webhook protection — dedupeKey is unique; replays are no-ops
   const existing = await db.paymentEvent.findUnique({ where: { dedupeKey: event.eventId } })
   if (existing) {
     return { ok: true, outcome: 'duplicate', eventId: event.eventId }
@@ -49,8 +38,8 @@ export async function processWebhookEvent(rawBody: string, signature: string): P
   if (!payment) {
     await db.paymentEvent.create({
       data: {
-        provider: event.provider ?? 'UNKNOWN',
-        eventType: event.type,
+        provider: event.provider,
+        eventType: event.rawType,
         dedupeKey: event.eventId,
         signatureValid: true,
         payload: rawBody,
@@ -63,7 +52,7 @@ export async function processWebhookEvent(rawBody: string, signature: string): P
   await db.paymentEvent.create({
     data: {
       provider: event.provider,
-      eventType: event.type,
+      eventType: event.rawType,
       dedupeKey: event.eventId,
       signatureValid: true,
       payload: rawBody,
@@ -91,7 +80,7 @@ export async function processWebhookEvent(rawBody: string, signature: string): P
       entityId: payment.id,
       orderId: payment.orderId,
       mallId: payment.order.mallId,
-      meta: { providerRef: payment.providerRef, amountPaise: payment.amountPaise, method: event.method },
+      meta: { providerRef: payment.providerRef, amountPaise: payment.amountPaise, method: event.method, provider: event.provider, rawType: event.rawType },
     })
 
     // fanout: customer room, each store room, mall-scoped admin room
@@ -125,11 +114,11 @@ export async function processWebhookEvent(rawBody: string, signature: string): P
       entityId: payment.id,
       orderId: payment.orderId,
       mallId: payment.order.mallId,
-      meta: { providerRef: payment.providerRef, reason: event.failureReason },
+      meta: { providerRef: payment.providerRef, reason: event.failureReason, provider: event.provider },
     })
     await emitToRooms({ rooms: [`order:${payment.order.code}`], event: 'order:update', data: { code: payment.order.code, paymentStatus: 'FAILED' } })
     return { ok: true, outcome: 'failed', eventId: event.eventId, orderCode: payment.order.code }
   }
 
-  return { ok: false, status: 422, error: `Unsupported event type: ${event.type}` }
+  return { ok: false, status: 422, error: `Unsupported event type: ${event.rawType}` }
 }

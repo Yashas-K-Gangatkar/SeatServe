@@ -1,7 +1,9 @@
 #!/bin/bash
-# SeatServe — end-to-end API golden path test (bash/curl) — audit-fix edition.
+# SeatServe — end-to-end API golden path test (bash/curl) — Phase 3 edition.
 # Covers: commerce flow + auth + tenant isolation + audit-round fixes
-# (#12–19 isolation, #1–11 money, #20–22 cutoff, refund actioning).
+# (#12–19 isolation, #1–11 money, #20–22 cutoff, refund actioning)
+# + Phase 3: provider webhooks (Razorpay/Cashfree schemes), partial cancel,
+# settlement batches, reconciliation.
 set -e
 BASE="http://localhost:3000"
 RUNKEY=$(date +%s)
@@ -298,6 +300,165 @@ echo "── Webhook signature ──"
 RAW='{"eventId":"evt_evil_1","type":"payment.captured","provider":"EVIL","providerRef":"pay_x"}'
 WH=$(code -X POST "$BASE/api/payments/webhook" -H 'Content-Type: application/json' -H 'X-SeatServe-Signature: deadbeef' -d "$RAW")
 check "forged webhook → 401" "$([ "$WH" = "401" ] && echo 1 || echo 0)"
+
+echo "── Phase 3: provider webhook schemes (Razorpay Route / Cashfree Easy Split) ──"
+P3_SECRET="rzp_test_seatserve_secret"
+P3_CFSECRET="cf_test_seatserve_secret"
+rzs() { python3 -c "import hmac,hashlib,sys;print(hmac.new(sys.argv[1].encode(),sys.argv[2].encode(),hashlib.sha256).hexdigest())" "$1" "$2"; }
+cfs() { python3 -c "import hmac,hashlib,sys,base64;print(base64.b64encode(hmac.new(sys.argv[1].encode(),(sys.argv[2]+sys.argv[3]).encode(),hashlib.sha256).digest()).decode())" "$1" "$2" "$3"; }
+
+# helper: make an order with one item, then a FAILED mock-pay to mint an INITIATED→FAILED
+# payment row with a known providerRef for provider-shaped events to capture
+p3_make_paidable() {
+  local qr="$1" pid="$2"
+  local ord=$(curl -s -X POST "$BASE/api/orders" -H 'Content-Type: application/json' \
+    -d "{\"qrToken\":\"$qr\",\"items\":[{\"productId\":\"$pid\",\"qty\":1}]}")
+  echo "$ord" | jget "['data']['code']"
+}
+p3_fail_pay() {
+  local ord_code="$1"
+  curl -s -X POST "$BASE/api/payments/mock-pay" -H 'Content-Type: application/json' \
+    -d "{\"orderCode\":\"$ord_code\",\"method\":\"UPI\",\"outcome\":\"failure\",\"failureReason\":\"bank timeout\",\"idempotencyKey\":\"p3-fail-$RUNKEY-$ord_code\"}" \
+    | jget "['data']['providerRef']"
+}
+
+RZP_CODE=$(p3_make_paidable "$AURORA_QR" "$POPCORN")
+RZP_REF=$(p3_fail_pay "$RZP_CODE")
+RZP_BODY=$(python3 -c "
+import json,sys
+print(json.dumps({'event':'payment.captured','payload':{'payment':{'entity':{'id':'pay_$RZP_REF','method':'upi','vpa':'arjun@okicici'}}}}))")
+RZP_SIG=$(rzs "$P3_SECRET" "$RZP_BODY")
+RZP_WH=$(curl -s -X POST "$BASE/api/payments/webhook" -H 'Content-Type: application/json' \
+  -H "X-Razorpay-Signature: $RZP_SIG" -d "$RZP_BODY")
+RZP_OUT=$(echo "$RZP_WH" | jget "['data']['outcome']")
+check "razorpay-signed webhook captures payment" "$([ "$RZP_OUT" = "captured" ] && echo 1 || echo 0)"
+RZP_STATUS=$(curl -s "$BASE/api/orders/$RZP_CODE" | jget "['data']['paymentStatus']")
+check "razorpay capture → order PAID" "$([ "$RZP_STATUS" = "PAID" ] && echo 1 || echo 0)"
+RZP_BAD=$(code -X POST "$BASE/api/payments/webhook" -H 'Content-Type: application/json' \
+  -H "X-Razorpay-Signature: $(printf '%064d' 0)" -d "$RZP_BODY")
+check "forged razorpay signature → 401" "$([ "$RZP_BAD" = "401" ] && echo 1 || echo 0)"
+
+CF_CODE=$(p3_make_paidable "$AURORA_QR" "$POPCORN")
+CF_REF=$(p3_fail_pay "$CF_CODE")
+CF_BODY=$(python3 -c "
+import json,sys
+print(json.dumps({'type':'PAYMENT_SUCCESS','data':{'order':{'order_id':'$CF_CODE|$CF_REF'},'payment':{'cf_payment_id':987654,'payment_method':'upi','upi':{'vpa':'priya@ybl'}}}}))")
+CF_TS="1725000000$RUNKEY"
+CF_SIG=$(cfs "$P3_CFSECRET" "$CF_TS" "$CF_BODY")
+CF_WH=$(curl -s -X POST "$BASE/api/payments/webhook" -H 'Content-Type: application/json' \
+  -H "x-webhook-timestamp: $CF_TS" -H "x-webhook-signature: $CF_SIG" -d "$CF_BODY")
+CF_OUT=$(echo "$CF_WH" | jget "['data']['outcome']")
+check "cashfree-signed webhook captures payment" "$([ "$CF_OUT" = "captured" ] && echo 1 || echo 0)"
+CF_BAD_TS="1725000000999"
+CF_BAD=$(code -X POST "$BASE/api/payments/webhook" -H 'Content-Type: application/json' \
+  -H "x-webhook-timestamp: $CF_BAD_TS" -H "x-webhook-signature: $CF_SIG" -d "$CF_BODY")
+check "cashfree replay with tampered timestamp → 401" "$([ "$CF_BAD" = "401" ] && echo 1 || echo 0)"
+
+echo "── Phase 3: partial cancel (customer self-service) ──"
+P3=$(curl -s -X POST "$BASE/api/orders" -H 'Content-Type: application/json' \
+  -d "{\"qrToken\":\"$AURORA_QR\",\"items\":[{\"productId\":\"$POPCORN\",\"qty\":1},{\"productId\":\"$PIZZA\",\"qty\":1}]}")
+P3_CODE=$(echo "$P3" | jget "['data']['code']")
+P3_TOTAL=$(echo "$P3" | jget "['data']['breakdown']['totalPaise']")
+P3_PLATFORM=$(echo "$P3" | jget "['data']['breakdown']['platformFeePaise']")
+P3_SUBTOTAL=$(echo "$P3" | jget "['data']['breakdown']['subtotalPaise']")
+curl -s -X POST "$BASE/api/payments/mock-pay" -H 'Content-Type: application/json' \
+  -d "{\"orderCode\":\"$P3_CODE\",\"method\":\"UPI\",\"outcome\":\"success\",\"idempotencyKey\":\"p3-pay-$RUNKEY\"}" > /dev/null
+P3_TRACK=$(curl -s "$BASE/api/orders/$P3_CODE")
+P3_T0=$(echo "$P3_TRACK" | jget "['data']['stores'][0]['ticketId']")
+P3_T1=$(echo "$P3_TRACK" | jget "['data']['stores'][1]['ticketId']")
+P3_STORE0_SUB=$(echo "$P3" | jget "['data']['breakdown']['perStore'][0]['subtotalPaise']")
+P3_STORE0_FEE=$(echo "$P3" | jget "['data']['breakdown']['perStore'][0]['deliveryFeePaise']")
+P3_EXPECT_REFUND=$(python3 -c "print($P3_STORE0_SUB + $P3_STORE0_FEE + round($P3_PLATFORM * $P3_STORE0_SUB / $P3_SUBTOTAL))")
+check "expected leg refund math (leg + fee + platform share)" "$([ -n "$P3_EXPECT_REFUND" ] && [ "$P3_EXPECT_REFUND" != "None" ] && echo 1 || echo 0)"
+
+# cancel on an UNPAID order must refuse
+P3_UNPAID=$(p3_make_paidable "$AURORA_QR" "$POPCORN")
+P3_UPT=$(curl -s "$BASE/api/orders/$P3_UNPAID" | jget "['data']['stores'][0]['ticketId']")
+P3_UP=$(code -X POST "$BASE/api/orders/$P3_UNPAID/cancel-leg" -H 'Content-Type: application/json' -d "{\"ticketId\":\"$P3_UPT\"}")
+check "cancel leg on unpaid order → 409" "$([ "$P3_UP" = "409" ] && echo 1 || echo 0)"
+# unknown ticket
+P3_UT=$(code -X POST "$BASE/api/orders/$P3_CODE/cancel-leg" -H 'Content-Type: application/json' -d '{"ticketId":"nope"}')
+check "cancel unknown ticket → 404" "$([ "$P3_UT" = "404" ] && echo 1 || echo 0)"
+
+P3_CANCEL=$(curl -s -X POST "$BASE/api/orders/$P3_CODE/cancel-leg" -H 'Content-Type: application/json' -d "{\"ticketId\":\"$P3_T0\"}")
+P3_REFUND=$(echo "$P3_CANCEL" | jget "['data']['refundTotalPaise']")
+P3_NEWSTATUS=$(echo "$P3_CANCEL" | jget "['data']['orderStatus']")
+check "leg cancelled → order PARTIALLY_CANCELLED" "$([ "$P3_NEWSTATUS" = "PARTIALLY_CANCELLED" ] && echo 1 || echo 0)"
+check "auto refund amount EXACT (subtotal+fee+platform share)" "$([ "$P3_REFUND" = "$P3_EXPECT_REFUND" ] && echo 1 || echo 0)"
+P3_DOUBLE=$(code -X POST "$BASE/api/orders/$P3_CODE/cancel-leg" -H 'Content-Type: application/json' -d "{\"ticketId\":\"$P3_T0\"}")
+check "double cancel same leg → 409" "$([ "$P3_DOUBLE" = "409" ] && echo 1 || echo 0)"
+
+# remaining leg continues: accept → prepare → then cancel must refuse
+# (T1 is the Pizza Corner leg → use its own cook k1; k0 would get 403)
+curl -s -b "$JARS/k1" -X POST "$BASE/api/kitchen/tickets/$P3_T1/status" -H 'Content-Type: application/json' -d '{"status":"ACCEPTED"}' > /dev/null
+curl -s -b "$JARS/k1" -X POST "$BASE/api/kitchen/tickets/$P3_T1/status" -H 'Content-Type: application/json' -d '{"status":"PREPARING"}' > /dev/null
+P3_LATE=$(code -X POST "$BASE/api/orders/$P3_CODE/cancel-leg" -H 'Content-Type: application/json' -d "{\"ticketId\":\"$P3_T1\"}")
+check "cancel after PREPARING → 409" "$([ "$P3_LATE" = "409" ] && echo 1 || echo 0)"
+
+# process the auto-opened refund → refundedPaise exact
+P3_REFUND_ID=$(curl -s -b "$JARS/admin" "$BASE/api/admin/overview" | python3 -c "
+import sys,json
+d=json.load(sys.stdin)['data']['refunds']
+m=[r for r in d if r['code']=='$P3_CODE' and r['status']=='APPROVED']
+print(m[0]['id'] if m else '')")
+check "auto-opened refund found in admin inbox" "$([ -n "$P3_REFUND_ID" ] && echo 1 || echo 0)"
+curl -s -b "$JARS/admin" -X POST "$BASE/api/admin/refunds/$P3_REFUND_ID/action" -H 'Content-Type: application/json' -d '{"action":"PROCESS"}' > /dev/null
+P3_ORDER_AFTER=$(curl -s "$BASE/api/orders/$P3_CODE" | jget "['data']['paymentStatus']")
+check "processed leg refund → PARTIALLY_REFUNDED" "$([ "$P3_ORDER_AFTER" = "PARTIALLY_REFUNDED" ] && echo 1 || echo 0)"
+
+echo "── Phase 3: settlement batches & reconciliation ──"
+S_GET=$(curl -s -b "$JARS/admin" "$BASE/api/admin/settlement")
+S_SCOPE=$(echo "$S_GET" | jget "['data']['scope']")
+check "settlement summary scoped Mall-wide" "$([ "$S_SCOPE" = "Mall-wide" ] && echo 1 || echo 0)"
+S_STORES=$(echo "$S_GET" | python3 -c "import sys,json;print(len(json.load(sys.stdin)['data']['stores']))")
+check "settlement summary lists 4 Aurora stores" "$([ "$S_STORES" = "4" ] && echo 1 || echo 0)"
+S_ANON=$(code "$BASE/api/admin/settlement")
+check "settlement without login → 401" "$([ "$S_ANON" = "401" ] && echo 1 || echo 0)"
+S_KITCHEN=$(code -b "$JARS/k0" "$BASE/api/admin/settlement")
+check "kitchen staff settlement access → 403" "$([ "$S_KITCHEN" = "403" ] && echo 1 || echo 0)"
+
+S_BATCH=$(curl -s -b "$JARS/admin" -X POST "$BASE/api/admin/settlement" -H 'Content-Type: application/json' -d '{}')
+S_COUNT=$(echo "$S_BATCH" | python3 -c "import sys,json;print(len(json.load(sys.stdin)['data']['batches']))")
+check "settlement batch created (≥1 store)" "$([ "$S_COUNT" != "0" ] && [ "$S_COUNT" != "None" ] && echo 1 || echo 0)"
+S_ID=$(echo "$S_BATCH" | jget "['data']['batches'][0]['settlementId']")
+S_AMT=$(echo "$S_BATCH" | jget "['data']['batches'][0]['amountPaise']")
+S_PROC=$(curl -s -b "$JARS/admin" -X POST "$BASE/api/admin/settlement/$S_ID/process")
+S_UTR=$(echo "$S_PROC" | jget "['data']['utr']")
+check "batch processed with UTR" "$([ "$S_UTR" != "None" ] && [ -n "$S_UTR" ] && echo 1 || echo 0)"
+S_PROC_AMT=$(echo "$S_PROC" | jget "['data']['amountPaise']")
+check "processed amount matches batch snapshot" "$([ "$S_PROC_AMT" = "$S_AMT" ] && echo 1 || echo 0)"
+S_DOUBLE=$(code -b "$JARS/admin" -X POST "$BASE/api/admin/settlement/$S_ID/process")
+check "double process same batch → 409" "$([ "$S_DOUBLE" = "409" ] && echo 1 || echo 0)"
+
+R_H=$(curl -s -b "$JARS/admin" "$BASE/api/admin/reconciliation")
+R_HEALTHY=$(echo "$R_H" | jget "['data']['healthy']")
+R_N=$(echo "$R_H" | jget "['data']['ordersChecked']")
+check "reconciliation healthy over $R_N orders" "$([ "$R_HEALTHY" = "True" ] && [ "$R_N" != "0" ] && echo 1 || echo 0)"
+R_ANON=$(code "$BASE/api/admin/reconciliation")
+check "reconciliation without login → 401" "$([ "$R_ANON" = "401" ] && echo 1 || echo 0)"
+
+# corruption drill: mangle one split row directly in sqlite → report goes unhealthy → restore
+bun -e "
+const { Database } = require('bun:sqlite');
+const db = new Database('/home/z/my-project/db/custom.db');
+const row = db.query(\"SELECT id, amountPaise FROM Split WHERE amountPaise > 0 AND beneficiary='STORE' ORDER BY createdAt DESC LIMIT 1\").get();
+db.run('UPDATE Split SET amountPaise = ? WHERE id = ?', [row.amountPaise + 777, row.id]);
+console.log(row.id);
+" > /tmp/p3_corrupt_id 2>/dev/null
+CORRUPT_ID=$(cat /tmp/p3_corrupt_id)
+if [ -n "$CORRUPT_ID" ]; then
+  R_BAD=$(curl -s -b "$JARS/admin" "$BASE/api/admin/reconciliation" | jget "['data']['healthy']")
+  check "corrupted ledger detected → unhealthy" "$([ "$R_BAD" = "False" ] && echo 1 || echo 0)"
+  bun -e "
+const { Database } = require('bun:sqlite');
+const db = new Database('/home/z/my-project/db/custom.db');
+db.run('UPDATE Split SET amountPaise = amountPaise - 777 WHERE id = ?', ['$CORRUPT_ID']);
+" 2>/dev/null
+  R_FIXED=$(curl -s -b "$JARS/admin" "$BASE/api/admin/reconciliation" | jget "['data']['healthy']")
+  check "restored ledger → healthy again" "$([ "$R_FIXED" = "True" ] && echo 1 || echo 0)"
+else
+  check "corruption drill skipped (no sqlite rows)" "0"
+fi
 
 echo "── Logout ──"
 curl -s -b "$JARS/k0" -c "$JARS/k0" -X POST "$BASE/api/auth/logout" > /dev/null

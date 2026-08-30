@@ -8,12 +8,14 @@ const REALTIME_EMIT_URL = process.env.REALTIME_EMIT_URL ?? 'http://127.0.0.1:300
 export type RealtimeEvent =
   | 'ticket:new'
   | 'ticket:status'
+  | 'ticket:cancelled'
   | 'order:paid'
   | 'order:update'
   | 'run:assigned'
   | 'run:update'
   | 'store:update'
   | 'product:update'
+  | 'settlement:update'
 
 export interface EmitInput {
   rooms: string[]

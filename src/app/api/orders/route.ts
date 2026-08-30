@@ -149,6 +149,8 @@ export async function POST(request: Request) {
           storeId: s.storeId,
           beneficiary: s.beneficiary,
           amountPaise: s.amountPaise,
+          commissionPaise: s.commissionPaise,
+          taxPaise: s.taxPaise,
           settlementStatus: 'PENDING',
         })),
       },

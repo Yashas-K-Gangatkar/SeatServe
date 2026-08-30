@@ -113,3 +113,22 @@ Stage Summary:
 - ALL 44 audit items addressed and verified: 63 unit + 76 API assertions green, lint clean, browser-verified end-to-end incl. working refund money flow and cross-mall isolation proof
 - Key designs: negative-amount split rows (VOIDED/REFUNDED) keep the ledger self-consistent without mutating history; realtime staff rooms = mall-scoped + HMAC room token; QR tokens and order codes are capabilities
 - Dev server :3000 + realtime :3003 healthy on fresh seed (2 malls, 21 products, 18 staff users); worklog continues
+
+---
+Task ID: recheck-1
+Agent: Super Z (main)
+Task: "check again everything if you find any thing failing then correct them then and there and start phase 3"
+
+Work Log:
+- Full re-verification sweep: /api/health 200; /api/context correct mall-scoped behavior (A3-F12 404 is CORRECT — random capability tokens are audit fix #15); realtime :3003 up
+- 63/63 unit tests pass; 76/76 API golden-path assertions pass
+- Found + fixed 30 TypeScript errors "then and there":
+  * runner/assign: Prisma conditional-type collapse across ternary union silently dropped `zone` from inferred type → restructured with explicit `(Runner & { zone }) | null` annotation + include on both branches (also needed at runtime)
+  * pricing.ts StoreLineGroup.lines: PricedLine[] → PricedLineInput[] (computeBill prices internally; callers pass unpriced lines) — fixed orders route, seed, pricing tests
+  * StaffGate made generic <R> so children receive role-narrowed profile (no casts at call sites; one sound cast inside the gate, justified by useStaffAuth runtime filter)
+  * tsconfig excludes non-app dirs (skills/upload/examples); mini-services got its own tsconfig (0 errors); @types/bun installed for bun:test types
+- Post-fix re-check: tsc 0 errors, lint clean, 63/63 + 76/76, browser smoke (staff login, runner console renders, runner→admin gate correctly forbidden, 0 console errors)
+
+Stage Summary:
+- Codebase fully green: types, lint, 63 unit, 76 API, browser-verified gates
+- Phase 3 (payments provider abstraction, partial cancel, settlement runs, reconciliation) starting now

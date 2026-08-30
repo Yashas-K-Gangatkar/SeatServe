@@ -34,7 +34,8 @@ export interface StoreFeeConfig {
 
 export interface StoreLineGroup {
   storeId: string
-  lines: PricedLine[]
+  /** unpriced line inputs — computeBill prices them (idempotent if already priced) */
+  lines: PricedLineInput[]
   /** per-line prep estimate in minutes (from Product.prepEstimateMin) */
   prepMinutes: number[]
   fees: StoreFeeConfig
@@ -140,18 +141,27 @@ export interface SplitRow {
   storeId: string | null
   beneficiary: 'STORE' | 'PLATFORM_COMMISSION' | 'DELIVERY_FEE' | 'TAX'
   amountPaise: number
+  /** Phase 3: STORE rows carry their own commission & tax so settlement is ledger-driven */
+  commissionPaise: number
+  taxPaise: number
 }
 
 export function computeSplits(bill: BillBreakdown): SplitRow[] {
   const rows: SplitRow[] = []
   let commissionTotal = 0
   for (const s of bill.perStore) {
-    rows.push({ storeId: s.storeId, beneficiary: 'STORE', amountPaise: s.storeNetPaise })
+    rows.push({
+      storeId: s.storeId,
+      beneficiary: 'STORE',
+      amountPaise: s.storeNetPaise,
+      commissionPaise: s.commissionPaise,
+      taxPaise: s.taxPaise,
+    })
     commissionTotal += s.commissionPaise
   }
-  rows.push({ storeId: null, beneficiary: 'TAX', amountPaise: bill.taxPaise })
-  rows.push({ storeId: null, beneficiary: 'PLATFORM_COMMISSION', amountPaise: bill.platformFeePaise + commissionTotal })
-  rows.push({ storeId: null, beneficiary: 'DELIVERY_FEE', amountPaise: bill.deliveryFeePaise })
+  rows.push({ storeId: null, beneficiary: 'TAX', amountPaise: bill.taxPaise, commissionPaise: 0, taxPaise: bill.taxPaise })
+  rows.push({ storeId: null, beneficiary: 'PLATFORM_COMMISSION', amountPaise: bill.platformFeePaise + commissionTotal, commissionPaise: 0, taxPaise: 0 })
+  rows.push({ storeId: null, beneficiary: 'DELIVERY_FEE', amountPaise: bill.deliveryFeePaise, commissionPaise: 0, taxPaise: 0 })
   return rows
 }
 

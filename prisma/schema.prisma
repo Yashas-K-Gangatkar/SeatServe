@@ -301,6 +301,11 @@ model Split {
   store            Store?   @relation(fields: [storeId], references: [id])
   beneficiary      String // STORE | PLATFORM_COMMISSION | DELIVERY_FEE | TAX | PAYMENT_FEE
   amountPaise      Int
+  // Phase 3: per-store tax & commission carried ON the STORE row so settlement
+  // is ledger-driven (no re-derivation): storeNet = amount = subtotal − tax − commission.
+  // TAX rows carry taxPaise = amount; adjustment (negative) rows carry negatives.
+  commissionPaise  Int      @default(0)
+  taxPaise         Int      @default(0)
   // PENDING | SETTLED — normal ledger. REFUNDED — reversed by a refund, money
   // returned to the customer. VOIDED — leg cancelled before fulfilment, never owed.
   settlementStatus String   @default("PENDING")
@@ -309,15 +314,18 @@ model Split {
 }
 
 model Settlement {
-  id          String   @id @default(cuid())
-  storeId     String
-  store       Store    @relation(fields: [storeId], references: [id])
-  amountPaise Int
-  periodStart DateTime
-  periodEnd   DateTime
-  status      String   @default("PENDING") // PENDING | PROCESSED
-  utr         String? // fake bank reference in Phase 3
-  createdAt   DateTime @default(now())
+  id           String   @id @default(cuid())
+  storeId      String
+  store        Store    @relation(fields: [storeId], references: [id])
+  amountPaise  Int // net payable = Σ PENDING STORE rows at batch creation
+  periodStart  DateTime
+  periodEnd    DateTime
+  status       String   @default("PENDING") // PENDING | PROCESSED | FAILED
+  utr          String? // fake bank reference in Phase 3
+  // JSON snapshot: { grossPaise, commissionPaise, taxPaise, refundAdjustPaise, splitIds[] }
+  detail       String?
+  processedAt  DateTime?
+  createdAt    DateTime @default(now())
 }
 
 // ───────────────────────────── Governance ─────────────────────────────

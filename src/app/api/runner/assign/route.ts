@@ -2,6 +2,7 @@
 // RUNNER role is pinned to their own runner profile from the session;
 // MALL_ADMIN may assign any on-duty runner (front-desk coordination).
 import { z } from 'zod'
+import type { Runner, DeliveryZone } from '@prisma/client'
 import { db } from '@/lib/db'
 import { ok, fail, parseBody } from '@/lib/api-helpers'
 import { requireStaff } from '@/lib/auth-server'
@@ -46,10 +47,21 @@ export async function POST(request: Request) {
   }
 
   // session pinning: a runner can only self-assign; admins may pick any runner
+  // NOTE: both branches carry `include: { zone: true }` (the mall check below needs
+  // it for either path). An explicit annotation avoids Prisma's conditional-type
+  // collapse across a ternary union (findUnique vs findFirst arg shapes differ),
+  // which silently dropped `zone` from the inferred type and broke tsc.
   const requestedRunnerId = user.role === 'RUNNER' ? user.runnerId : (parsed.data.runnerId ?? null)
-  const runner = requestedRunnerId
-    ? await db.runner.findUnique({ where: { id: requestedRunnerId }, include: { zone: true } })
-    : (await db.runner.findFirst({ where: { isOnDuty: true, zone: { mallId: callerMallId ?? '__none__' } }, orderBy: { name: 'asc' } }))
+  let runner: (Runner & { zone: DeliveryZone | null }) | null
+  if (requestedRunnerId) {
+    runner = await db.runner.findUnique({ where: { id: requestedRunnerId }, include: { zone: true } })
+  } else {
+    runner = await db.runner.findFirst({
+      where: { isOnDuty: true, zone: { mallId: callerMallId ?? '__none__' } },
+      orderBy: { name: 'asc' },
+      include: { zone: true },
+    })
+  }
   if (!runner) return fail('No on-duty runner available', 409)
   if (user.role === 'RUNNER' && !runner.isOnDuty) return fail('You are off duty — clock in first', 409)
   // the assigned runner must also belong to the same mall as the ticket

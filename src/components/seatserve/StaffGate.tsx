@@ -8,18 +8,23 @@ import { ChefHat, LockKeyhole, ShieldAlert, LogIn } from 'lucide-react'
 import { useStaffAuth, ROLE_LABELS, type StaffProfile } from '@/lib/client/auth'
 import { Spinner } from './ui-bits'
 
-export default function StaffGate({
+type AnyStaffRole = StaffProfile['role']
+
+// Generic over the allowed role union so `children` receives a NARROWED profile
+// (e.g. roles={['MALL_ADMIN','CINEMA_MANAGER']} → user.role is exactly that union)
+// instead of forcing cast at every call site.
+export default function StaffGate<R extends AnyStaffRole = AnyStaffRole>({
   roles,
   go,
   consoleName,
   children,
 }: {
-  roles?: StaffProfile['role'][]
+  roles?: R[]
   go: (p: string) => void
   consoleName: string
-  children: (user: StaffProfile) => React.ReactNode
+  children: (user: StaffProfile & { role: R }) => React.ReactNode
 }) {
-  const { status, user } = useStaffAuth(roles)
+  const { status, user } = useStaffAuth(roles as AnyStaffRole[] | undefined)
 
   if (status === 'loading') return <Spinner label="Checking your session…" />
 
@@ -77,6 +82,10 @@ export default function StaffGate({
     )
   }
 
-  if (status === 'ok' && user) return <>{children(user)}</>
+  if (status === 'ok' && user) {
+    // Sound: useStaffAuth only returns status 'ok' when user.role ∈ roles (checked
+    // above at runtime), so user.role is exactly the narrowed union R.
+    return <>{children(user as StaffProfile & { role: R })}</>
+  }
   return null
 }

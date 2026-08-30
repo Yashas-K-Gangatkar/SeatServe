@@ -9,6 +9,7 @@ import { get, patch, post, ApiError } from '@/lib/client/api'
 import { useRealtime, usePolling, useOnline } from '@/lib/client/realtime'
 import type { AdminOverview } from '@/lib/client/types'
 import StaffGate from '../StaffGate'
+import SettlementPanel from './SettlementPanel'
 import { rupees, timeHM, minAgo, StatusPill, LiveDot, Spinner, LoadError, EmptyState } from '../ui-bits'
 
 const BENEFICIARY_LABEL: Record<string, string> = {
@@ -296,6 +297,9 @@ function AdminBoard({ go, scopeRole }: { go: (p: string) => void; scopeRole: 'MA
           )}
         </dl>
       </section>
+
+      {/* Phase 3: settlement runs + reconciliation (money actions are mall-admin only) */}
+      {scopeRole === 'MALL_ADMIN' && <SettlementPanel canAct />}
 
       {/* audit log */}
       <section className="mt-6" aria-label="Audit log">
