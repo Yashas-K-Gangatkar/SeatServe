@@ -4,7 +4,7 @@
 // Realtime via socket.io + 4s polling fallback. Per-store status timelines,
 // runner leg, payment state (incl. retry), refund/help entry.
 import { useCallback, useEffect, useState } from 'react'
-import { Check, ChefHat, Bike, PackageCheck, CircleHelp, ChevronLeft, MapPin, CreditCard, ReceiptText, XCircle } from 'lucide-react'
+import { Check, ChefHat, Bike, PackageCheck, CircleHelp, ChevronLeft, MapPin, CreditCard, ReceiptText, XCircle, Copy } from 'lucide-react'
 import { toast } from 'sonner'
 import { get, post, ApiError } from '@/lib/client/api'
 import { useRealtime, usePolling } from '@/lib/client/realtime'
@@ -41,11 +41,12 @@ function TrackEntry({ go }: { go: (p: string) => void }) {
       </button>
       <div className="rounded-3xl border border-stone-200 bg-white p-6 shadow-xl shadow-orange-500/5">
         <h1 className="text-xl font-black tracking-tight">Track your order</h1>
-        <p className="mt-1 text-sm text-stone-600">Enter the order code from your payment confirmation (e.g. SS-7HYVEV).</p>
+        <p className="mt-1 text-sm text-stone-600">Enter the tracking number from your payment confirmation (e.g. SS-7HYVEV).</p>
         <form
           onSubmit={(e) => {
             e.preventDefault()
-            if (entry.trim()) go(`#/track/${entry.trim().toUpperCase()}`)
+            const cleaned = entry.trim().toUpperCase().replace(/[^A-Z0-9-]/g, '')
+            if (cleaned) go(`#/track/${cleaned.startsWith('SS-') ? cleaned : `SS-${cleaned}`}`)
           }}
           className="mt-4 flex gap-2"
         >
@@ -53,7 +54,10 @@ function TrackEntry({ go }: { go: (p: string) => void }) {
             value={entry}
             onChange={(e) => setEntry(e.target.value)}
             placeholder="SS-XXXXXX"
-            aria-label="Order code"
+            autoCapitalize="characters"
+            autoCorrect="off"
+            spellCheck={false}
+            aria-label="Order tracking number"
             className="flex-1 rounded-xl border border-stone-300 bg-stone-50 px-3.5 py-2.5 text-sm font-bold uppercase tracking-wide outline-none transition focus:border-orange-400 focus:bg-white focus:ring-2 focus:ring-orange-200"
           />
           <button
@@ -63,6 +67,9 @@ function TrackEntry({ go }: { go: (p: string) => void }) {
             Track
           </button>
         </form>
+        <p className="mt-3 text-[11px] leading-relaxed text-stone-500">
+          The tracking number is shown right after payment — you can copy it there. Anyone who has it can follow the order, like a parcel tracking number; no account needed.
+        </p>
       </div>
     </div>
   )
@@ -115,8 +122,21 @@ function TrackingInner({ code, go }: { code: string; go: (p: string) => void }) 
       <header className="rounded-2xl border border-border bg-card p-5">
         <div className="flex items-start justify-between gap-3">
           <div>
-            <p className="text-[10px] font-extrabold tracking-[0.18em] text-orange-600">ORDER {order.code}</p>
-            <h1 className="mt-1 text-2xl font-black tracking-tight">
+            <button
+              onClick={async () => {
+                try {
+                  await navigator.clipboard.writeText(order.code)
+                  toast.success('Tracking number copied')
+                } catch {
+                  toast.error('Copy failed — long-press the code instead')
+                }
+              }}
+              className="inline-flex items-center gap-1.5 rounded-full bg-amber-50 px-2.5 py-1 text-[10px] font-extrabold tracking-[0.14em] text-orange-600 ring-1 ring-amber-200 transition hover:bg-amber-100"
+              aria-label={`Copy tracking number ${order.code}`}
+            >
+              ORDER {order.code} <Copy className="h-3 w-3" aria-hidden />
+            </button>
+            <h1 className="mt-1.5 text-2xl font-black tracking-tight">
               {awaitingPayment ? 'Waiting for payment' : order.status === 'COMPLETED' ? 'Enjoyed your snacks?' : 'Food is on its way'}
             </h1>
           </div>
@@ -225,8 +245,17 @@ function TrackingInner({ code, go }: { code: string; go: (p: string) => void }) 
                   })}
                 </ol>
               ) : (
-                <p className="mt-3 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-xs font-bold text-red-700" role="status">
-                  Cancelled by the store — this leg will not be prepared. A refund for this part is handled by the finance desk.
+                <p
+                  role="status"
+                  className={`mt-3 rounded-xl border px-3 py-2 text-xs font-bold ${
+                    store.cancelledByRole === 'CUSTOMER'
+                      ? 'border-amber-200 bg-amber-50 text-amber-800'
+                      : 'border-red-200 bg-red-50 text-red-700'
+                  }`}
+                >
+                  {store.cancelledByRole === 'CUSTOMER'
+                    ? 'You cancelled this store — that part of the bill is being refunded via the finance desk. Your other stores are unaffected.'
+                    : 'Cancelled by the store — this leg will not be prepared. A refund for this part is handled by the finance desk.'}
                 </p>
               )}
 

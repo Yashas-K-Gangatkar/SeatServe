@@ -87,6 +87,7 @@ export interface TrackingStore {
   storeName: string
   emoji: string | null
   status: string
+  cancelledByRole?: string | null
   prepEtaMinutes: number
   items: TrackingItem[]
   subtotalPaise: number

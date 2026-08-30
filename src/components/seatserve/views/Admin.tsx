@@ -3,7 +3,7 @@
 // SeatServe — mall admin board (#/admin)
 // KPIs, live orders, refund requests, settlement summary, store & inventory controls, audit log.
 import { useCallback, useEffect, useState } from 'react'
-import { ChevronLeft, IndianRupee, Receipt, Timer, Truck, CircleSlash, Wallet, ScrollText, ChevronDown, ChevronUp } from 'lucide-react'
+import { ChevronLeft, IndianRupee, Receipt, Timer, Truck, CircleSlash, Wallet, ScrollText, ChevronDown, ChevronUp, ScanSearch } from 'lucide-react'
 import { toast } from 'sonner'
 import { get, patch, post, ApiError } from '@/lib/client/api'
 import { useRealtime, usePolling, useOnline } from '@/lib/client/realtime'
@@ -301,6 +301,9 @@ function AdminBoard({ go, scopeRole }: { go: (p: string) => void; scopeRole: 'MA
       {/* Phase 3: settlement runs + reconciliation (money actions are mall-admin only) */}
       {scopeRole === 'MALL_ADMIN' && <SettlementPanel canAct />}
 
+      {/* anti-scam: trace which orders came from a seat QR */}
+      <SeatTrace />
+
       {/* audit log */}
       <section className="mt-6" aria-label="Audit log">
         <h2 className="mb-2 flex items-center gap-1.5 text-xs font-extrabold uppercase tracking-wider text-muted-foreground">
@@ -324,5 +327,101 @@ function AdminBoard({ go, scopeRole }: { go: (p: string) => void; scopeRole: 'MA
         </ul>
       </section>
     </div>
+  )
+}
+
+// Anti-scam seat trace — every seat has a UNIQUE QR and every order permanently
+// records the seat it was placed from. Staff type a QR token or seat code to see
+// exactly which orders came from that seat (and who claimed it). Lookups are audited.
+function SeatTrace() {
+  const [query, setQuery] = useState('')
+  const [busy, setBusy] = useState(false)
+  const [result, setResult] = useState<{
+    seat: { code: string; qrToken: string; screen: string; cinema: string; mall: string }
+    orders: { code: string; placedAt: string; customerName: string | null; status: string; paymentStatus: string; totalPaise: number; stores: { name: string; emoji: string | null; status: string }[] }[]
+  } | null>(null)
+  const [error, setError] = useState<string | null>(null)
+
+  const trace = async () => {
+    if (query.trim().length < 2 || busy) return
+    setBusy(true)
+    setError(null)
+    try {
+      setResult(await get(`/api/admin/seat-trace?q=${encodeURIComponent(query.trim())}`))
+    } catch (err) {
+      setResult(null)
+      setError(err instanceof ApiError ? err.message : 'Lookup failed')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <section className="mt-6 rounded-2xl border border-border bg-card p-4" aria-label="Seat trace">
+      <h2 className="flex items-center gap-1.5 text-xs font-extrabold uppercase tracking-wider text-muted-foreground">
+        <ScanSearch className="h-3.5 w-3.5" aria-hidden /> Seat trace · which orders came from a seat QR
+      </h2>
+      <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground">
+        Every seat's QR is unique and every order permanently records the seat it was placed from. Paste the QR token (or a seat code like F-12) to audit a suspicious order — lookups are logged to the audit trail.
+      </p>
+      <form
+        onSubmit={(e) => {
+          e.preventDefault()
+          void trace()
+        }}
+        className="mt-3 flex gap-2"
+      >
+        <input
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="QR token or seat code (e.g. F-12)"
+          autoCapitalize="characters"
+          autoCorrect="off"
+          spellCheck={false}
+          aria-label="Seat QR token or seat code"
+          className="flex-1 rounded-xl border border-stone-300 bg-stone-50 px-3 py-2 text-sm font-bold uppercase tracking-wide outline-none transition focus:border-orange-400 focus:bg-white focus:ring-2 focus:ring-orange-200"
+        />
+        <button
+          type="submit"
+          disabled={busy || query.trim().length < 2}
+          className="rounded-xl bg-gradient-to-b from-amber-500 to-orange-500 px-4 py-2 text-sm font-extrabold text-white shadow-md shadow-orange-500/25 transition hover:from-amber-600 hover:to-orange-600 disabled:opacity-50"
+        >
+          {busy ? 'Checking…' : 'Trace'}
+        </button>
+      </form>
+
+      {error && (
+        <p className="mt-3 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-xs font-bold text-red-700" role="alert">
+          {error}
+        </p>
+      )}
+
+      {result && (
+        <div className="mt-3">
+          <p className="rounded-xl bg-amber-50 px-3 py-2 text-xs font-bold text-amber-900 ring-1 ring-amber-200">
+            Seat {result.seat.code} · {result.seat.screen} · {result.seat.cinema} · {result.seat.mall}
+            <span className="ml-1 font-mono text-[10px] font-semibold text-amber-700/80">QR {result.seat.qrToken}</span>
+          </p>
+          {result.orders.length === 0 ? (
+            <p className="mt-2 text-xs text-muted-foreground">No orders have ever been placed from this seat.</p>
+          ) : (
+            <ul className="kitchen-scroll mt-2 max-h-64 space-y-1.5 overflow-y-auto">
+              {result.orders.map((o) => (
+                <li key={o.code} className="rounded-xl bg-background px-3 py-2 text-xs">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="font-black">{o.code}</span>
+                    <span className="tabular font-bold text-orange-600">{rupees(o.totalPaise)}</span>
+                  </div>
+                  <p className="mt-0.5 text-muted-foreground">
+                    {timeHM(o.placedAt)} · {o.customerName ?? 'name not given'} · {o.status.replaceAll('_', ' ')} · {o.paymentStatus}
+                  </p>
+                  <p className="mt-0.5">{o.stores.map((s) => `${s.emoji ?? ''} ${s.name} (${s.status.replaceAll('_', ' ')})`).join(' · ')}</p>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      )}
+    </section>
   )
 }

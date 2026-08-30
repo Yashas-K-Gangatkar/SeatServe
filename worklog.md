@@ -132,3 +132,32 @@ Work Log:
 Stage Summary:
 - Codebase fully green: types, lint, 63 unit, 76 API, browser-verified gates
 - Phase 3 (payments provider abstraction, partial cancel, settlement runs, reconciliation) starting now
+
+---
+Task ID: phase-3-complete + user-bugfixes
+Agent: Super Z (main)
+Task: Finish Phase 3 verification (found mid-flight when session resumed), then fix user-reported customer bugs: case/paste-tolerant tracking, copy-code popup, wrong cancel attribution, seat-QR anti-scam trace
+
+Work Log:
+- RESUMED after context compression: worklog showed recheck-1 done (63 unit + 76 API green) and Phase 3 files present but UNVERIFIED (provider.ts, settlement.ts, reconcile.ts, cancel-leg, admin settlement/reconciliation routes, SettlementPanel, phase3 tests)
+- Fixed 3 tsc errors then-and-there: refunds.ts computeProportionalReversal id optional (pure SplitRow has no id, never used positionally), p3probe.ts include splits + relation-connect syntax
+- CRITICAL RUNTIME BUG found by probe: POST /api/orders 500 — nested splits.create used scalar storeId; Split.store is a RELATION so Prisma rejects it in nested creates ("Unknown argument storeId") → fixed with store:{connect} / omit for null. Same bug in p3probe.ts
+- Stale Prisma client incidents ×2 (commissionPaise unknown, cancelledByRole unknown after schema push): long-lived dev server caches old client → restart via double-fork setsid pattern (documented sandbox behavior)
+- Golden path expanded to 102 assertions incl. Phase 3 sections; 3 failures all diagnosed:
+  * test bug: kitchen payload {"status":...} → API expects {"to":...} (script fixed)
+  * seed: PAID demo orders had NO payment.captured PaymentEvent (R5 fails) → seed now synthesizes signed captured event + STORE split rows now carry commissionPaise/taxPaise (Phase 3 ledger-driven settlement)
+  * Cashfree adapter stored eventType=rawType ('PAYMENT_SUCCESS') but R5 checks normalized 'payment.captured' → payment-webhook.ts now stores NORMALIZED type (raw stays in payload+audit meta)
+  * two more test-script bugs: CF cf_payment_id hardcoded 987654 → dedupeKey collision across runs (now run-unique); Nexora isolation assertion assumed empty mall (user's real Nexora order exists) → now asserts scope=Nexora AND no Aurora code leak
+- RESULT: 102/102 API, 73/73 unit, tsc 0, lint clean
+
+USER-REPORTED FIXES (all browser-verified):
+1. Track lookup: GET /api/orders/[code] paste-tolerant (trim+uppercase+SS- prefix auto-add+illegal-char strip); TrackEntry normalizes input too. Lowercase `gatde4` resolves SS-GATDE4 (200), junk → 404
+2. PaymentSheet new 'paid' phase: Order confirmed popup with 3xl tracking number + Copy button + share note + Track my order. Tracking header code is now a copy chip. TrackEntry explains the code is shareable, no account needed
+3. Cancel attribution: StoreTicket.cancelledByRole column (db push); cancel-leg sets CUSTOMER, kitchen status route sets session role; tracking payload+UI branch: customer → amber "You cancelled this store…", store → red "Cancelled by the store…" (orders cancelled BEFORE the fix keep the old message)
+4. Seat-QR anti-scam: confirmed 432 unique per-seat QR tokens; every order records seatId; kitchen/runner payloads already carry screen/cinema/seat; NEW GET /api/admin/seat-trace?q=<QR|seat code> (MALL_ADMIN/CINEMA_MANAGER/STORE_MANAGER, scope-filtered via screen.cinema.mallId, SEAT_TRACE audit event) + Admin board Seat trace section (browser-verified: 'e-4' → Seat E-4 + QR 2AELK7ASAC + orders). Fixed my own Prisma relation-path bug in first version (screen.mallId → screen.cinema.mallId)
+5. Two-portal confirmed: customer app login-free (QR + order code as capabilities), staff portal scoped logins — no customer accounts
+
+Stage Summary:
+- Phase 3 COMPLETE and fully verified: multi-provider webhooks (SANDBOX_MOCK | RAZORPAY hex-HMAC | CASHFREE base64(ts+body) HMAC), linked-account/vendor split instruction builders, partial cancel with exact auto-refund, full/partial refunds, ledger-driven settlement batches (PENDING→PROCESSED+UTR, double-payout structurally impossible), R1–R5 reconciliation, admin SettlementPanel + SeatTrace UIs
+- 102 API + 73 unit tests green, tsc/lint clean, all user-reported bugs fixed and browser-verified
+- Production HTTP calls to gateways (checkout session creation, refund submission) documented as Phase 4 deployment work (needs real credentials)

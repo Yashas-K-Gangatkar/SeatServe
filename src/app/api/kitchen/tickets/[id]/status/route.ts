@@ -74,6 +74,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
       preparingAt: to === 'PREPARING' ? now : undefined,
       readyAt: to === 'READY_FOR_PICKUP' ? now : undefined,
       cancelledAt: to === 'CANCELLED' ? now : undefined,
+      cancelledByRole: to === 'CANCELLED' ? user.role : undefined,
     },
   })
   if (guard.count === 0) {

@@ -5,7 +5,7 @@
 // POST /api/payments/mock-pay (sandbox gateway). No card/UPI secrets are ever sent —
 // only a masked display string (e.g. "•••• 4242") the server may store for receipts.
 import { useMemo, useState } from 'react'
-import { Loader2, Lock, ShieldCheck, TriangleAlert, Timer, Store as StoreIcon, ChevronDown } from 'lucide-react'
+import { Loader2, Lock, ShieldCheck, TriangleAlert, Timer, Store as StoreIcon, ChevronDown, CheckCircle2, Copy } from 'lucide-react'
 import { toast } from 'sonner'
 import { post, ApiError } from '@/lib/client/api'
 import { useCart } from '@/lib/client/cart'
@@ -195,7 +195,7 @@ export function PaymentSheet({ order, onClose }: { order: PlacedOrder | null; on
   const [vpa, setVpa] = useState('priya@okhdfcbank')
   const [card, setCard] = useState('4242 4242 4242 4242')
   const [failure, setFailure] = useState(false)
-  const [phase, setPhase] = useState<'form' | 'processing' | 'failed' | 'unknown'>('form')
+  const [phase, setPhase] = useState<'form' | 'processing' | 'failed' | 'unknown' | 'paid'>('form')
   const [failMsg, setFailMsg] = useState('')
 
   if (!order) return null
@@ -223,8 +223,10 @@ export function PaymentSheet({ order, onClose }: { order: PlacedOrder | null; on
         setPhase('failed')
         return
       }
+      // Order confirmed — show the tracking code BEFORE navigating so the
+      // customer can copy/share it (it is the only way back to this order).
       toast.success('Payment successful', { description: `Order ${order.code} · ${rupees(order.totalPaise)}` })
-      onClose(true)
+      setPhase('paid')
     } catch (err) {
       // Audit fix #33: a network drop mid-payment does NOT mean failure — the
       // webhook may still capture. Never lie about the money state.
@@ -243,15 +245,54 @@ export function PaymentSheet({ order, onClose }: { order: PlacedOrder | null; on
       <SheetContent side="bottom" className="mx-auto w-full max-w-md rounded-t-3xl border-border bg-popover p-0 sm:left-1/2 sm:-translate-x-1/2 sm:right-auto">
         <SheetHeader className="p-5 pb-0">
           <SheetTitle className="flex items-center gap-2 text-left">
-            <Lock className="h-4 w-4 text-orange-500" aria-hidden /> Secure payment
+            {phase === 'paid' ? (
+              <>
+                <CheckCircle2 className="h-4 w-4 text-emerald-600" aria-hidden /> Order confirmed
+              </>
+            ) : (
+              <>
+                <Lock className="h-4 w-4 text-orange-500" aria-hidden /> Secure payment
+              </>
+            )}
           </SheetTitle>
           <SheetDescription className="text-left">
-            Order {order.code} · <span className="font-bold text-foreground">{rupees(order.totalPaise)}</span> · SANDBOX (mock gateway)
+            Order {order.code} · <span className="font-bold text-foreground">{rupees(order.totalPaise)}</span>
+            {phase !== 'paid' && ' · SANDBOX (mock gateway)'}
           </SheetDescription>
         </SheetHeader>
 
         <div className="px-5 pb-6 pt-4">
-          {phase === 'processing' ? (
+          {phase === 'paid' ? (
+            <div className="py-2" role="status">
+              <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-center">
+                <p className="text-sm font-bold text-emerald-800">Payment received — your order is in the kitchens</p>
+                <p className="mt-3 text-[11px] font-bold uppercase tracking-wider text-emerald-700/80">Your tracking number</p>
+                <p className="mt-1 select-all text-3xl font-black tracking-[0.14em] text-stone-900">{order.code}</p>
+                <button
+                  onClick={async () => {
+                    try {
+                      await navigator.clipboard.writeText(order.code)
+                      toast.success('Tracking number copied')
+                    } catch {
+                      toast.error('Copy failed — long-press the code to copy it')
+                    }
+                  }}
+                  className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-stone-900 px-4 py-2 text-xs font-extrabold text-white hover:bg-stone-800"
+                >
+                  <Copy className="h-3.5 w-3.5" aria-hidden /> Copy tracking number
+                </button>
+                <p className="mt-3 text-[11px] leading-relaxed text-emerald-800/80">
+                  Save or share this code — anyone who has it can follow this order on the Track your order screen, like a parcel tracking number.
+                </p>
+              </div>
+              <button
+                onClick={() => onClose(true)}
+                className="mt-4 w-full rounded-full bg-gradient-to-b from-amber-500 to-orange-500 py-3.5 text-sm font-extrabold text-white shadow-md shadow-orange-500/30 hover:from-amber-600 hover:to-orange-600"
+              >
+                Track my order
+              </button>
+            </div>
+          ) : phase === 'processing' ? (
             <div className="flex flex-col items-center gap-3 py-10" role="status" aria-live="polite">
               <Loader2 className="h-8 w-8 animate-spin text-orange-500" aria-hidden />
               <p className="text-sm font-semibold">Contacting bank{method === 'UPI' ? ' (UPI)' : ''}…</p>

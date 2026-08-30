@@ -4,10 +4,14 @@ import { ok, fail } from '@/lib/api-helpers'
 import { cutoffInfo } from '@/lib/cutoff'
 
 export async function GET(_request: Request, { params }: { params: Promise<{ code: string }> }) {
-  const { code } = await params
+  let { code } = await params
+  // paste-tolerant: trim + uppercase; customers routinely paste lowercase or
+  // drop the SS- prefix when copying from a popup/notification
+  code = code.trim().toUpperCase()
+  if (!code.startsWith('SS-')) code = `SS-${code}`
 
   const order = await db.order.findUnique({
-    where: { code: code.toUpperCase() },
+    where: { code: code.replace(/[^A-Z0-9-]/g, '') },
     include: {
       seat: { include: { screen: { include: { cinema: { include: { mall: true } }, showtimes: true } } } },
       items: { orderBy: { nameSnapshot: 'asc' } },
@@ -62,6 +66,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ cod
       storeName: t.store.name,
       emoji: t.store.emoji,
       status: t.status,
+      cancelledByRole: t.cancelledByRole,
       prepEtaMinutes: t.prepEtaMinutes,
       items: (byStore.get(t.storeId) ?? []).map((i) => ({
         name: i.nameSnapshot,

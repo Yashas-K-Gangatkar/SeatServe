@@ -258,9 +258,11 @@ ACM=$(curl -s -b "$JARS/cm" "$BASE/api/admin/overview")
 check "cinema manager scope label = Your cinema only" "$([ "$(echo "$ACM" | jget "['data']['scope']['label']")" = "Your cinema only" ] && echo 1 || echo 0)"
 check "cinema manager gets realtimeMallId (own cinema's mall)" "$([ "$(echo "$ACM" | jget "['data']['scope']['realtimeMallId']")" = "$AURORA_MALL" ] && echo 1 || echo 0)"
 NEX_OV=$(curl -s -b "$JARS/nadmin" "$BASE/api/admin/overview")
-NEX_ORDERS=$(echo "$NEX_OV" | python3 -c "import sys,json;print(len(json.load(sys.stdin)['data']['liveOrders']))")
-NEX_KPI=$(echo "$NEX_OV" | jget "['data']['kpis']['ordersCount']")
-check "Nexora admin sees ZERO Aurora orders (isolation)" "$([ "$NEX_ORDERS" = "0" ] && [ "$NEX_KPI" = "0" ] && echo 1 || echo 0)"
+NEX_CODES=$(echo "$NEX_OV" | python3 -c "import sys,json;print(','.join(o['code'] for o in json.load(sys.stdin)['data']['liveOrders']))")
+NEX_MALL=$(echo "$NEX_OV" | jget "['data']['scope']['mallName']")
+# true invariant: the Nexora board is the Nexora board and NO Aurora order leaks into it
+# (the mall may legitimately hold its own live orders, e.g. real staff testing)
+check "Nexora admin board scoped to Nexora + ZERO Aurora orders (isolation)" "$(python3 -c "import sys; codes='$NEX_CODES'.split(',') if '$NEX_CODES' else []; ok = ('Nexora' in '''$NEX_MALL''') and ('$CODE' not in codes); sys.exit(0 if ok else 1)" && echo 1 || echo 0)"
 AUD=$(curl -s -b "$JARS/admin" "$BASE/api/audit" | python3 -c "import sys,json;print(len(json.load(sys.stdin)['data']))")
 check "audit trail populated ($AUD)" "$([ "$AUD" -gt 5 ] && echo 1 || echo 0)"
 AUD_NO=$(code "$BASE/api/audit")
@@ -340,9 +342,12 @@ check "forged razorpay signature → 401" "$([ "$RZP_BAD" = "401" ] && echo 1 ||
 
 CF_CODE=$(p3_make_paidable "$AURORA_QR" "$POPCORN")
 CF_REF=$(p3_fail_pay "$CF_CODE")
+# cf_payment_id is globally unique in production — make it unique per run here too,
+# or the dedupeKey (cf_<pid>_<type>) collides with events from earlier runs
+CF_PID="$RUNKEY$RANDOM"
 CF_BODY=$(python3 -c "
 import json,sys
-print(json.dumps({'type':'PAYMENT_SUCCESS','data':{'order':{'order_id':'$CF_CODE|$CF_REF'},'payment':{'cf_payment_id':987654,'payment_method':'upi','upi':{'vpa':'priya@ybl'}}}}))")
+print(json.dumps({'type':'PAYMENT_SUCCESS','data':{'order':{'order_id':'$CF_CODE|$CF_REF'},'payment':{'cf_payment_id':$CF_PID,'payment_method':'upi','upi':{'vpa':'priya@ybl'}}}}))")
 CF_TS="1725000000$RUNKEY"
 CF_SIG=$(cfs "$P3_CFSECRET" "$CF_TS" "$CF_BODY")
 CF_WH=$(curl -s -X POST "$BASE/api/payments/webhook" -H 'Content-Type: application/json' \

@@ -217,6 +217,10 @@ model StoreTicket {
   pickedUpAt     DateTime?
   deliveredAt    DateTime?
   cancelledAt    DateTime?
+  // who cancelled this leg: CUSTOMER (self-service partial cancel) |
+  // KITCHEN_STAFF / STORE_MANAGER / MALL_ADMIN (staff cancel). Drives the
+  // customer-facing tracking message ("you cancelled" vs "store cancelled").
+  cancelledByRole String?
   customerNote   String?
   createdAt      DateTime     @default(now())
   deliveryRun    DeliveryRun?

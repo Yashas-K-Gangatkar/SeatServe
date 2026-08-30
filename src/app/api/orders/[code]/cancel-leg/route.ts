@@ -58,7 +58,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ cod
   // 1) cancel the leg (guard against a kitchen transition racing us: only from NEW/ACCEPTED)
   const updated = await db.storeTicket.updateMany({
     where: { id: ticket.id, status: { in: [...CANCELLABLE_TICKET_STATES] } },
-    data: { status: 'CANCELLED', cancelledAt: new Date() },
+    data: { status: 'CANCELLED', cancelledAt: new Date(), cancelledByRole: 'CUSTOMER' },
   })
   if (updated.count === 0) {
     return fail(`${ticket.store.name} just started preparing — no longer cancellable`, 409)
