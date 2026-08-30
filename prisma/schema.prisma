@@ -1,0 +1,346 @@
+// SeatServe — normalized schema (Phase 1)
+// NOTE: SQLite does not support Prisma enums — status/type fields are String
+// columns constrained by zod + TypeScript union types in src/lib/types.ts.
+// Migration target for Phase 2/4 is PostgreSQL where these become real enums.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// ───────────────────────────── Venues ─────────────────────────────
+
+model Mall {
+  id        String         @id @default(cuid())
+  name      String
+  city      String
+  address   String
+  createdAt DateTime       @default(now())
+  cinemas   Cinema[]
+  stores    Store[]
+  zones     DeliveryZone[]
+  orders    Order[]
+}
+
+model Cinema {
+  id        String   @id @default(cuid())
+  mallId    String
+  mall      Mall     @relation(fields: [mallId], references: [id])
+  name      String
+  wing      String?
+  createdAt DateTime @default(now())
+  screens   Screen[]
+}
+
+model Screen {
+  id        String     @id @default(cuid())
+  cinemaId  String
+  cinema    Cinema     @relation(fields: [cinemaId], references: [id])
+  name      String // "Screen 3"
+  seatRows  Int
+  seatCols  Int
+  seats     Seat[]
+  showtimes Showtime[]
+  orders    Order[]
+  createdAt DateTime   @default(now())
+}
+
+model Seat {
+  id         String   @id @default(cuid())
+  screenId   String
+  screen     Screen   @relation(fields: [screenId], references: [id])
+  code       String // "F-12"
+  rowLabel   String
+  seatNumber Int
+  qrToken    String   @unique // what the printed QR encodes: /?qr=<token>
+  createdAt  DateTime @default(now())
+  orders     Order[]
+}
+
+model Showtime {
+  id                 String   @id @default(cuid())
+  screenId           String
+  screen             Screen   @relation(fields: [screenId], references: [id])
+  movieTitle         String
+  language           String?
+  startsAt           DateTime
+  orderCutoffMinutes Int      @default(30) // ordering closes N minutes before start
+  isActive           Boolean  @default(true)
+  createdAt          DateTime @default(now())
+  orders             Order[]
+}
+
+model DeliveryZone {
+  id          String   @id @default(cuid())
+  mallId      String
+  mall        Mall     @relation(fields: [mallId], references: [id])
+  name        String // "Wing A · Screens 1–3"
+  description String?
+  runners     Runner[]
+}
+
+// ───────────────────────────── Catalog ─────────────────────────────
+
+model Store {
+  id               String        @id @default(cuid())
+  mallId           String
+  mall             Mall          @relation(fields: [mallId], references: [id])
+  name             String
+  slug             String        @unique
+  tagline          String?
+  emoji            String? // demo visual identity
+  isOpen           Boolean       @default(true)
+  prepBufferMin    Int           @default(10) // extra handling for cinema delivery
+  deliveryFeePaise Int           @default(1900)
+  commissionPct    Float         @default(12) // platform commission
+  kycStatus        String        @default("PENDING") // PENDING | VERIFIED | REJECTED
+  bankRefMasked    String? // e.g. "XXXX4821" — never real credentials
+  rating           Float         @default(4.5)
+  createdAt        DateTime      @default(now())
+  products         Product[]
+  tickets          StoreTicket[]
+  users            User[]
+  splits           Split[]
+  settlements      Settlement[]
+}
+
+model Product {
+  id              String      @id @default(cuid())
+  storeId         String
+  store           Store       @relation(fields: [storeId], references: [id])
+  name            String
+  description     String?
+  category        String      @default("Snacks")
+  pricePaise      Int // inclusive of GST (India menu convention)
+  taxRatePct      Float       @default(5) // GST %
+  prepEstimateMin Int         @default(8)
+  isVeg           Boolean     @default(true)
+  allergens       String? // "nuts, dairy"
+  isAvailable     Boolean     @default(true)
+  createdAt       DateTime    @default(now())
+  cartItems       CartItem[]
+  orderItems      OrderItem[]
+}
+
+// ───────────────────────────── Commerce ─────────────────────────────
+
+model Cart {
+  id        String     @id @default(cuid())
+  seatId    String?
+  status    String     @default("ACTIVE") // ACTIVE | CONVERTED | ABANDONED
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+  items     CartItem[]
+}
+
+model CartItem {
+  id        String  @id @default(cuid())
+  cartId    String
+  cart      Cart    @relation(fields: [cartId], references: [id])
+  productId String
+  product   Product @relation(fields: [productId], references: [id])
+  qty       Int
+  notes     String?
+}
+
+model Order {
+  id               String        @id @default(cuid())
+  code             String        @unique // "SS-7K2QX9"
+  mallId           String
+  mall             Mall          @relation(fields: [mallId], references: [id])
+  cinemaId         String
+  screenId         String
+  screen           Screen        @relation(fields: [screenId], references: [id])
+  seatId           String
+  seat             Seat          @relation(fields: [seatId], references: [id])
+  showtimeId       String?
+  showtime         Showtime?     @relation(fields: [showtimeId], references: [id])
+  status           String        @default("PENDING_PAYMENT") // PENDING_PAYMENT | PAID | COMPLETED | CANCELLED | PARTIALLY_CANCELLED | REFUNDED
+  paymentStatus    String        @default("PENDING") // PENDING | PAID | FAILED | REFUNDED | PARTIALLY_REFUNDED
+  subtotalPaise    Int // sum of line totals (GST-inclusive)
+  taxPaise         Int // GST component included in subtotal
+  deliveryFeePaise Int
+  platformFeePaise Int
+  totalPaise       Int
+  customerName     String?
+  customerPhone    String?
+  placedAt         DateTime      @default(now())
+  completedAt      DateTime?
+  items            OrderItem[]
+  tickets          StoreTicket[]
+  payments         Payment[]
+  refunds          Refund[]
+  splits           Split[]
+  events           AuditLog[]
+}
+
+model OrderItem {
+  id             String   @id @default(cuid())
+  orderId        String
+  order          Order    @relation(fields: [orderId], references: [id])
+  productId      String?
+  product        Product? @relation(fields: [productId], references: [id])
+  storeId        String
+  nameSnapshot   String
+  unitPricePaise Int // GST-inclusive snapshot
+  qty            Int
+  taxRatePct     Float
+  lineTotalPaise Int
+  notes          String? // allergy / prep notes
+}
+
+model StoreTicket {
+  id             String       @id @default(cuid())
+  orderId        String
+  order          Order        @relation(fields: [orderId], references: [id])
+  storeId        String
+  store          Store        @relation(fields: [storeId], references: [id])
+  ticketCode     String       @unique
+  status         String       @default("NEW") // NEW | ACCEPTED | PREPARING | READY_FOR_PICKUP | PICKED_UP | DELIVERED | CANCELLED
+  subtotalPaise  Int
+  prepEtaMinutes Int
+  acceptedAt     DateTime?
+  preparingAt    DateTime?
+  readyAt        DateTime?
+  pickedUpAt     DateTime?
+  deliveredAt    DateTime?
+  cancelledAt    DateTime?
+  customerNote   String?
+  createdAt      DateTime     @default(now())
+  deliveryRun    DeliveryRun?
+}
+
+model Runner {
+  id       String        @id @default(cuid())
+  name     String
+  phone    String
+  zoneId   String?
+  zone     DeliveryZone? @relation(fields: [zoneId], references: [id])
+  isOnDuty Boolean       @default(true)
+  rating   Float         @default(4.8)
+  runs     DeliveryRun[]
+  user     User?
+}
+
+model DeliveryRun {
+  id          String      @id @default(cuid())
+  ticketId    String      @unique
+  ticket      StoreTicket @relation(fields: [ticketId], references: [id])
+  runnerId    String
+  runner      Runner      @relation(fields: [runnerId], references: [id])
+  status      String      @default("ASSIGNED") // ASSIGNED | PICKED_UP | DELIVERED
+  pickupLabel String
+  dropLabel   String
+  assignedAt  DateTime    @default(now())
+  pickedUpAt  DateTime?
+  deliveredAt DateTime?
+}
+
+// ───────────────────────────── Payments ─────────────────────────────
+
+model Payment {
+  id             String         @id @default(cuid())
+  orderId        String
+  order          Order          @relation(fields: [orderId], references: [id])
+  provider       String         @default("SANDBOX_MOCK") // Phase 3: RAZORPAY | CASHFREE
+  method         String // UPI | CARD | NETBANKING
+  amountPaise    Int
+  status         String         @default("INITIATED") // INITIATED | SUCCESS | FAILED
+  providerRef    String         @unique // fake gateway ref (e.g. pay_mock_xxx)
+  idempotencyKey String         @unique
+  methodDetail   String? // masked: VPA "name@bank", card "•••• 4242" — demo only, never secrets
+  failureReason  String?
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+  events         PaymentEvent[]
+}
+
+model PaymentEvent {
+  id             String    @id @default(cuid())
+  provider       String
+  eventType      String // payment.captured | payment.failed | refund.processed
+  dedupeKey      String    @unique // provider event id — duplicate-webhook protection
+  signatureValid Boolean
+  payload        String // raw JSON snapshot
+  paymentId      String?
+  payment        Payment?  @relation(fields: [paymentId], references: [id])
+  receivedAt     DateTime  @default(now())
+  processedAt    DateTime?
+}
+
+model Refund {
+  id              String    @id @default(cuid())
+  orderId         String
+  order           Order     @relation(fields: [orderId], references: [id])
+  amountPaise     Int
+  reason          String // WRONG_ITEM | NEVER_DELIVERED | PARTIAL_STORE_CANCEL | OTHER
+  detail          String?
+  status          String    @default("REQUESTED") // REQUESTED | APPROVED | PROCESSED | REJECTED
+  requestedByRole String    @default("CUSTOMER")
+  createdAt       DateTime  @default(now())
+  processedAt     DateTime?
+}
+
+model Split {
+  id               String   @id @default(cuid())
+  orderId          String
+  order            Order    @relation(fields: [orderId], references: [id])
+  storeId          String?
+  store            Store?   @relation(fields: [storeId], references: [id])
+  beneficiary      String // STORE | PLATFORM_COMMISSION | DELIVERY_FEE | TAX | PAYMENT_FEE
+  amountPaise      Int
+  settlementStatus String   @default("PENDING") // PENDING | SETTLED
+  settlementId     String?
+  createdAt        DateTime @default(now())
+}
+
+model Settlement {
+  id          String   @id @default(cuid())
+  storeId     String
+  store       Store    @relation(fields: [storeId], references: [id])
+  amountPaise Int
+  periodStart DateTime
+  periodEnd   DateTime
+  status      String   @default("PENDING") // PENDING | PROCESSED
+  utr         String? // fake bank reference in Phase 3
+  createdAt   DateTime @default(now())
+}
+
+// ───────────────────────────── Governance ─────────────────────────────
+
+model User {
+  id           String  @id @default(cuid())
+  name         String
+  phone        String  @unique
+  email        String? @unique
+  role         String // CUSTOMER | MALL_ADMIN | CINEMA_MANAGER | STORE_MANAGER | KITCHEN_STAFF | RUNNER
+  storeId      String?
+  store        Store?  @relation(fields: [storeId], references: [id])
+  runnerId     String? @unique
+  runner       Runner? @relation(fields: [runnerId], references: [id])
+  passwordHash String? // Phase 2 (NextAuth credentials)
+  isActive     Boolean @default(true)
+}
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  actorRole  String // CUSTOMER | KITCHEN_STAFF | RUNNER | ADMIN | SYSTEM | GATEWAY
+  actorRef   String?
+  action     String // ORDER_PLACED | PAYMENT_CAPTURED | TICKET_STATUS_CHANGED | ...
+  entityType String
+  entityId   String
+  meta       String? // JSON
+  orderId    String?
+  order      Order?   @relation(fields: [orderId], references: [id])
+  createdAt  DateTime @default(now())
+}
+
+model AppSetting {
+  key       String   @id
+  value     String // JSON
+  updatedAt DateTime @updatedAt
+}
