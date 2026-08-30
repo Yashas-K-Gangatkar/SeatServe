@@ -6,9 +6,18 @@ import { useCallback, useEffect, useState } from 'react'
 import { ChevronLeft, Printer, ScanLine } from 'lucide-react'
 import { get, ApiError } from '@/lib/client/api'
 import type { QrResponse } from '@/lib/client/types'
+import StaffGate from '../StaffGate'
 import { Spinner, LoadError } from '../ui-bits'
 
 export default function QrAdmin({ go }: { go: (p: string) => void }) {
+  return (
+    <StaffGate roles={['MALL_ADMIN', 'CINEMA_MANAGER']} go={go} consoleName="Seat QR generator">
+      {() => <QrSheet go={go} />}
+    </StaffGate>
+  )
+}
+
+function QrSheet({ go }: { go: (p: string) => void }) {
   const [data, setData] = useState<QrResponse | null>(null)
   const [screenId, setScreenId] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)

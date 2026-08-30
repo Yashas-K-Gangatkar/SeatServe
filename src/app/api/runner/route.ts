@@ -1,11 +1,18 @@
-// GET /api/runner?runnerId=<id> — runner console data:
-// queue (READY tickets + assigned runs), my runs, recent deliveries, roster.
+// GET /api/runner — runner console data (login required).
+// RUNNER role: "my runs" are derived from the session's runnerId — a runner can
+// never read another runner's runs. MALL_ADMIN: full board + ?runnerId= filter.
 import { db } from '@/lib/db'
 import { ok } from '@/lib/api-helpers'
+import { requireStaff } from '@/lib/auth-server'
 
 export async function GET(request: Request) {
+  const auth = await requireStaff(request, ['RUNNER', 'MALL_ADMIN'])
+  if ('error' in auth) return auth.error
+  const user = auth.user
+
   const url = new URL(request.url)
-  const runnerId = url.searchParams.get('runnerId') ?? undefined
+  // session wins over query param: runners are pinned to themselves
+  const runnerId = user.role === 'RUNNER' ? (user.runnerId ?? undefined) : (url.searchParams.get('runnerId') ?? undefined)
 
   const readyTickets = await db.storeTicket.findMany({
     where: { status: 'READY_FOR_PICKUP' },

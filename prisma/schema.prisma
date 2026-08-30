@@ -24,6 +24,7 @@ model Mall {
   stores    Store[]
   zones     DeliveryZone[]
   orders    Order[]
+  users     User[]
 }
 
 model Cinema {
@@ -34,6 +35,7 @@ model Cinema {
   wing      String?
   createdAt DateTime @default(now())
   screens   Screen[]
+  users     User[]
 }
 
 model Screen {
@@ -317,17 +319,36 @@ model Settlement {
 // ───────────────────────────── Governance ─────────────────────────────
 
 model User {
-  id           String  @id @default(cuid())
+  id           String   @id @default(cuid())
   name         String
-  phone        String  @unique
-  email        String? @unique
+  phone        String   @unique
+  email        String?  @unique
   role         String // CUSTOMER | MALL_ADMIN | CINEMA_MANAGER | STORE_MANAGER | KITCHEN_STAFF | RUNNER
+  // Tenant scope — which slice of the platform this staff user may ever see.
+  // Every staff API filter is derived from these fields (never from client input).
+  mallId       String?
+  cinemaId     String?
   storeId      String?
-  store        Store?  @relation(fields: [storeId], references: [id])
-  runnerId     String? @unique
-  runner       Runner? @relation(fields: [runnerId], references: [id])
-  passwordHash String? // Phase 2 (NextAuth credentials)
-  isActive     Boolean @default(true)
+  mall         Mall?    @relation(fields: [mallId], references: [id])
+  cinema       Cinema?  @relation(fields: [cinemaId], references: [id])
+  store        Store?   @relation(fields: [storeId], references: [id])
+  runnerId     String?  @unique
+  runner       Runner?  @relation(fields: [runnerId], references: [id])
+  passwordHash String? // scrypt — set in Phase 2 (staff portal login)
+  isActive     Boolean  @default(true)
+  sessions     Session[]
+}
+
+// Server-side sessions: the cookie carries an opaque random token; only its
+// SHA-256 hash is stored, so a DB leak cannot be replayed as a login.
+model Session {
+  id        String   @id @default(cuid())
+  tokenHash String   @unique // hex(sha256(token))
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  userAgent String?
+  createdAt DateTime @default(now())
 }
 
 model AuditLog {

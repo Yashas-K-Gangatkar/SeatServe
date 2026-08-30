@@ -3,6 +3,7 @@
 // SeatServe — single-route hash router + app shell.
 // Views: #/ · #/seat/<qrToken> · #/track/<code> · #/kitchen(/<storeId>)
 //        #/runner(/<runnerId>) · #/admin · #/qr · #/support(/<code>)
+//        #/staff · #/staff/login   ← Phase 2 staff portal (separate site)
 import { useEffect, useState, useCallback } from 'react'
 import SeatLanding from './views/Landing'
 import SeatPage from './views/SeatPage'
@@ -12,11 +13,13 @@ import Runner from './views/Runner'
 import Admin from './views/Admin'
 import QrAdmin from './views/QrAdmin'
 import Support from './views/Support'
+import StaffLogin from './views/StaffLogin'
+import StaffPortal from './views/StaffPortal'
 import { OfflineBanner } from './ui-bits'
 import { useOnline } from '@/lib/client/realtime'
 
 export interface Route {
-  name: 'landing' | 'seat' | 'track' | 'kitchen' | 'runner' | 'admin' | 'qr' | 'support'
+  name: 'landing' | 'seat' | 'track' | 'kitchen' | 'runner' | 'admin' | 'qr' | 'support' | 'staff' | 'staff-login'
   param?: string
 }
 
@@ -24,9 +27,14 @@ function parseRoute(): Route {
   const params = new URLSearchParams(window.location.search)
   const qr = params.get('qr')
   const hash = window.location.hash.replace(/^#\/?/, '')
-  // QR scanners land on /?qr=<token> — normalize into the hash route
+  // QR scanners land on /?qr=<token> — normalize into the hash route ONCE and
+  // strip the query param. (Keeping it would re-trigger this branch on every
+  // hashchange and bounce the customer back to the seat page after payment.)
   if (qr && !hash.startsWith('seat/')) {
-    window.location.hash = `#/seat/${qr}`
+    const url = new URL(window.location.href)
+    url.searchParams.delete('qr')
+    url.hash = `#/seat/${qr}`
+    window.history.replaceState(null, '', url)
     return { name: 'seat', param: qr }
   }
   const [name, param] = hash.split('/')
@@ -45,6 +53,11 @@ function parseRoute(): Route {
       return { name: 'qr' }
     case 'support':
       return { name: 'support', param }
+    case 'staff-login':
+      return { name: 'staff-login' }
+    case 'staff':
+      // #/staff/login → dedicated login view; #/staff → portal hub
+      return param === 'login' ? { name: 'staff-login' } : { name: 'staff' }
     default:
       return { name: 'landing' }
   }
@@ -79,9 +92,11 @@ export default function SeatServeApp() {
         {route.name === 'admin' && <Admin go={navigate} />}
         {route.name === 'qr' && <QrAdmin go={navigate} />}
         {route.name === 'support' && <Support code={route.param ?? ''} go={navigate} />}
+        {route.name === 'staff-login' && <StaffLogin go={navigate} />}
+        {route.name === 'staff' && <StaffPortal go={navigate} />}
       </main>
       <footer className="print-hide mt-auto border-t border-border/60 py-4 text-center text-[11px] text-muted-foreground/70">
-        SeatServe · Phase 1 sandbox demo · mock payments, no real money moves
+        SeatServe · Phase 2 sandbox · mock payments, scoped staff portals, no real money moves
       </footer>
     </div>
   )

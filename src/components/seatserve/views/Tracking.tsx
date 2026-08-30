@@ -26,6 +26,48 @@ function stepIndex(status: string): number {
 }
 
 export default function Tracking({ code, go }: { code: string; go: (p: string) => void }) {
+  // no code in URL → let the customer type/paste their order code
+  if (!code) return <TrackEntry go={go} />
+  return <TrackingInner code={code} go={go} />
+}
+
+function TrackEntry({ go }: { go: (p: string) => void }) {
+  const [entry, setEntry] = useState('')
+  return (
+    <div className="mx-auto w-full max-w-md px-4 pb-16 pt-10">
+      <button onClick={() => go('#/')} className="mb-3 inline-flex items-center gap-1 text-xs font-semibold text-muted-foreground hover:text-foreground">
+        <ChevronLeft className="h-3.5 w-3.5" aria-hidden /> Demo home
+      </button>
+      <div className="rounded-3xl border border-stone-200 bg-white p-6 shadow-xl shadow-orange-500/5">
+        <h1 className="text-xl font-black tracking-tight">Track your order</h1>
+        <p className="mt-1 text-sm text-stone-600">Enter the order code from your payment confirmation (e.g. SS-7HYVEV).</p>
+        <form
+          onSubmit={(e) => {
+            e.preventDefault()
+            if (entry.trim()) go(`#/track/${entry.trim().toUpperCase()}`)
+          }}
+          className="mt-4 flex gap-2"
+        >
+          <input
+            value={entry}
+            onChange={(e) => setEntry(e.target.value)}
+            placeholder="SS-XXXXXX"
+            aria-label="Order code"
+            className="flex-1 rounded-xl border border-stone-300 bg-stone-50 px-3.5 py-2.5 text-sm font-bold uppercase tracking-wide outline-none transition focus:border-orange-400 focus:bg-white focus:ring-2 focus:ring-orange-200"
+          />
+          <button
+            type="submit"
+            className="rounded-xl bg-gradient-to-b from-amber-500 to-orange-500 px-4 py-2.5 text-sm font-extrabold text-white shadow-lg shadow-orange-500/25 transition hover:from-amber-600 hover:to-orange-600"
+          >
+            Track
+          </button>
+        </form>
+      </div>
+    </div>
+  )
+}
+
+function TrackingInner({ code, go }: { code: string; go: (p: string) => void }) {
   const [order, setOrder] = useState<TrackingResponse | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)

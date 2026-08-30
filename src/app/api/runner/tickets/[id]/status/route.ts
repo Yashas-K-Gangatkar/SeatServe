@@ -1,20 +1,24 @@
-// POST /api/runner/tickets/[id]/status — PICKED_UP | DELIVERED (runner leg)
+// POST /api/runner/tickets/[id]/status — PICKED_UP | DELIVERED (runner leg).
+// Phase 2: login required; a RUNNER may only advance runs assigned to them.
 import { z } from 'zod'
 import { db } from '@/lib/db'
 import { ok, fail, parseBody } from '@/lib/api-helpers'
 import { orderStatusFromTickets } from '@/lib/order-state'
 import type { TicketStatus } from '@/lib/types'
+import { requireStaff } from '@/lib/auth-server'
 import { audit } from '@/lib/audit'
 import { emitToRooms } from '@/lib/realtime'
 
 const bodySchema = z.object({
   to: z.enum(['PICKED_UP', 'DELIVERED']),
-  actorRole: z.string().default('RUNNER'),
-  actorRef: z.string().optional(),
 })
 
 export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
+  const auth = await requireStaff(request, ['RUNNER', 'MALL_ADMIN'])
+  if ('error' in auth) return auth.error
+  const user = auth.user
+
   const parsed = await parseBody(request, bodySchema)
   if ('error' in parsed) return parsed.error
   const to = parsed.data.to
@@ -24,6 +28,11 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     include: { order: true, store: true, deliveryRun: { include: { runner: true } } },
   })
   if (!ticket) return fail('Ticket not found', 404)
+
+  // tenant isolation: a runner can only advance their own assigned runs
+  if (user.role === 'RUNNER' && ticket.deliveryRun?.runnerId !== user.runnerId) {
+    return fail('This run is not assigned to you', 403)
+  }
 
   const allowed: Partial<Record<TicketStatus, string[]>> = {
     READY_FOR_PICKUP: ['PICKED_UP'],
@@ -55,8 +64,8 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   })
 
   await audit({
-    actorRole: parsed.data.actorRole,
-    actorRef: parsed.data.actorRef ?? ticket.deliveryRun?.runner.name,
+    actorRole: user.role,
+    actorRef: user.email ?? user.id,
     action: to === 'PICKED_UP' ? 'RUN_PICKED_UP' : 'RUN_DELIVERED',
     entityType: 'StoreTicket',
     entityId: ticket.id,

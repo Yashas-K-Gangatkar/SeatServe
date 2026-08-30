@@ -10,6 +10,8 @@ import { toast } from 'sonner'
 import { get, post, patch, ApiError } from '@/lib/client/api'
 import { useRealtime, usePolling, useOnline, armAudio, playChime } from '@/lib/client/realtime'
 import type { KitchenResponse, KitchenTicket } from '@/lib/client/types'
+import type { StaffProfile } from '@/lib/client/auth'
+import StaffGate from '../StaffGate'
 import { rupees, timeHM, minAgo, StatusPill, LiveDot, Spinner, LoadError, EmptyState } from '../ui-bits'
 
 interface StoreLite {
@@ -29,23 +31,37 @@ const NEXT_ACTION: Record<string, { to: string; label: string }> = {
 }
 
 export default function Kitchen({ storeId, go, onRouteChange }: { storeId?: string; go: (p: string) => void; onRouteChange?: () => void }) {
+  return (
+    <StaffGate roles={['KITCHEN_STAFF', 'STORE_MANAGER', 'MALL_ADMIN']} go={go} consoleName="Kitchen console">
+      {(user) => <KitchenPicker user={user} storeId={storeId} go={go} onRouteChange={onRouteChange} />}
+    </StaffGate>
+  )
+}
+
+function KitchenPicker({ user, storeId, go, onRouteChange }: { user: StaffProfile; storeId?: string; go: (p: string) => void; onRouteChange?: () => void }) {
+  // Phase 2: store staff are PINNED to their own store by the session — a URL
+  // pointing at another store cannot widen their view (server enforces 403 too).
+  const pinned = user.role !== 'MALL_ADMIN' ? (user.storeId ?? undefined) : undefined
+  const effective = pinned ?? storeId ?? undefined
+
   const [stores, setStores] = useState<StoreLite[] | null>(null)
 
   useEffect(() => {
-    if (storeId) return
+    if (effective) return
     void get<StoreLite[]>('/api/stores')
       .then(setStores)
       .catch(() => setStores([]))
-  }, [storeId])
+  }, [effective])
 
-  if (!storeId) {
+  if (!effective) {
+    // only MALL_ADMIN reaches the picker
     return (
       <div className="mx-auto w-full max-w-md px-4 pb-16 pt-6">
         <button onClick={() => go('#/')} className="mb-3 inline-flex items-center gap-1 text-xs font-semibold text-muted-foreground hover:text-foreground">
           <ChevronLeft className="h-3.5 w-3.5" aria-hidden /> Demo home
         </button>
-        <h1 className="text-2xl font-black tracking-tight">Which kitchen are you?</h1>
-        <p className="mt-1 text-sm text-muted-foreground">Each store sees only its own tickets — store isolation is enforced per query.</p>
+        <h1 className="text-2xl font-black tracking-tight">Which kitchen?</h1>
+        <p className="mt-1 text-sm text-muted-foreground">Mall-admin supervision view — pick any store in your mall. Store staff skip this screen entirely.</p>
         {stores === null ? (
           <Spinner />
         ) : (
@@ -74,10 +90,10 @@ export default function Kitchen({ storeId, go, onRouteChange }: { storeId?: stri
       </div>
     )
   }
-  return <KitchenDashboard storeSlugOrId={storeId} go={go} />
+  return <KitchenDashboard storeSlugOrId={effective} canSwitch={user.role === 'MALL_ADMIN'} go={go} />
 }
 
-function KitchenDashboard({ storeSlugOrId, go }: { storeSlugOrId: string; go: (p: string) => void }) {
+function KitchenDashboard({ storeSlugOrId, canSwitch, go }: { storeSlugOrId: string; canSwitch: boolean; go: (p: string) => void }) {
   const [data, setData] = useState<KitchenResponse | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
@@ -163,9 +179,15 @@ function KitchenDashboard({ storeSlugOrId, go }: { storeSlugOrId: string; go: (p
 
   return (
     <div className="mx-auto w-full max-w-md px-4 pb-16 pt-6">
-      <button onClick={() => go('#/kitchen')} className="mb-3 inline-flex items-center gap-1 text-xs font-semibold text-muted-foreground hover:text-foreground">
-        <ChevronLeft className="h-3.5 w-3.5" aria-hidden /> Switch kitchen
-      </button>
+      {canSwitch ? (
+        <button onClick={() => go('#/kitchen')} className="mb-3 inline-flex items-center gap-1 text-xs font-semibold text-muted-foreground hover:text-foreground">
+          <ChevronLeft className="h-3.5 w-3.5" aria-hidden /> Switch kitchen
+        </button>
+      ) : (
+        <button onClick={() => go('#/staff')} className="mb-3 inline-flex items-center gap-1 text-xs font-semibold text-muted-foreground hover:text-foreground">
+          <ChevronLeft className="h-3.5 w-3.5" aria-hidden /> Staff portal
+        </button>
+      )}
 
       <header className="rounded-2xl border border-border bg-card p-5">
         <div className="flex items-start justify-between gap-2">

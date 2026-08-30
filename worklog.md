@@ -46,3 +46,30 @@ Stage Summary:
 - All three user-reported bugs fixed and browser-verified end-to-end; dark theme fully replaced by warm light theme
 - Demo is now time-decay-proof (rolling showtimes) and state-decay-proof (re-seed + reset button restores open stores/available products)
 - Lint passes; dev server healthy on :3000, realtime on :3003
+
+---
+Task ID: phase-2
+Agent: Super Z (main)
+Task: Phase 2 — authentication + RBAC + separate staff portal with tenant scoping (user assigned virtual team: CTO/Assets/Lawyer/Design/UIUX/Sales/Developer); answer multi-cinema/multi-store isolation design
+
+Work Log:
+- Answered architecture question: one platform, two portals (customer app login-free via seat QR; staff portal #/staff with email+password). Isolation = session-derived tenant scope (mallId/cinemaId/storeId/runnerId), enforced server-side on every staff API — never from client params
+- Schema: User + mallId/cinemaId scope columns (+ Mall.users/Cinema.users relations), new Session model (unique tokenHash, expiresAt, userAgent, cascade delete); db:push OK
+- src/lib/auth.ts (pure): scrypt hashPassword/verifyPassword (timingSafeEqual), newSessionToken (32B random), hashSessionToken (sha256 — raw token never stored), SESSION_TTL 7d, STAFF_ROLES, roleAllowed, scopeErrorFor, canAccessStore
+- src/lib/auth-server.ts: tokenFromRequest (cookie parse), sessionUser (loads user + expiry/isActive checks), requireStaff(request, roles) route guard → 401/403, sessionCookieOptions (httpOnly, SameSite=Lax)
+- APIs: POST /api/auth/login (email+password → cookie + scoped profile, LOGIN/LOGIN_FAILED audit), GET /api/auth/me, POST /api/auth/logout (revokes row + clears cookie)
+- Seed: demo password demo1234 (scrypt) for all 13 staff users; runner users got emails (ravi@/sana@runner.demo); scope assignments: asha→mall, vikram→cinema A, per-store manager/kitchen, runners→mall
+- Server-side scoping wired into: kitchen tickets GET (cook pinned to own store; MALL_ADMIN supervises mall), kitchen ticket status POST (canAccessStore + session actor), runner GET (RUNNER pinned to own runnerId), runner assign (self-assign only for RUNNER), runner ticket status (must own the run), admin overview (mall admin=own mall, cinema manager=own cinema, store manager=own store incl. per-store ticket filtering in liveOrders + scope label), admin/qr (cinema-scoped screens), audit (order-scoped; store/product events pass for mall admin w/ documented single-mall note), stores/[id] + products/[id] PATCH (canAccessStore), simulator/reset (MALL_ADMIN only)
+- Frontend: src/lib/client/auth.ts (login/logout/useStaffAuth hook with tick-based refresh), StaffGate.tsx (loading/unauthenticated→sign-in card/forbidden→wrong-role card/ok→children), views/StaffLogin.tsx (portal identity, tap-to-fill demo chips, lawyer disclosure), views/StaffPortal.tsx (role-based console cards + scope badge + sign out + mall-admin reset), App.tsx routes #/staff #/staff/login (+ param==='login' parse fix, duplicate case cleanup)
+- Staff views gated: Kitchen (store staff PINNED to own store — URL cannot widen; picker only for mall admin; canSwitch prop), Runner, Admin (scope banner "Scoped view · Mall-wide/Your cinema only", dynamic header), QrAdmin; Tracking gained TrackEntry (code-entry form) as wrapper+inner components (hooks-order safe); Landing redesigned to customer-front-door + staff entry, reset moved to staff portal
+- FIXED REAL CUSTOMER BUG: parseRoute re-bounced every hashchange to the seat page while ?qr= remained in the query — QR-entry customers got yanked back to the menu after paying instead of tracking. Now normalized ONCE via history.replaceState (query stripped); verified: pay → lands #/track/<code>
+- Dev-server incident: db.session undefined after schema change (old Prisma client cached by long-lived server) → restarted via double-fork setsid pattern; healthy
+- Lint: fixed react-hooks use-memo deps (rolesKey string), set-state-in-effect (inline async IIFE + cancelled flag + tick refresh)
+- Tests: tests/auth.test.ts (14 unit: scrypt round-trip/salt uniqueness/tamper-safety, token randomness/hash determinism, roleAllowed, scopeErrorFor, canAccessStore matrix) — 49 total pass; scripts/api-golden-path.sh rewritten: 48 assertions incl. full auth matrix (wrong-password 401, anon 401s on kitchen/runner/admin/audit/qr, cook-cross-store 403, runner pinning, cinema-manager scope label, store-toggle 403, reset 403, logout revocation)
+- Browser-verified (agent-browser): login page chips → cook (only own kitchen, URL-hack #/kitchen/pizza-corner stays pinned, wrong-role card for runner→admin), mall admin (portal cards, admin board Mall-wide KPIs ₹1,407.20/3 orders), runner (own runs), customer flow via ?qr=A3-F12 → 3-store cart ₹550→₹633.50 earlier run & ₹347 rerun → payment → TRACKING (bug fix proven) → mobile 390px tracking + login screenshots saved; console clean
+- README: Phase 2 status, two-portals table, demo credentials table, tenant isolation explainer, API surface updated (auth endpoints + scoping notes), testing section (49+48), roadmap (PG migration documented as Phase 4 provider swap), honest limitations
+
+Stage Summary:
+- Phase 2 COMPLETE: staff portal live at #/staff/login (demo1234), customer app still login-free, every staff API session-scoped with server-enforced 403s, 49 unit + 48 API tests green, lint clean, browser-verified end-to-end
+- Multi-tenancy answer delivered: same code serves N malls/cinemas/stores — role + scope columns drive all filters; new tenants are seed data, not new code
+- Known deferrals (documented): PostgreSQL swap (sandbox is SQLite-only), Playwright E2E + rate limiting + full admin CRUD → Phase 3, invite/password flows → Phase 4

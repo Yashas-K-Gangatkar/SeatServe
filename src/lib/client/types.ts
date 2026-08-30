@@ -187,6 +187,7 @@ export interface RunnerResponse {
 }
 
 export interface AdminOverview {
+  scope: { role: string; label: string; mallId: string | null; cinemaId: string | null; storeId: string | null }
   window: { since: string; label: string }
   kpis: {
     salesPaise: number

@@ -1,14 +1,38 @@
-// GET /api/admin/overview — mall-wide live board + KPIs (rolling 24h window)
+// GET /api/admin/overview — live board + KPIs (rolling 24h window).
+// Phase 2 multi-tenancy: the board is scoped by the session, never by params.
+//   MALL_ADMIN     → everything inside their mall
+//   CINEMA_MANAGER → only orders/placements of their own cinema
+//   STORE_MANAGER  → only orders containing their store's tickets + their store row
 import { db } from '@/lib/db'
 import { ok } from '@/lib/api-helpers'
+import { requireStaff } from '@/lib/auth-server'
 
-export async function GET() {
+export async function GET(request: Request) {
+  const auth = await requireStaff(request, ['MALL_ADMIN', 'CINEMA_MANAGER', 'STORE_MANAGER'])
+  if ('error' in auth) return auth.error
+  const user = auth.user
+
   const since = new Date(Date.now() - 24 * 3600_000)
 
-  const [orders, liveOrders, tickets, runs, refunds, splits, stores, recentAudit] = await Promise.all([
-    db.order.findMany({ where: { placedAt: { gte: since } }, include: { tickets: true, payments: true, refunds: true } }),
+  // ── tenant scope ────────────────────────────────────────────────
+  const orderScope =
+    user.role === 'MALL_ADMIN'
+      ? { mallId: user.mallId ?? '__none__' }
+      : user.role === 'CINEMA_MANAGER'
+        ? { screen: { cinemaId: user.cinemaId ?? '__none__' } }
+        : { tickets: { some: { storeId: user.storeId ?? '__none__' } } }
+  const storeScope =
+    user.role === 'MALL_ADMIN'
+      ? { mallId: user.mallId ?? '__none__' }
+      : user.role === 'STORE_MANAGER'
+        ? { id: user.storeId ?? '__none__' }
+        : null
+  const scopeLabel = user.role === 'MALL_ADMIN' ? 'Mall-wide' : user.role === 'CINEMA_MANAGER' ? 'Your cinema only' : 'Your store only'
+
+  const [orders, liveOrders, stores, recentAudit] = await Promise.all([
+    db.order.findMany({ where: { placedAt: { gte: since }, ...orderScope }, include: { tickets: true, payments: true, refunds: true } }),
     db.order.findMany({
-      where: { paymentStatus: 'PAID', status: { in: ['PAID', 'PARTIALLY_CANCELLED'] } },
+      where: { paymentStatus: 'PAID', status: { in: ['PAID', 'PARTIALLY_CANCELLED'] }, ...orderScope },
       include: {
         seat: { include: { screen: { include: { cinema: true } } } },
         tickets: { include: { store: { select: { name: true, emoji: true } } } },
@@ -16,18 +40,37 @@ export async function GET() {
       orderBy: { placedAt: 'desc' },
       take: 30,
     }),
+    db.store.findMany({
+      where: storeScope ?? undefined,
+      include: { products: { select: { id: true, name: true, isAvailable: true } }, _count: { select: { tickets: true } } },
+      orderBy: { name: 'asc' },
+    }),
+    db.auditLog.findMany({
+      where: { order: orderScope },
+      orderBy: { createdAt: 'desc' },
+      take: 20,
+      include: { order: { select: { code: true } } },
+    }),
+  ])
+
+  const orderIds = orders.map((o) => o.id)
+
+  // scope-follower queries (tickets/refunds/runs/splits ride on scoped orders)
+  const [tickets, runs, refunds, splits] = await Promise.all([
     db.storeTicket.findMany({
-      where: { createdAt: { gte: since }, acceptedAt: { not: null }, readyAt: { not: null } },
+      where: { createdAt: { gte: since }, acceptedAt: { not: null }, readyAt: { not: null }, orderId: { in: orderIds } },
       select: { acceptedAt: true, readyAt: true, storeId: true, status: true, subtotalPaise: true },
     }),
     db.deliveryRun.findMany({
-      where: { assignedAt: { gte: since }, pickedUpAt: { not: null }, deliveredAt: { not: null } },
+      where: { assignedAt: { gte: since }, pickedUpAt: { not: null }, deliveredAt: { not: null }, ticket: { orderId: { in: orderIds } } },
       select: { pickedUpAt: true, deliveredAt: true },
     }),
-    db.refund.findMany({ where: { createdAt: { gte: since } }, include: { order: { select: { code: true, totalPaise: true } } }, orderBy: { createdAt: 'desc' } }),
-    db.split.groupBy({ by: ['beneficiary'], _sum: { amountPaise: true }, where: { settlementStatus: 'PENDING' } }),
-    db.store.findMany({ include: { products: { select: { id: true, name: true, isAvailable: true } }, _count: { select: { tickets: true } } }, orderBy: { name: 'asc' } }),
-    db.auditLog.findMany({ orderBy: { createdAt: 'desc' }, take: 20, include: { order: { select: { code: true } } } }),
+    db.refund.findMany({
+      where: { createdAt: { gte: since }, orderId: { in: orderIds } },
+      include: { order: { select: { code: true, totalPaise: true } } },
+      orderBy: { createdAt: 'desc' },
+    }),
+    db.split.groupBy({ by: ['beneficiary'], _sum: { amountPaise: true }, where: { order: { id: { in: orderIds } } , settlementStatus: 'PENDING' } }),
   ])
 
   const paidOrders = orders.filter((o) => o.paymentStatus === 'PAID' || o.paymentStatus === 'REFUNDED' || o.paymentStatus === 'PARTIALLY_REFUNDED')
@@ -57,6 +100,13 @@ export async function GET() {
   })
 
   return ok({
+    scope: {
+      role: user.role,
+      label: scopeLabel,
+      mallId: user.mallId,
+      cinemaId: user.cinemaId,
+      storeId: user.storeId,
+    },
     window: { since, label: 'last 24 hours' },
     kpis: {
       salesPaise,
@@ -75,7 +125,10 @@ export async function GET() {
       seat: o.seat.code,
       totalPaise: o.totalPaise,
       status: o.status,
-      tickets: o.tickets.map((t) => ({ storeName: t.store.name, emoji: t.store.emoji, status: t.status, ticketId: t.id })),
+      // store managers see only their own leg of a shared multi-store order
+      tickets: o.tickets
+        .filter((t) => user.role !== 'STORE_MANAGER' || t.storeId === user.storeId)
+        .map((t) => ({ storeName: t.store.name, emoji: t.store.emoji, status: t.status, ticketId: t.id })),
     })),
     refunds: refunds.map((r) => ({ id: r.id, code: r.order.code, reason: r.reason, detail: r.detail, status: r.status, amountPaise: r.amountPaise, createdAt: r.createdAt })),
     settlement: splits.map((s) => ({ beneficiary: s.beneficiary, pendingPaise: s._sum.amountPaise ?? 0 })),

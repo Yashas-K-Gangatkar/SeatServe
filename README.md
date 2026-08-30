@@ -5,7 +5,9 @@ at their cinema seat, orders from multiple participating stores in **one cart**,
 (mock UPI/card/netbanking in Phase 1), and each store receives **only its own ticket** and
 settlement amount. Food is delivered to the exact screen and seat.
 
-> **Status: Phase 1 — clickable sandbox demo.** Payments are fully mocked (no real money,
+> **Status: Phase 2 — platform core.** Customer app stays login-free (seat QR); staff
+> consoles are behind a scoped sign-in portal (RBAC: 6 roles, per-store / per-cinema /
+> per-mall isolation enforced server-side). Payments remain fully mocked (no real money,
 > no real credentials). Merchant onboarding and legal/accounting review come in Phase 4.
 
 ---
@@ -40,7 +42,38 @@ cd mini-services/realtime-service && bun run dev   # socket.io :3003 + internal 
 7. **Admin board**: KPIs, live orders, refund requests, pending settlement ledger, audit trail.
 8. **QR generator**: printable seat-QR sheets; every code opens that exact seat on a phone.
 
-Reset everything any time from the landing page (or `POST /api/simulator/reset`).
+Reset the demo from the **staff portal** (mall admin sign-in → “Reset demo data”) or
+`POST /api/simulator/reset` with a mall-admin session.
+
+## Two portals, one platform (Phase 2)
+
+| | Customer app | Staff portal (`#/staff`) |
+|---|---|---|
+| Who | Guests who scan a seat QR — **no login** | Cooks, runners, managers, admins — email + password |
+| Production shape | `seatserve.in` | `staff.seatserve.in` (separate site, same API) |
+| Sees | Their own cart / order only | Only what their **tenant scope** allows |
+
+**Demo credentials** — password for every account: `demo1234`
+
+| Role | Email | Scope |
+|---|---|---|
+| Mall Admin | `asha@seatserve.demo` | All 4 stores, all screens, reset & QR |
+| Cinema Manager | `vikram@aurora.demo` | Wing A cinema only (orders, QR for its screens) |
+| Store Manager | `manager@cinema-snacks.demo` (+ 1 per store) | Own store only |
+| Kitchen Staff | `kitchen@cinema-snacks.demo` (+ 1 per store) | Own store's tickets only |
+| Runner | `ravi@runner.demo` / `sana@runner.demo` | Own delivery runs only |
+
+**How tenant isolation works** — the session user carries `mallId / cinemaId / storeId /
+runnerId`; every staff API derives its Prisma filters from the **session**, never from query
+params. A cook requesting another store's tickets gets **403** (not a hidden button); a
+runner advancing someone else's run gets **403**; the cinema manager's admin board only
+contains their cinema's orders. Same code serves N malls × N cinemas × N stores — it's data,
+not new code per tenant.
+
+Security mechanics: scrypt-hashed passwords (per-user salt, timing-safe verify); sessions
+are opaque 32-byte tokens in an **httpOnly, SameSite=Lax** cookie — only the SHA-256 hash is
+stored server-side (a DB dump can't be replayed); 7-day expiry; logout revokes the row.
+Audit log records LOGIN / LOGIN_FAILED and every staff action with the session-derived actor.
 
 ## Environment variables
 
@@ -51,7 +84,7 @@ Reset everything any time from the landing page (or `POST /api/simulator/reset`)
 | `REALTIME_EMIT_URL` | `http://127.0.0.1:3004/emit` | Internal emit bus of the realtime service. |
 | `INTERNAL_BASE_URL` | `http://localhost:3000` | Used by the mock gateway to call our public webhook endpoint. |
 
-## API surface (Phase 1)
+## API surface
 
 | Method | Path | Notes |
 |---|---|---|
@@ -62,14 +95,15 @@ Reset everything any time from the landing page (or `POST /api/simulator/reset`)
 | POST | `/api/orders/[code]/support` | refund/help request (deduped per order) |
 | POST | `/api/payments/mock-pay` | **sandbox** gateway; idempotency-key enforced |
 | POST | `/api/payments/webhook` | HMAC-verified, dedupe-keyed event processor |
-| GET | `/api/kitchen/tickets?storeId=` | paid tickets for ONE store only |
-| POST | `/api/kitchen/tickets/[id]/status` | state machine `NEW→…→DELIVERED` |
-| GET | `/api/runner` · POST `/api/runner/assign` · POST `/api/runner/tickets/[id]/status` | runner leg |
-| GET | `/api/admin/overview` | KPIs, live orders, refunds, settlement, audit |
-| GET | `/api/admin/qr?screenId=` | seat QR data-URLs (printable) |
-| PATCH | `/api/stores/[id]` · `/api/products/[id]` | open/close, 86 items |
-| POST | `/api/simulator/reset` | wipe + reseed demo |
-| GET | `/api/audit` | audit trail |
+| POST | `/api/auth/login` · GET `/api/auth/me` · POST `/api/auth/logout` | staff session (httpOnly cookie) |
+| GET | `/api/kitchen/tickets?storeId=` | staff-only; cook pinned to own store, 403 cross-store |
+| POST | `/api/kitchen/tickets/[id]/status` | state machine `NEW→…→DELIVERED`, scoped actor |
+| GET | `/api/runner` · POST `/api/runner/assign` · POST `/api/runner/tickets/[id]/status` | runner leg; runners pinned to own runs |
+| GET | `/api/admin/overview` | KPIs/live orders/refunds/settlement — scoped mall / cinema / store |
+| GET | `/api/admin/qr?screenId=` | seat QR data-URLs — scoped to own cinema/mall |
+| PATCH | `/api/stores/[id]` · `/api/products/[id]` | open/close, 86 items — own store only |
+| POST | `/api/simulator/reset` | wipe + reseed demo (mall admin only) |
+| GET | `/api/audit` | audit trail (mall/cinema scoped) |
 
 ## Payments — how the sandbox works
 
@@ -108,31 +142,44 @@ TypeScript unions in `src/lib/types.ts` (they become real enums on PostgreSQL).
 ## Testing
 
 - **Unit** (`bun test tests/`): pricing/GST math, split-ledger invariant, cutoff rules,
-  ticket/order state machines, webhook signatures, ID formats — **96.6% line coverage** of
-  the domain layer.
-- **API golden path** (`bash scripts/api-golden-path.sh`): 28 end-to-end assertions over the
-  live server — QR resolution, ordering, idempotent payment, state machine guards, runner
-  leg, refund dedupe, cutoff lock, forged-webhook rejection.
-- **E2E browser tests**: Phase 2 (Playwright).
+  ticket/order state machines, webhook signatures, ID formats, **password hashing, session
+  token hygiene, RBAC allow-lists, tenant-scope guards** — 49 tests, high coverage of the
+  domain + auth layers.
+- **API golden path** (`bash scripts/api-golden-path.sh`): **48 end-to-end assertions** over
+  the live server — QR resolution, ordering, idempotent payment, state machine guards, runner
+  leg, refund dedupe, cutoff lock, forged-webhook rejection, **plus the full auth matrix:
+  login/logout, wrong-password 401, anonymous 401s on every staff API, cook-cross-store 403,
+  runner self-run pinning, cinema-manager scoping, reset/QR/store-toggle RBAC**.
+- **E2E browser tests (Playwright)**: Phase 3 backlog (golden path currently verified via
+  scripted browser runs).
 
 ## Phased roadmap
 
-- **Phase 1 (this build)** — clickable demo, mock payment + signed webhook simulation,
-  realtime staff dashboards, QR sheets, seed data, tests.
-- **Phase 2** — PostgreSQL, NextAuth RBAC (customer / mall admin / cinema manager / store
-  manager / kitchen staff / runner), full admin CRUD, Playwright E2E, rate limiting.
+- **Phase 1 ✅** — clickable demo, mock payment + signed webhook simulation, realtime staff
+  dashboards, QR sheets, seed data, tests.
+- **Phase 2 ✅ (this build)** — auth + RBAC with tenant scoping (mall / cinema / store /
+  runner), separate staff portal with login, scoped admin board & QR sheets, session
+  security (scrypt + hashed opaque tokens), 49 unit tests + 48 API assertions, bug fix:
+  QR-entry customers now land on tracking after payment (previously bounced back to menu).
+  *Note: PostgreSQL migration was planned here; the sandbox runtime is SQLite-only, so the
+  schema stays provider-agnostic and the migration is a documented one-line provider swap
+  with `db:push` in Phase 4 deployment. Admin CRUD beyond toggles moved to Phase 3.*
 - **Phase 3** — Razorpay Route / Cashfree Easy Split sandbox: real linked accounts, real
   signed webhooks, partial store cancellation, full/partial refunds, settlement &
-  reconciliation reports.
-- **Phase 4** — production hardening, merchant KYC onboarding, security review, legal &
-  accounting review, deployment.
+  reconciliation reports, full admin CRUD (store onboarding), rate limiting, Playwright E2E.
+- **Phase 4** — production hardening, PostgreSQL migration, merchant KYC onboarding,
+  security review, legal & accounting review, deployment.
 
-## Honest limitations (Phase 1)
+## Honest limitations (Phase 2)
 
-- **No authentication yet** — staff/admin consoles are open demo views (Phase 2 adds
-  NextAuth with role-based access). This is intentional for the clickable demo.
 - **Single route SPA** — the sandbox gateway exposes one port; views are hash-routed
-  (`#/seat/…`, `#/kitchen/…`). Phase 2 moves to real routes.
+  (`#/seat/…`, `#/staff`, `#/kitchen/…`). In production the staff portal would be a separate
+  deployment (e.g. `staff.seatserve.in`) sharing the same API.
 - **Mock payments only** — the sandbox never touches real money; it exists to prove the
   state machine, idempotency, signature verification and split math.
 - **Realtime** is socket.io + polling fallback; a dead socket degrades gracefully.
+- **Demo passwords are public** (`demo1234`) by design — this is a sandbox. Phase 4 adds
+  invite flows, password rotation and rate limiting before any real deployment.
+- **AuditLog mall scoping** — store/product-level audit events (no orderId) are shown to the
+  mall admin without a mall filter (sandbox has one mall); Phase 4 adds a denormalized
+  mallId column to AuditLog for exact multi-mall scoping.

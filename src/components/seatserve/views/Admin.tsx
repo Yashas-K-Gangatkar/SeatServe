@@ -3,11 +3,12 @@
 // SeatServe — mall admin board (#/admin)
 // KPIs, live orders, refund requests, settlement summary, store & inventory controls, audit log.
 import { useCallback, useEffect, useState } from 'react'
-import { ChevronLeft, IndianRupee, Receipt, Timer, Truck, CircleSlash, RotateCcw, Wallet, ScrollText, ChevronDown, ChevronUp } from 'lucide-react'
+import { ChevronLeft, IndianRupee, Receipt, Timer, Truck, CircleSlash, Wallet, ScrollText, ChevronDown, ChevronUp } from 'lucide-react'
 import { toast } from 'sonner'
 import { get, patch, ApiError } from '@/lib/client/api'
 import { useRealtime, usePolling, useOnline } from '@/lib/client/realtime'
 import type { AdminOverview } from '@/lib/client/types'
+import StaffGate from '../StaffGate'
 import { rupees, timeHM, minAgo, StatusPill, LiveDot, Spinner, LoadError, EmptyState } from '../ui-bits'
 
 const BENEFICIARY_LABEL: Record<string, string> = {
@@ -18,6 +19,14 @@ const BENEFICIARY_LABEL: Record<string, string> = {
 }
 
 export default function Admin({ go }: { go: (p: string) => void }) {
+  return (
+    <StaffGate roles={['MALL_ADMIN', 'CINEMA_MANAGER']} go={go} consoleName="Admin board">
+      {(user) => <AdminBoard go={go} scopeRole={user.role} />}
+    </StaffGate>
+  )
+}
+
+function AdminBoard({ go, scopeRole }: { go: (p: string) => void; scopeRole: 'MALL_ADMIN' | 'CINEMA_MANAGER' }) {
   const [data, setData] = useState<AdminOverview | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
@@ -85,13 +94,20 @@ export default function Admin({ go }: { go: (p: string) => void }) {
 
   return (
     <div className="mx-auto w-full max-w-3xl px-4 pb-16 pt-6 sm:px-6">
-      <button onClick={() => go('#/')} className="mb-3 inline-flex items-center gap-1 text-xs font-semibold text-muted-foreground hover:text-foreground">
-        <ChevronLeft className="h-3.5 w-3.5" aria-hidden /> Demo home
+      <button onClick={() => go('#/staff')} className="mb-3 inline-flex items-center gap-1 text-xs font-semibold text-muted-foreground hover:text-foreground">
+        <ChevronLeft className="h-3.5 w-3.5" aria-hidden /> Staff portal
       </button>
+      {data.scope && (
+        <p className="mb-3 inline-flex items-center gap-1.5 rounded-full border border-orange-200 bg-orange-50 px-3 py-1 text-[11px] font-bold text-orange-700" role="status">
+          Scoped view · {data.scope.label}
+        </p>
+      )}
 
       <header className="flex items-start justify-between gap-2">
         <div>
-          <p className="text-[10px] font-extrabold tracking-[0.18em] text-amber-600">MALL ADMIN · AURORA MALL</p>
+          <p className="text-[10px] font-extrabold tracking-[0.18em] text-amber-600">
+            {data.scope.role === 'MALL_ADMIN' ? 'MALL ADMIN · AURORA MALL' : data.scope.role === 'CINEMA_MANAGER' ? 'CINEMA MANAGER · YOUR CINEMA' : 'STORE MANAGER · YOUR STORE'}
+          </p>
           <h1 className="mt-1 text-2xl font-black tracking-tight sm:text-3xl">Operations board</h1>
           <p className="text-xs text-muted-foreground">Rolling window: {data.window.label}</p>
         </div>

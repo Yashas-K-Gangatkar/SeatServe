@@ -8,9 +8,18 @@ import { toast } from 'sonner'
 import { get, post, ApiError } from '@/lib/client/api'
 import { useRealtime, usePolling, useOnline } from '@/lib/client/realtime'
 import type { RunnerResponse } from '@/lib/client/types'
+import StaffGate from '../StaffGate'
 import { timeHM, minAgo, StatusPill, LiveDot, Spinner, LoadError, EmptyState } from '../ui-bits'
 
 export default function Runner({ runnerId, go, onRouteChange }: { runnerId?: string; go: (p: string) => void; onRouteChange?: () => void }) {
+  return (
+    <StaffGate roles={['RUNNER', 'MALL_ADMIN']} go={go} consoleName="Runner console">
+      {() => <RunnerConsole runnerId={runnerId} go={go} onRouteChange={onRouteChange} />}
+    </StaffGate>
+  )
+}
+
+function RunnerConsole({ runnerId, go, onRouteChange }: { runnerId?: string; go: (p: string) => void; onRouteChange?: () => void }) {
   const [data, setData] = useState<RunnerResponse | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)

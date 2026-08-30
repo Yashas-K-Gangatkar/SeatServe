@@ -5,17 +5,22 @@ import { db } from '@/lib/db'
 import { ok, fail, parseBody } from '@/lib/api-helpers'
 import { canTransitionTicket, orderStatusFromTickets } from '@/lib/order-state'
 import { isTicketStatus, type TicketStatus } from '@/lib/types'
+import { requireStaff } from '@/lib/auth-server'
+import { canAccessStore } from '@/lib/auth'
 import { audit } from '@/lib/audit'
 import { emitToRooms } from '@/lib/realtime'
 
 const bodySchema = z.object({
   to: z.string().refine(isTicketStatus, 'Unknown ticket status'),
-  actorRole: z.string().default('KITCHEN_STAFF'),
-  actorRef: z.string().optional(),
 })
 
 export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
+  // Phase 2: only this store's kitchen/manager (or the mall admin) may advance tickets
+  const auth = await requireStaff(request, ['KITCHEN_STAFF', 'STORE_MANAGER', 'MALL_ADMIN'])
+  if ('error' in auth) return auth.error
+  const user = auth.user
+
   const parsed = await parseBody(request, bodySchema)
   if ('error' in parsed) return parsed.error
   const to = parsed.data.to as TicketStatus
@@ -25,6 +30,10 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     include: { order: { include: { seat: true, screen: { include: { cinema: true } } } }, store: true },
   })
   if (!ticket) return fail('Ticket not found', 404)
+
+  if (!canAccessStore(user, { id: ticket.storeId, mallId: ticket.store.mallId })) {
+    return fail('Your account is not authorized for this store', 403)
+  }
 
   if (!canTransitionTicket(ticket.status as TicketStatus, to)) {
     return fail(`Cannot move ticket from ${ticket.status} to ${to}`, 409)
@@ -76,8 +85,8 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   await db.order.update({ where: { id: ticket.orderId }, data: { status: nextOrderStatus } })
 
   await audit({
-    actorRole: parsed.data.actorRole,
-    actorRef: parsed.data.actorRef ?? ticket.store.name,
+    actorRole: user.role,
+    actorRef: user.email ?? user.id,
     action: 'TICKET_STATUS_CHANGED',
     entityType: 'StoreTicket',
     entityId: ticket.id,

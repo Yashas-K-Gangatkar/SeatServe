@@ -10,6 +10,7 @@
 import { PrismaClient } from '@prisma/client'
 import { computeBill, DEFAULT_PLATFORM, type StoreLineGroup } from '../src/lib/pricing'
 import { generateTicketCode, generatePaymentRef } from '../src/lib/ids'
+import { hashPassword } from '../src/lib/auth'
 
 type DB = PrismaClient
 
@@ -187,18 +188,23 @@ export async function seedDemoData(db: DB): Promise<void> {
   for (const p of products) await db.product.create({ data: p })
 
   // ── runners & users ──────────────────────────────────────────────
+  // Phase 2: every staff user gets a demo password + tenant scope.
+  // All demo accounts share the password "demo1234" (sandbox only).
+  const DEMO_PASSWORD = 'demo1234'
+  const demoHash = await hashPassword(DEMO_PASSWORD)
+
   const r1 = await db.runner.create({ data: { name: 'Ravi Kumar', phone: '+91 98200 11111', zoneId: zoneA.id, rating: 4.8 } })
   const r2 = await db.runner.create({ data: { name: 'Sana Sheikh', phone: '+91 98200 22222', zoneId: zoneB.id, rating: 4.9 } })
   await db.runner.create({ data: { name: 'Arjun Das', phone: '+91 98200 33333', zoneId: zoneA.id, rating: 4.6, isOnDuty: false } })
 
-  await db.user.create({ data: { name: 'Asha Rao', phone: '+91 90000 00001', email: 'asha@seatserve.demo', role: 'MALL_ADMIN' } })
-  await db.user.create({ data: { name: 'Vikram Mehta', phone: '+91 90000 00002', email: 'vikram@aurora.demo', role: 'CINEMA_MANAGER' } })
+  await db.user.create({ data: { name: 'Asha Rao', phone: '+91 90000 00001', email: 'asha@seatserve.demo', role: 'MALL_ADMIN', mallId: mall.id, passwordHash: demoHash } })
+  await db.user.create({ data: { name: 'Vikram Mehta', phone: '+91 90000 00002', email: 'vikram@aurora.demo', role: 'CINEMA_MANAGER', mallId: mall.id, cinemaId: cinemaA.id, passwordHash: demoHash } })
   for (const s of [snacks, pizza, wraps, mithai]) {
-    await db.user.create({ data: { name: `${s.name} Manager`, phone: `+91 9000${s.slug.length} 1100`, email: `manager@${s.slug}.demo`, role: 'STORE_MANAGER', storeId: s.id } })
-    await db.user.create({ data: { name: `${s.name} Kitchen`, phone: `+91 9000${s.slug.length} 2200`, email: `kitchen@${s.slug}.demo`, role: 'KITCHEN_STAFF', storeId: s.id } })
+    await db.user.create({ data: { name: `${s.name} Manager`, phone: `+91 9000${s.slug.length} 1100`, email: `manager@${s.slug}.demo`, role: 'STORE_MANAGER', storeId: s.id, passwordHash: demoHash } })
+    await db.user.create({ data: { name: `${s.name} Kitchen`, phone: `+91 9000${s.slug.length} 2200`, email: `kitchen@${s.slug}.demo`, role: 'KITCHEN_STAFF', storeId: s.id, passwordHash: demoHash } })
   }
-  await db.user.create({ data: { name: 'Ravi Kumar', phone: '+91 90000 00003', role: 'RUNNER', runnerId: r1.id } })
-  await db.user.create({ data: { name: 'Sana Sheikh', phone: '+91 90000 00004', role: 'RUNNER', runnerId: r2.id } })
+  await db.user.create({ data: { name: 'Ravi Kumar', phone: '+91 90000 00003', email: 'ravi@runner.demo', role: 'RUNNER', runnerId: r1.id, mallId: mall.id, passwordHash: demoHash } })
+  await db.user.create({ data: { name: 'Sana Sheikh', phone: '+91 90000 00004', email: 'sana@runner.demo', role: 'RUNNER', runnerId: r2.id, mallId: mall.id, passwordHash: demoHash } })
   await db.user.create({ data: { name: 'Priya Sharma', phone: '+91 90000 00005', role: 'CUSTOMER' } })
 
   // ── settings ─────────────────────────────────────────────────────

@@ -1,10 +1,8 @@
 'use client'
 
 // SeatServe — landing / demo hub (#/)
-import { useState } from 'react'
-import { QrCode, ChefHat, Bike, LayoutDashboard, ScanLine, RotateCcw, Clapperboard, Info } from 'lucide-react'
-import { toast } from 'sonner'
-import { post } from '@/lib/client/api'
+// Customer app front door (no login — seat QR flow) + staff portal entry.
+import { Clapperboard, LockKeyhole, QrCode, Search, Info } from 'lucide-react'
 import { rupees } from '../ui-bits'
 
 const CONSOLES = [
@@ -17,60 +15,20 @@ const CONSOLES = [
     tag: 'START HERE',
   },
   {
-    href: '#/kitchen/cinema-snacks',
-    icon: ChefHat,
-    title: 'Kitchen · Cinema Snacks',
-    sub: 'Realtime tickets with sound, status flow, allergy notes',
-    tint: 'text-violet-600 bg-violet-100',
-    tag: 'STAFF',
-  },
-  {
-    href: '#/kitchen/pizza-corner',
-    icon: ChefHat,
-    title: 'Kitchen · Pizza Corner',
-    sub: 'Own tickets only — store isolation by design',
-    tint: 'text-violet-600 bg-violet-100',
-    tag: 'STAFF',
-  },
-  {
-    href: '#/kitchen/wrap-house',
-    icon: ChefHat,
-    title: 'Kitchen · Wrap House',
-    sub: 'Accept → Prepare → Ready for pickup',
-    tint: 'text-violet-600 bg-violet-100',
-    tag: 'STAFF',
-  },
-  {
-    href: '#/kitchen/mithai-more',
-    icon: ChefHat,
-    title: 'Kitchen · Mithai & More',
-    sub: 'Sweets & filter coffee tickets',
-    tint: 'text-violet-600 bg-violet-100',
-    tag: 'STAFF',
-  },
-  {
-    href: '#/runner',
-    icon: Bike,
-    title: 'Runner console',
-    sub: 'Pick up from store, deliver to screen & seat',
+    href: '#/track',
+    icon: Search,
+    title: 'Track an order',
+    sub: 'Enter your order code (e.g. SS-7HYVEV) for per-store live status',
     tint: 'text-emerald-600 bg-emerald-100',
-    tag: 'STAFF',
+    tag: 'CUSTOMER',
   },
   {
-    href: '#/admin',
-    icon: LayoutDashboard,
-    title: 'Mall admin board',
-    sub: 'Live orders, KPIs, refunds, settlement summary, audit log',
-    tint: 'text-amber-600 bg-amber-100',
-    tag: 'ADMIN',
-  },
-  {
-    href: '#/qr',
-    icon: ScanLine,
-    title: 'Seat QR generator',
-    sub: 'Printable QR sheet per screen — scan any code to open that seat',
-    tint: 'text-rose-600 bg-rose-100',
-    tag: 'ADMIN',
+    href: '#/staff',
+    icon: LockKeyhole,
+    title: 'Staff portal',
+    sub: 'Kitchen · Runner · Cinema · Mall admin — sign-in required, every console scoped by role',
+    tint: 'text-violet-600 bg-violet-100',
+    tag: 'STAFF LOGIN',
   },
 ]
 
@@ -78,25 +36,11 @@ const DEMO_STEPS = [
   'Open “Customer · Seat F-12” (or scan a QR from the generator page).',
   'Add items from 2–3 different stores to ONE cart, then pay (mock UPI).',
   'You land on live tracking — each store has its own status ticket.',
-  'Open the matching kitchen consoles — new tickets arrive with a chime.',
-  'Advance each ticket to “Ready”, then deliver as the Runner. Watch tracking update in realtime.',
+  'Sign in to the staff portal as a cook (e.g. kitchen@pizza-corner.demo) — only their tickets appear.',
+  'Advance to “Ready”, deliver as the runner (ravi@runner.demo), watch tracking update in realtime.',
 ]
 
 export default function SeatLanding({ go }: { go: (path: string) => void }) {
-  const [resetting, setResetting] = useState(false)
-
-  const resetDemo = async () => {
-    setResetting(true)
-    try {
-      await post('/api/simulator/reset')
-      toast.success('Demo data reset', { description: 'Two sample orders restored, everything else wiped.' })
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Reset failed')
-    } finally {
-      setResetting(false)
-    }
-  }
-
   return (
     <div className="mx-auto w-full max-w-5xl px-4 pb-16 pt-10 sm:px-6">
       {/* hero */}
@@ -121,18 +65,18 @@ export default function SeatLanding({ go }: { go: (path: string) => void }) {
             <QrCode className="h-4 w-4" aria-hidden /> Open seat F-12
           </button>
           <button
-            onClick={() => go('#/qr')}
+            onClick={() => go('#/staff/login')}
             className="inline-flex items-center gap-2 rounded-full border border-stone-300 bg-white/70 px-5 py-3 text-sm font-bold text-stone-800 shadow-sm transition hover:border-stone-400 hover:bg-white"
           >
-            <ScanLine className="h-4 w-4" aria-hidden /> QR generator
+            <LockKeyhole className="h-4 w-4" aria-hidden /> Staff sign in
           </button>
         </div>
       </header>
 
       {/* consoles */}
       <section aria-label="Demo consoles">
-        <h2 className="mb-3 text-sm font-bold uppercase tracking-wider text-muted-foreground">Consoles</h2>
-        <div className="grid gap-3 sm:grid-cols-2">
+        <h2 className="mb-3 text-sm font-bold uppercase tracking-wider text-muted-foreground">Two apps, one platform</h2>
+        <div className="grid gap-3 sm:grid-cols-3">
           {CONSOLES.map((c) => (
             <a
               key={c.href}
@@ -171,15 +115,9 @@ export default function SeatLanding({ go }: { go: (path: string) => void }) {
           ))}
         </ol>
         <div className="mt-5 flex flex-wrap items-center gap-3 border-t border-stone-200 pt-4">
-          <button
-            onClick={resetDemo}
-            disabled={resetting}
-            className="inline-flex items-center gap-2 rounded-full border border-stone-300 bg-white px-4 py-2 text-xs font-bold text-stone-700 shadow-sm transition hover:border-stone-400 hover:bg-stone-50 disabled:opacity-50"
-          >
-            <RotateCcw className={`h-3.5 w-3.5 ${resetting ? 'animate-spin' : ''}`} aria-hidden />
-            {resetting ? 'Resetting…' : 'Reset demo data'}
-          </button>
-          <p className="text-xs text-stone-500">Restores seed data: 1 mall, 2 cinemas, 6 screens, 4 stores, 2 sample orders.</p>
+          <p className="text-xs text-stone-500">
+            <b>Phase 2:</b> staff consoles are now behind sign-in. Reset &amp; maintenance moved to the staff portal (mall admin).
+          </p>
         </div>
       </section>
 
@@ -191,10 +129,10 @@ export default function SeatLanding({ go }: { go: (path: string) => void }) {
         </div>
         <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           {[
-            { p: 'Phase 1', t: 'Clickable demo', d: 'Fake payment + simulated order flow, realtime staff dashboards, QR codes', state: 'current' },
-            { p: 'Phase 2', t: 'Platform core', d: 'PostgreSQL, NextAuth RBAC (6 roles), admin CRUD, E2E tests', state: 'next' },
+            { p: 'Phase 1', t: 'Clickable demo', d: 'Fake payment + simulated order flow, realtime staff dashboards, QR codes', state: 'done' },
+            { p: 'Phase 2', t: 'Platform core', d: 'Auth + RBAC (6 roles), scoped staff portal, session security, tests — YOU ARE HERE', state: 'current' },
             { p: 'Phase 3', t: 'Real sandbox rails', d: 'Razorpay Route / Cashfree Easy Split, signed webhooks, refunds, settlements', state: 'later' },
-            { p: 'Phase 4', t: 'Production', d: 'Merchant KYC onboarding, security & legal review, deployment', state: 'later' },
+            { p: 'Phase 4', t: 'Production', d: 'PostgreSQL migration, merchant KYC onboarding, security & legal review, deployment', state: 'later' },
           ].map((ph) => (
             <div
               key={ph.p}

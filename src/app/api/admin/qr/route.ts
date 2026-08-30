@@ -1,9 +1,10 @@
-// GET /api/admin/qr?screenId=<id> — printable seat-QR sheet data.
+// GET /api/admin/qr?screenId=<id> — printable seat-QR sheet data (login required).
 // QR encodes `<public origin>/?qr=<seatToken>` so a phone camera scan opens
-// exactly that seat's ordering page. Origin is derived from forwarded headers
-// so the QR works through the sandbox gateway and in production alike.
+// exactly that seat's ordering page. CINEMA_MANAGER is limited to their own
+// cinema's screens; MALL_ADMIN to their mall.
 import { db } from '@/lib/db'
 import { ok, fail } from '@/lib/api-helpers'
+import { requireStaff } from '@/lib/auth-server'
 import QRCode from 'qrcode'
 
 function publicOrigin(request: Request): string {
@@ -13,15 +14,25 @@ function publicOrigin(request: Request): string {
 }
 
 export async function GET(request: Request) {
+  const auth = await requireStaff(request, ['CINEMA_MANAGER', 'MALL_ADMIN'])
+  if ('error' in auth) return auth.error
+  const user = auth.user
+
   const url = new URL(request.url)
   const screenId = url.searchParams.get('screenId')
 
+  const scopeWhere =
+    user.role === 'MALL_ADMIN'
+      ? { cinema: { mallId: user.mallId ?? '__none__' } }
+      : { cinemaId: user.cinemaId ?? '__none__' }
+
   const screens = await db.screen.findMany({
+    where: scopeWhere,
     include: { cinema: true, _count: { select: { seats: true } } },
     orderBy: { name: 'asc' },
   })
-  const screen = screenId ? screens.find((s) => s.id === screenId) : screens.find((s) => s.name === 'Screen 3')
-  if (!screen) return fail('Screen not found', 404)
+  const screen = screenId ? screens.find((s) => s.id === screenId) : screens[0]
+  if (!screen) return fail('Screen not found (or outside your scope)', 404)
 
   const seats = await db.seat.findMany({
     where: { screenId: screen.id },

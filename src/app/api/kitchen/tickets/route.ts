@@ -1,11 +1,19 @@
 // GET /api/kitchen/tickets?storeId=<id> — paid, live tickets for ONE store only.
-// A store can never see another store's tickets (Phase 1 demo: enforced by query; Phase 2: by role).
+// Phase 2: login required. KITCHEN_STAFF/STORE_MANAGER are hard-locked to their
+// own store (server-side, from the session — client params cannot widen it);
+// MALL_ADMIN may supervise any store inside their mall.
 import { db } from '@/lib/db'
 import { ok, fail } from '@/lib/api-helpers'
+import { requireStaff } from '@/lib/auth-server'
+import { canAccessStore } from '@/lib/auth'
 
 const ACTIVE_STATUSES = ['NEW', 'ACCEPTED', 'PREPARING', 'READY_FOR_PICKUP'] as const
 
 export async function GET(request: Request) {
+  const auth = await requireStaff(request, ['KITCHEN_STAFF', 'STORE_MANAGER', 'MALL_ADMIN'])
+  if ('error' in auth) return auth.error
+  const user = auth.user
+
   const url = new URL(request.url)
   const storeId = url.searchParams.get('storeId')
   if (!storeId) return fail('storeId is required', 400)
@@ -13,6 +21,11 @@ export async function GET(request: Request) {
   // accept CUID id OR slug (dashboards route by slug for readable URLs)
   const store = await db.store.findFirst({ where: { OR: [{ id: storeId }, { slug: storeId }] } })
   if (!store) return fail('Store not found', 404)
+
+  // tenant isolation: a store cook can never read another store's tickets
+  if (!canAccessStore(user, { id: store.id, mallId: store.mallId })) {
+    return fail('Your account is not authorized for this store', 403)
+  }
 
   const tickets = await db.storeTicket.findMany({
     where: { storeId: store.id, status: { in: [...ACTIVE_STATUSES, 'PICKED_UP', 'DELIVERED'] }, order: { paymentStatus: 'PAID' } },
