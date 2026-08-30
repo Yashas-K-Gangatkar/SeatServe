@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>SeatServe — cinema ordering demo</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main>
+      <section class="hero">
+        <p class="eyebrow">AURORA MALL CINEMAS · DEMO</p>
+        <h1>Snacks without leaving your seat.</h1>
+        <p class="lead">Screen 3 · Seat F-12</p>
+        <button id="start-order" class="primary">Start an order</button>
+      </section>
+
+      <section id="ordering" class="hidden" aria-label="Food ordering">
+        <div class="section-heading"><div><p class="eyebrow">YOUR SEAT</p><h2>Screen 3 · F-12</h2></div><p>One payment. Separate tickets for each store.</p></div>
+        <div id="menu" class="menu"></div>
+        <div class="checkout"><div><strong id="total">₹0</strong><span id="item-count">0 items</span></div><button id="checkout" class="primary" disabled>Pay securely (demo)</button></div>
+      </section>
+
+      <section id="success" class="hidden confirmation" aria-live="polite"></section>
+
+      <section class="staff" aria-label="Staff dashboard">
+        <div class="section-heading"><div><p class="eyebrow">LIVE STAFF VIEW</p><h2>Kitchen & runner dashboard</h2></div><span class="live">● Live demo</span></div>
+        <p id="empty-state">A paid order will appear here for the right store.</p>
+        <div id="tickets" class="tickets"></div>
+      </section>
+    </main>
+    <script type="module" src="app.js"></script>
+  </body>
+</html>

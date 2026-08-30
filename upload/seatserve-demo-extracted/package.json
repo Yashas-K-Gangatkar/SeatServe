@@ -1,0 +1,10 @@
+{
+  "name": "seatserve-demo",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "node server.js",
+    "test": "node --test",
+    "test:coverage": "node --experimental-test-coverage --test"
+  }
+}
