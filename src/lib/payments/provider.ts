@@ -297,7 +297,7 @@ export function verifyWebhookMultiProvider(headers: Headers, rawBody: string): W
 }
 
 export const activeProviderId = (): ProviderId => {
-  const configured = process.env.PAYMENT_PROVIDER
+  const configured = process.env.PAYMENT_PROVIDER?.trim().toUpperCase()
   if (configured === 'RAZORPAY' || configured === 'CASHFREE') return configured
   return 'SANDBOX_MOCK'
 }

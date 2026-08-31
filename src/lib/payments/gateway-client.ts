@@ -18,7 +18,9 @@ import { razorpayTransfers, cashfreeSplits, type SplitInstructionInput } from '.
 export type ActiveGateway = 'SANDBOX_MOCK' | 'RAZORPAY' | 'CASHFREE'
 
 export function activeGateway(): ActiveGateway {
-  const configured = process.env.PAYMENT_PROVIDER
+  // case/format tolerant — "razorpay", " Razorpay " and "RAZORPAY" all work;
+  // a silent SANDBOX_MOCK fallback on a formatting mistake would be a money bug
+  const configured = process.env.PAYMENT_PROVIDER?.trim().toUpperCase()
   if (configured === 'RAZORPAY' && process.env.RAZORPAY_KEY_ID && process.env.RAZORPAY_KEY_SECRET) return 'RAZORPAY'
   if (configured === 'CASHFREE' && process.env.CASHFREE_APP_ID && process.env.CASHFREE_SECRET_KEY) return 'CASHFREE'
   return 'SANDBOX_MOCK'
@@ -91,12 +93,19 @@ export interface RazorpayOrderResult {
  */
 export async function createRazorpayOrder(input: SplitInstructionInput & { receipt: string }): Promise<RazorpayOrderResult> {
   const creds = razorpayCreds()
-  const transfers = razorpayTransfers(input)
+  // Route transfers attach ONLY for stores whose linked account is actually
+  // configured (RAZORPAY_ACCOUNT_<SLUG>). Without it the whole payment
+  // settles to the platform's main account and the Split ledger + settlement
+  // batches handle store payouts — the provider must never see a made-up
+  // account id like acct_<slug> (it rejects the whole order).
+  const transfers = razorpayTransfers(input).filter(
+    (t, i) => input.storeLegs[i] && process.env[`RAZORPAY_ACCOUNT_${input.storeLegs[i].storeSlug.toUpperCase().replace(/[^A-Z0-9]/g, '_')}`],
+  )
   const res = await gatewayJson(creds, '/orders', 'POST', {
     amount: input.amountPaise,
     currency: 'INR',
     receipt: input.receipt,
-    transfers,
+    ...(transfers.length > 0 ? { transfers } : {}),
   })
   if (!res.ok) throw new Error(`Razorpay order creation failed: ${res.error}`)
   const order = res.data as { id: string; amount: number }

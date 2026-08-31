@@ -1,13 +1,15 @@
 'use client'
 
-// SeatServe — checkout sheet (bill breakdown) + sandbox payment sheet.
+// SeatServe — checkout sheet (bill breakdown) + payment sheet.
 // The payment sheet talks to POST /api/orders (server computes money) and then
-// POST /api/payments/mock-pay (sandbox gateway). No card/UPI secrets are ever sent —
-// only a masked display string (e.g. "•••• 4242") the server may store for receipts.
+// to POST /api/payments/session: SANDBOX_MOCK drives the signed mock-gateway
+// pipeline; RAZORPAY opens the real Razorpay checkout (checkout.js) and the
+// SIGNED WEBHOOK — never the client — is the source of truth for money state.
+// No card/UPI secrets are ever sent to our server.
 import { useMemo, useRef, useState, useEffect } from 'react'
 import { Loader2, Lock, ShieldCheck, TriangleAlert, Timer, Store as StoreIcon, ChevronDown, CheckCircle2, Copy } from 'lucide-react'
 import { toast } from 'sonner'
-import { post, ApiError } from '@/lib/client/api'
+import { get, post, ApiError } from '@/lib/client/api'
 import { platformFeePaise } from '@/lib/pricing'
 import { useCart } from '@/lib/client/cart'
 import { rememberOrder } from '@/lib/client/orderMemory'
@@ -19,6 +21,36 @@ import { Input } from '@/components/ui/input'
 import { Switch } from '@/components/ui/switch'
 
 type Method = 'UPI' | 'CARD' | 'NETBANKING'
+
+type CheckoutSession =
+  | { mode: 'SANDBOX_MOCK'; orderCode: string; amountPaise: number }
+  | { mode: 'RAZORPAY'; gatewayOrderId: string; amountPaise: number; keyId: string; orderCode?: string }
+  | { mode: 'CASHFREE'; gatewayOrderId: string; paymentSessionId: string; amountPaise: number; orderCode?: string }
+
+type RazorpayHandlerResponse = {
+  razorpay_payment_id: string
+  razorpay_order_id: string
+  razorpay_signature: string
+}
+
+declare global {
+  interface Window {
+    Razorpay?: new (options: Record<string, unknown>) => { open: () => void }
+  }
+}
+
+/** Load Razorpay's checkout.js once; resolves false when unreachable. */
+function loadRazorpayScript(): Promise<boolean> {
+  return new Promise((resolve) => {
+    if (window.Razorpay) return resolve(true)
+    const script = document.createElement('script')
+    script.src = 'https://checkout.razorpay.com/v1/checkout.js'
+    script.async = true
+    script.onload = () => resolve(!!window.Razorpay)
+    script.onerror = () => resolve(false)
+    document.head.appendChild(script)
+  })
+}
 
 interface PlacedOrder {
   code: string
@@ -176,13 +208,14 @@ export function CheckoutSheet({
               {placing ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : <Lock className="h-4 w-4" aria-hidden />}
               Continue to pay ~{rupees(estimatedTotal)}
             </button>
-            <p className="mt-2 text-center text-[11px] text-muted-foreground">Sandbox demo — you will see a mock payment sheet, no real money moves.</p>
+            <p className="mt-2 text-center text-[11px] text-muted-foreground">One tap to pay — UPI, card or netbanking. The payment screen always shows the exact amount before you confirm.</p>
           </div>
         </SheetContent>
       </Sheet>
 
       <PaymentSheet
         order={placedOrder ? { code: placedOrder.code, totalPaise: placedOrder.breakdown.totalPaise } : null}
+        customer={{ name: name.trim() || undefined, phone: phone.trim() || undefined }}
         receipt={{
           seatCode: ctx.seat.code,
           screenName: ctx.screen.name,
@@ -213,17 +246,21 @@ export function PaymentSheet({
   order,
   onClose,
   receipt,
+  customer,
 }: {
   order: PlacedOrder | null
   onClose: (paid: boolean) => void
   /** optional itemized bill — the printed paper receipt after paying */
   receipt?: ReceiptData
+  /** optional prefill for the gateway's payment form */
+  customer?: { name?: string; phone?: string }
 }) {
   const [method, setMethod] = useState<Method>('UPI')
   const [vpa, setVpa] = useState('priya@okhdfcbank')
   const [card, setCard] = useState('4242 4242 4242 4242')
   const [failure, setFailure] = useState(false)
-  const [phase, setPhase] = useState<'form' | 'processing' | 'failed' | 'unknown' | 'paid'>('form')
+  const [gatewayMode, setGatewayMode] = useState<'SANDBOX_MOCK' | 'RAZORPAY' | null>(null)
+  const [phase, setPhase] = useState<'form' | 'processing' | 'confirming' | 'failed' | 'unknown' | 'paid'>('form')
   const [failMsg, setFailMsg] = useState('')
   const [paidDetail, setPaidDetail] = useState('')
   const sheetScrollRef = useRef<HTMLDivElement>(null)
@@ -235,11 +272,99 @@ export function PaymentSheet({
 
   if (!order) return null
 
-  const pay = async () => {
-    // Audit fix #10: double-tapping "Pay" used to fire two concurrent payment
-    // attempts. One attempt at a time, and a fresh idempotency key per attempt.
+  /**
+   * The signed webhook — never this client — flips the order to PAID. After the
+   * gateway reports success we poll the order status until the webhook lands
+   * (usually 1–3 s). Timeout lands in the honest "could not confirm" state.
+   */
+  const pollUntilPaid = async (code: string) => {
+    const deadline = Date.now() + 24_000
+    while (Date.now() < deadline) {
+      await new Promise((r) => setTimeout(r, 1500))
+      try {
+        const o = await get<{ paymentStatus: string }>(`/api/orders/${code}`)
+        if (o.paymentStatus === 'PAID') {
+          toast.success('Payment confirmed', { description: `Order ${code} · ${rupees(order.totalPaise)}` })
+          setPaidDetail('Razorpay')
+          setPhase('paid')
+          return
+        }
+        if (o.paymentStatus === 'FAILED') {
+          setFailMsg('The bank declined this payment. You can retry — you were not charged.')
+          setPhase('failed')
+          return
+        }
+      } catch {
+        /* transient — keep polling until the deadline */
+      }
+    }
+    setPhase('unknown')
+  }
+
+  const payWithRazorpay = async (session: Extract<CheckoutSession, { mode: 'RAZORPAY' }>) => {
+    const loaded = await loadRazorpayScript()
+    if (!loaded || !window.Razorpay) {
+      setFailMsg('Could not reach the payment gateway. Check your connection and retry.')
+      setPhase('failed')
+      return
+    }
+    const rzp = new window.Razorpay({
+      key: session.keyId,
+      order_id: session.gatewayOrderId,
+      amount: session.amountPaise,
+      currency: 'INR',
+      name: 'SeatServe',
+      description: `Order ${order.code}`,
+      ...(customer?.name || customer?.phone
+        ? { prefill: { name: customer.name || undefined, contact: customer.phone || undefined } }
+        : {}),
+      theme: { color: '#ea580c' },
+      handler: (response: RazorpayHandlerResponse) => {
+        // the gateway accepted the payment — webhook confirmation is pending
+        setPhase('confirming')
+        void pollUntilPaid(order.code)
+      },
+      modal: {
+        ondismiss: () => {
+          setPhase('form')
+          toast.info('Payment window closed — you can retry, or pay later from tracking.')
+        },
+      },
+    })
+    rzp.open()
+  }
+
+  const startPayment = async () => {
+    // Audit fix #10 still applies: one attempt at a time.
     if (phase !== 'form') return
     setPhase('processing')
+    try {
+      const session = await post<CheckoutSession>('/api/payments/session', { orderCode: order.code })
+      if (session.mode === 'RAZORPAY') {
+        setGatewayMode('RAZORPAY')
+        await payWithRazorpay(session)
+        return
+      }
+      if (session.mode === 'CASHFREE') {
+        setFailMsg('This payment method is not enabled yet. Please use the standard pay option.')
+        setPhase('failed')
+        return
+      }
+      setGatewayMode('SANDBOX_MOCK')
+      await runMockPay()
+    } catch (err) {
+      // Audit fix #33: a network drop mid-session does NOT mean failure.
+      const status = err instanceof ApiError ? err.status : 0
+      if (status === 0 || status >= 500) {
+        setPhase('unknown')
+        return
+      }
+      setFailMsg(err instanceof ApiError ? err.message : 'Could not start the payment')
+      setPhase('failed')
+    }
+  }
+
+  const runMockPay = async () => {
     // a touch of theatre — real gateways take a few seconds
     await new Promise((r) => setTimeout(r, 1600))
     try {
@@ -293,7 +418,7 @@ export function PaymentSheet({
           </SheetTitle>
           <SheetDescription className="text-left">
             Order {order.code} · <span className="font-bold text-foreground">{rupees(order.totalPaise)}</span>
-            {phase !== 'paid' && ' · SANDBOX (mock gateway)'}
+            {phase !== 'paid' && gatewayMode && (gatewayMode === 'RAZORPAY' ? ' · Secure UPI / card via Razorpay' : ' · SANDBOX (mock gateway)')}
           </SheetDescription>
         </SheetHeader>
 
@@ -324,7 +449,7 @@ export function PaymentSheet({
               {/* the printed bill — thermal paper sliding out of the slot */}
               {receipt && (
                 <div className="mt-4">
-                  <PaperReceipt data={receipt} orderCode={order.code} paidLine={`PAID — ${method}${paidDetail ? ` ${paidDetail}` : ''}`} />
+                  <PaperReceipt data={receipt} orderCode={order.code} paidLine={gatewayMode === 'RAZORPAY' ? `PAID — via Razorpay${paidDetail ? ` (${paidDetail})` : ''}` : `PAID — ${method}${paidDetail ? ` ${paidDetail}` : ''}`} />
                 </div>
               )}
               <button
@@ -337,10 +462,16 @@ export function PaymentSheet({
                 Anyone who has the tracking number can follow this order — like a parcel.
               </p>
             </div>
-          ) : phase === 'processing' ? (
+          ) : phase === 'processing' || phase === 'confirming' ? (
             <div className="flex flex-col items-center gap-3 py-10" role="status" aria-live="polite">
               <Loader2 className="h-8 w-8 animate-spin text-orange-500" aria-hidden />
-              <p className="text-sm font-semibold">Contacting bank{method === 'UPI' ? ' (UPI)' : ''}…</p>
+              <p className="text-sm font-semibold">
+                {gatewayMode === 'RAZORPAY'
+                  ? phase === 'confirming'
+                    ? 'Payment received — confirming with the bank…'
+                    : 'Opening the secure payment window…'
+                  : 'Contacting bank…'}
+              </p>
               <p className="text-xs text-muted-foreground">Do not close this window</p>
             </div>
           ) : phase === 'unknown' ? (
@@ -377,6 +508,12 @@ export function PaymentSheet({
             </div>
           ) : (
             <>
+              {gatewayMode === 'RAZORPAY' ? (
+                <div className="rounded-xl border border-border bg-card p-3 text-xs leading-relaxed text-muted-foreground">
+                  UPI, cards, netbanking and wallets — processed securely by Razorpay. Card details and UPI credentials never touch our servers.
+                </div>
+              ) : (
+                <>
               {/* method tabs */}
               <div className="grid grid-cols-3 gap-2" role="tablist" aria-label="Payment method">
                 {(['UPI', 'CARD', 'NETBANKING'] as Method[]).map((m) => (
@@ -417,9 +554,11 @@ export function PaymentSheet({
                 <span className="text-xs font-semibold text-amber-800">Simulate a failed payment</span>
                 <Switch checked={failure} onCheckedChange={setFailure} aria-label="Simulate payment failure" />
               </div>
+                </>
+              )}
 
               <button
-                onClick={pay}
+                onClick={startPayment}
                 className="mt-4 flex w-full items-center justify-center gap-2 rounded-full bg-gradient-to-b from-amber-500 to-orange-500 py-3.5 text-sm font-extrabold text-white shadow-md shadow-orange-500/30 hover:from-amber-600 hover:to-orange-600 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-orange-500"
               >
                 <ShieldCheck className="h-4 w-4" aria-hidden /> Pay {rupees(order.totalPaise)}
