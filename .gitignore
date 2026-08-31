@@ -57,3 +57,6 @@ server.log
 
 # sandbox tool output dumps (may contain file previews incl. secrets) — never commit
 /tool-results/
+
+# throwaway clones / scratch
+/tmp/
