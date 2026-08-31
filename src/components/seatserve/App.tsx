@@ -5,7 +5,7 @@
 //        #/runner(/<runnerId>) · #/admin · #/qr · #/support(/<code>)
 //        #/staff · #/staff/login   ← Phase 2 staff portal (separate site)
 import { useEffect, useState, useCallback } from 'react'
-import SeatLanding from './views/Landing'
+import Landing from '@/components/landing/Landing'
 import SeatPage from './views/SeatPage'
 import Tracking from './views/Tracking'
 import Kitchen from './views/Kitchen'
@@ -84,7 +84,7 @@ export default function SeatServeApp() {
     <div className="flex min-h-dvh flex-col">
       <OfflineBanner show={!online} />
       <main className="flex-1" aria-label="SeatServe">
-        {route.name === 'landing' && <SeatLanding go={navigate} />}
+        {route.name === 'landing' && <Landing />}
         {route.name === 'seat' && <SeatPage qrToken={route.param ?? ''} go={navigate} />}
         {route.name === 'track' && <Tracking code={route.param ?? ''} go={navigate} />}
         {route.name === 'kitchen' && <Kitchen storeId={route.param} go={navigate} onRouteChange={refreshRoute} />}
@@ -95,9 +95,11 @@ export default function SeatServeApp() {
         {route.name === 'staff-login' && <StaffLogin go={navigate} />}
         {route.name === 'staff' && <StaffPortal go={navigate} />}
       </main>
-      <footer className="print-hide mt-auto border-t border-border/60 py-4 text-center text-[11px] text-muted-foreground/70">
-        SeatServe · Phase 2 sandbox · mock payments, scoped staff portals, no real money moves
-      </footer>
+      {route.name !== 'landing' && (
+        <footer className="print-hide mt-auto border-t border-border/60 py-4 text-center text-[11px] text-muted-foreground/70">
+          SeatServe · Phase 2 sandbox · mock payments, scoped staff portals, no real money moves
+        </footer>
+      )}
     </div>
   )
 }

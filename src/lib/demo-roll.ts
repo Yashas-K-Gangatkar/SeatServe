@@ -31,8 +31,25 @@ export async function rollStaleShowtimes(screenId?: string): Promise<void> {
   // future showtime takes over on the same screen. Old orders keep pointing
   // at the retired show — history intact, nothing rewritten — while new
   // orders land on the fresh show.
+  // v3: also roll shows whose ORDERING WINDOW has died even though the show
+  // hasn't started (cutoff passed, startsAt still future). Without this there
+  // is a 30-minute dead zone per cycle where the seat page reads
+  // "Ordering closed" although the guardian's own startsAt<now trigger will
+  // not fire yet — found during landing QA, breaks the Try Demo path.
   const stale = await db.showtime.findMany({
-    where: { demoAutoRoll: true, isActive: true, startsAt: { lt: now }, ...scope },
+    where: {
+      demoAutoRoll: true,
+      isActive: true,
+      OR: [
+        { startsAt: { lt: now } }, // show already started
+        {
+          // ordering closed (cutoff passed) while the show is still future —
+          // roll anything that starts within its own cutoff window from now
+          startsAt: { lt: new Date(now.getTime() + 30 * 60_000) },
+        },
+      ],
+      ...scope,
+    },
     select: { id: true, screenId: true, movieTitle: true, language: true, orderCutoffMinutes: true },
   })
   for (const st of stale) {
