@@ -250,3 +250,25 @@ Stage Summary:
 - Local main = 5-ask fixes + rebuilt QR print enhancements, all green, ready to deploy in one push
 - Production is one deployment behind: needs push of 9c3573e + 518a0bc
 - Honest pitch numbers for the user: platform ~95% — everything demo-ready locally, production update blocked only on deploy credentials
+
+---
+Task ID: notifetch-motion-sound
+Agent: Super Z (main)
+Task: Transform the NotiFetch website (ctshop-git-main-noti-fetch.vercel.app) with premium motion + sound design per the 32-point brief
+
+Work Log:
+- DISCOVERY: the live NotiFetch URL serves the SAME codebase as SeatServe but a NEWER build — a full marketing landing (gold #D4AF37 theme, Geist fonts, 10 sections) + real routes (/scan /faq /staff /developers /legal/*) that do NOT exist in this sandbox. The repo is private (GitHub 404s), no token in sandbox → reconstructed the live presentation by scraping: extracted every section's markup from SSR HTML, all ss-* animation CSS from the compiled bundle, all 9 landing PNGs, fonts already local
+- MOTION SYSTEM: src/lib/motion/config.ts (EASE mirrors the site's CSS cubic-beziers, DUR, SPRING, STAGGER, LOOP clocks, HERO_TIMELINE 8-phase, MotionTier) + variants.ts (fadeRise/blurRise/maskUp/scaleIn/stagger/quietExit/still) + useReveal.ts (IntersectionObserver → .ss-reveal-in for the CSS layer)
+- SOUND SYSTEM: src/lib/sound/SoundManager.ts — 7 cues synthesized via WebAudio (tap/pop/notif/sweep/success/connect/toggle), master gain .14 + compressor, gesture-locked unlock, never throws; SoundProvider.tsx — useSyncExternalStore over localStorage ('notifetch.sound', default OFF), multi-tab sync, resume-on-first-pointerdown for returning users; SoundToggle in header (aria-pressed, persisted)
+- HERO: 8-phase entrance (place→headline blur-rise→sub→CTA→proof→masked media reveal→live system wakes→equilibrium); phone step conveyor (scan→browse→pay→track→arrived) always-forward transitions = seamless 5→1 wrap; status chip narrates each step; pauses off-screen + hidden tab; QR reconstructed as 15×15 bitmap data
+- LIVE STATUS: 3-card notification conveyor (confirmed→oven→runner) pure CSS on one 5.5s clock with negative delays (cyclical meaning → no visible seam); sound ping locks to animationiteration event; scroll counter-drift ±10px desktop only
+- Sections: HowItWorks (tap-driven step panels w/ AnimatePresence), WhySeatServe (CSS reveal + draw-check), CTA band (8s breathing glow), MenuShowcase (stagger + snap scroller + pop cues), TrustStats (rAF count-up + connect cue), Testimonials (restrained CSS reveal), FAQ (grid-rows accordion + tap cue), footer static
+- AUX PAGES: built html2tsx.py converter (class→className, SVG camelCase, style objects, brace escaping, optimizer src stripping) → /scan (BarcodeDetector camera + manual seat code + demo fallback), /faq (9 Q&As + live search), /staff (9 accounts + copy password), /developers, /legal/privacy|terms|refund (converted fragments, live-faithful); AuxChrome shared header/footer
+- QA ROUNDS: build 33 routes green, tsc 0, eslint 0 (fixed 2 setState-in-effect + 2 unused directives), 65/65 unit tests, 0 console errors, 0px overflow @360/390/768/1440, conveyor verified animating via computed-style sampling (Playwright freezes CSS animations in screenshots — artifact, not a bug), sound persists across reload, FAQ/step/scan interactions verified, Try Demo → seat flow verified
+- BUG FIXED en route: demo-roll guardian dead zone — shows whose cutoff passed but not yet started never re-rolled ('Ordering closed' stuck state); v3 rolls on cutoff-passed too (Try Demo now always works)
+- NOT DONE (needs user/deploy): production deploy (no GitHub/Vercel token in this sandbox); reference video was never uploaded — motion grammar taken from the brief's written spec
+
+Stage Summary:
+- Local build = live NotiFetch site + full motion/sound transformation, all QA green, commit bcfb178
+- Production deploy remains the single blocked step (token needed), same as the SeatServe line
+- Flagged: FAQ/auto-refund copy on landing+faq contradicts the no-refund policy pages (live site's own inconsistency; user to decide)
