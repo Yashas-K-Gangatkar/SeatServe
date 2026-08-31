@@ -24,6 +24,32 @@ interface PlacedOrder {
   totalPaise: number
 }
 
+// brief M4: light one-shot confetti burst when payment succeeds
+function ConfettiBurst() {
+  const pieces = useMemo(
+    () =>
+      Array.from({ length: 14 }, (_, i) => ({
+        left: `${6 + Math.random() * 88}%`,
+        dx: `${Math.round(Math.random() * 60 - 30)}px`,
+        rot: `${Math.round(Math.random() * 540 - 270)}deg`,
+        delay: `${(Math.random() * 0.25).toFixed(2)}s`,
+        color: ['#D4AF37', '#22C55E', '#F59E0B', '#F43F5E'][i % 4],
+      })),
+    [],
+  )
+  return (
+    <div aria-hidden className="pointer-events-none absolute inset-x-0 top-0 h-24 overflow-hidden">
+      {pieces.map((p, i) => (
+        <span
+          key={i}
+          className="ss-confetti-piece"
+          style={{ left: p.left, background: p.color, animationDelay: p.delay, ['--dx' as never]: p.dx, ['--rot' as never]: p.rot } as React.CSSProperties}
+        />
+      ))}
+    </div>
+  )
+}
+
 export function CheckoutSheet({
   open,
   onOpenChange,
@@ -295,7 +321,8 @@ export function PaymentSheet({
 
         <div className="px-5 pb-6 pt-4">
           {phase === 'paid' ? (
-            <div className="py-1" role="status">
+            <div className="relative py-1" role="status">
+              <ConfettiBurst />
               {/* the printed bill — thermal paper sliding out of the slot */}
               {receipt ? (
                 <PaperReceipt data={receipt} orderCode={order.code} paidLine={`PAID — ${method}${paidDetail ? ` ${paidDetail}` : ''}`} />

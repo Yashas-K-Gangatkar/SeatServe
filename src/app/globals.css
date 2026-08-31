@@ -199,3 +199,65 @@ body {
 @media (prefers-reduced-motion: reduce) {
   .receipt-anim, .slot-led { animation: none; }
 }
+
+/* ── Public site (Apple-style landing & pages) ─────────────────────── */
+.site-root {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+}
+
+@keyframes ss-rise {
+  from { opacity: 0; transform: translateY(14px); }
+  to { opacity: 1; transform: none; }
+}
+.ss-rise { animation: ss-rise 0.7s cubic-bezier(0.16, 1, 0.3, 1) both; }
+
+@keyframes ss-pop {
+  0% { transform: scale(1); }
+  40% { transform: scale(1.4); }
+  100% { transform: scale(1); }
+}
+.ss-pop { display: inline-block; animation: ss-pop 0.45s cubic-bezier(0.2, 0.8, 0.3, 1.4); }
+
+@keyframes ss-shake {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-9px); }
+  40% { transform: translateX(9px); }
+  60% { transform: translateX(-6px); }
+  80% { transform: translateX(6px); }
+}
+.ss-shake { animation: ss-shake 0.45s ease; }
+
+@keyframes ss-confetti {
+  0% { opacity: 1; transform: translate3d(0, -12px, 0) rotate(0deg); }
+  100% { opacity: 0; transform: translate3d(var(--dx, 0px), 64px, 0) rotate(var(--rot, 180deg)); }
+}
+.ss-confetti-piece {
+  position: absolute;
+  top: 0;
+  width: 7px;
+  height: 11px;
+  border-radius: 2px;
+  animation: ss-confetti 1.15s ease-out forwards;
+}
+
+@keyframes ss-scanline {
+  0% { top: 8%; }
+  50% { top: 90%; }
+  100% { top: 8%; }
+}
+.ss-scanline { animation: ss-scanline 2.6s ease-in-out infinite; }
+
+@keyframes ss-pulse-ring {
+  0% { box-shadow: 0 0 0 0 rgba(212, 175, 55, 0.45); }
+  70% { box-shadow: 0 0 0 18px rgba(212, 175, 55, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(212, 175, 55, 0); }
+}
+.ss-pulse-ring { animation: ss-pulse-ring 2s ease-out infinite; }
+
+.ss-imgzoom img { transition: transform 0.5s cubic-bezier(0.16, 1, 0.3, 1); }
+.ss-imgzoom:hover img { transform: scale(1.05); }
+
+@media (prefers-reduced-motion: reduce) {
+  .ss-rise, .ss-pop, .ss-shake, .ss-scanline, .ss-pulse-ring { animation: none; }
+  .ss-confetti-piece { display: none; }
+}

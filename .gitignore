@@ -60,3 +60,6 @@ server.log
 
 # throwaway clones / scratch
 /tmp/
+
+# local verification screenshots
+scripts/*.png

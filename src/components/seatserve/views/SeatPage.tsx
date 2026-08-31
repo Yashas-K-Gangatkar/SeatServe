@@ -3,7 +3,7 @@
 // SeatServe — customer seat page (#/seat/<qrToken>)
 // Mobile-first, dark-cinema friendly: big touch targets, high contrast, sticky cart bar.
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { Minus, Plus, ShoppingBag, Timer, Store as StoreIcon, ChevronLeft, MapPin, Ban, ChevronDown } from 'lucide-react'
+import { Minus, Plus, Check, ShoppingBag, Timer, Store as StoreIcon, ChevronLeft, MapPin, Ban, ChevronDown } from 'lucide-react'
 import { toast } from 'sonner'
 import { get, ApiError } from '@/lib/client/api'
 import { useCart } from '@/lib/client/cart'
@@ -19,6 +19,8 @@ export default function SeatPage({ qrToken, go }: { qrToken: string; go: (p: str
   const [loading, setLoading] = useState(true)
   const [checkoutOpen, setCheckoutOpen] = useState(false)
   const [openStores, setOpenStores] = useState<Record<string, boolean>>({})
+  // brief M2: add-to-cart button flashes green with a check for ~0.9s
+  const [flashId, setFlashId] = useState<string | null>(null)
 
   const cart = useCart()
   const load = useCallback(async () => {
@@ -211,13 +213,19 @@ export default function SeatPage({ qrToken, go }: { qrToken: string; go: (p: str
                           <button
                             onClick={() => {
                               cart.add(p.id)
-                              toast.success(`${p.name} added`, { duration: 1200 })
+                              setFlashId(p.id)
+                              window.setTimeout(() => setFlashId((cur) => (cur === p.id ? null : cur)), 900)
+                              toast.success(`${p.name} added`, { duration: 4000 })
                             }}
                             disabled={disabled}
-                            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-stone-300 bg-white text-stone-700 shadow-sm hover:border-amber-400 hover:bg-amber-50 hover:text-amber-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-500 disabled:cursor-not-allowed disabled:opacity-40"
+                            className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full shadow-sm transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-500 disabled:cursor-not-allowed disabled:opacity-40 ${
+                              flashId === p.id
+                                ? 'border border-emerald-500 bg-emerald-500 text-white'
+                                : 'border border-stone-300 bg-white text-stone-700 hover:border-amber-400 hover:bg-amber-50 hover:text-amber-700'
+                            }`}
                             aria-label={`Add ${p.name} to cart`}
                           >
-                            <Plus className="h-4 w-4" aria-hidden />
+                            {flashId === p.id ? <Check className="h-4 w-4" aria-hidden /> : <Plus className="h-4 w-4" aria-hidden />}
                           </button>
                         )}
                       </li>
@@ -237,7 +245,7 @@ export default function SeatPage({ qrToken, go }: { qrToken: string; go: (p: str
             <div className="min-w-0">
               <p className="text-lg font-black leading-none text-orange-600 tabular">{rupees(cartInfo.totalPaise)}</p>
               <p className="mt-0.5 truncate text-[11px] text-stone-500">
-                {cartInfo.count} item{cartInfo.count === 1 ? '' : 's'} · {cartInfo.storeCount} store{cartInfo.storeCount === 1 ? '' : 's'}
+                <span key={cartInfo.count} className="ss-pop font-extrabold tabular text-stone-900">{cartInfo.count}</span> item{cartInfo.count === 1 ? '' : 's'} · {cartInfo.storeCount} store{cartInfo.storeCount === 1 ? '' : 's'}
               </p>
             </div>
             <button

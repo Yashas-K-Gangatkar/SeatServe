@@ -95,9 +95,12 @@ export default function SeatServeApp() {
         {route.name === 'staff-login' && <StaffLogin go={navigate} />}
         {route.name === 'staff' && <StaffPortal go={navigate} />}
       </main>
-      <footer className="print-hide mt-auto border-t border-border/60 py-4 text-center text-[11px] text-muted-foreground/70">
-        SeatServe · Phase 2 sandbox · mock payments, scoped staff portals, no real money moves
-      </footer>
+      {/* shell footer only for in-app views — the landing has its own dark footer */}
+      {route.name !== 'landing' && (
+        <footer className="print-hide mt-auto border-t border-border/60 py-4 text-center text-[11px] text-muted-foreground/70">
+          SeatServe · In-seat ordering demo — no real payments are processed
+        </footer>
+      )}
     </div>
   )
 }
