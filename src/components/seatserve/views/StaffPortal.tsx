@@ -23,12 +23,8 @@ function consolesFor(user: StaffProfile): ConsoleCard[] {
   switch (user.role) {
     case 'MALL_ADMIN':
       return [
-<<<<<<< HEAD
         { href: '#/admin', icon: LayoutDashboard, title: 'Mall admin board', sub: 'Every store in your mall: live orders, KPIs, settlement, audit', tint: 'text-amber-600 bg-amber-100' },
-=======
-        { href: '#/admin', icon: LayoutDashboard, title: 'Mall admin board', sub: 'Every store in your mall: live orders, KPIs, refunds, settlement, audit', tint: 'text-amber-600 bg-amber-100' },
         { href: '#/menu', icon: UtensilsCrossed, title: 'Menu manager', sub: 'Any store in your mall: create items, set prices, mark items out of stock', tint: 'text-teal-600 bg-teal-100' },
->>>>>>> origin/main
         { href: '#/qr', icon: ScanLine, title: 'Seat QR generator', sub: 'Printable QR sheets for every screen in your mall', tint: 'text-rose-600 bg-rose-100' },
         { href: '#/kitchen', icon: ChefHat, title: 'Any kitchen (supervise)', sub: 'Open any store\u2019s kitchen console inside your mall', tint: 'text-violet-600 bg-violet-100' },
       ]

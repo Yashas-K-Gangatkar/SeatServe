@@ -3,44 +3,12 @@
 // SeatServe — PaperReceipt: the post-payment bill printed like a thermal
 // receipt sliding out of a POS slot. Just the slot + the paper (no machine
 // body, no hands — owner's brief). Warm hardware tones, white thermal paper,
-<<<<<<< HEAD
 // monospace ink, torn zigzag bottom, scannable QR to the tracking screen.
 
 import { useEffect, useState } from 'react'
 import QRCode from 'qrcode'
 import { rupees } from '../ui-bits'
 
-=======
-// monospace ink, torn zigzag bottom. No QR here — the only real QR is the
-// physical sticker on the seat; tracking is via the printed order code.
-
-import { rupees } from '../ui-bits'
-
-/** The warm hardware slot strip the paper slides out of (reused by the tracking page's bill). */
-export function ReceiptSlot() {
-  return (
-    <div className="relative z-20 mx-auto flex h-7 max-w-[300px] items-center rounded-full bg-gradient-to-b from-stone-500 via-stone-600 to-stone-700 px-4 shadow-[0_10px_20px_-8px_rgba(87,60,24,0.55),inset_0_1px_0_rgba(255,255,255,0.35)]">
-      <span className="slot-led h-1.5 w-1.5 shrink-0 rounded-full bg-amber-300 shadow-[0_0_6px_2px_rgba(252,211,77,0.7)]" aria-hidden />
-      <span className="mx-auto h-2 w-[74%] rounded-full bg-stone-950/80 shadow-[inset_0_1.5px_3px_rgba(0,0,0,0.8)]" aria-hidden />
-      <span className="text-[7px] font-black tracking-[0.22em] text-stone-300/90" aria-hidden>
-        SEATSERVE
-      </span>
-    </div>
-  )
-}
-
-/** Subtle bottom curl — the paper bows toward the viewer, corners lift off the surface. */
-export function ReceiptCurl() {
-  return (
-    <>
-      <span className="receipt-curl-shade" aria-hidden />
-      <span className="receipt-curl receipt-curl-l" aria-hidden />
-      <span className="receipt-curl receipt-curl-r" aria-hidden />
-    </>
-  )
-}
-
->>>>>>> origin/main
 export interface ReceiptData {
   seatCode?: string
   screenName?: string
@@ -73,7 +41,6 @@ export default function PaperReceipt({
   /** e.g. "PAID — UPI ••••@okhdfc" */
   paidLine: string
 }) {
-<<<<<<< HEAD
   const [qr, setQr] = useState<string | null>(null)
 
   // scannable QR → tracking screen (matches the reference bill's QR)
@@ -102,12 +69,6 @@ export default function PaperReceipt({
           SEATSERVE
         </span>
       </div>
-=======
-  return (
-    <div className="relative pt-1.5" aria-label="Payment receipt">
-      {/* machine slot — just the slot, no machine body, no hands */}
-      <ReceiptSlot />
->>>>>>> origin/main
 
       {/* the paper emerges from under the slot */}
       <div className="relative z-10 -mt-1 overflow-hidden pb-4">
@@ -176,7 +137,6 @@ export default function PaperReceipt({
 
           <div className="receipt-barcode mx-auto mt-3 h-9 w-3/4 opacity-90" aria-hidden />
 
-<<<<<<< HEAD
           {/* QR — scan to track this order */}
           <div className="mt-4 flex flex-col items-center">
             {qr ? (
@@ -189,13 +149,6 @@ export default function PaperReceipt({
 
           <p className="mt-4 text-center text-[11px] font-black tracking-[0.24em] text-stone-800">THANK YOU!</p>
           <p className="mt-0.5 text-center text-[9.5px] tracking-wide text-stone-500">ENJOY THE SHOW · NO DELIVERY FEE</p>
-=======
-          <p className="mt-4 text-center text-[11px] font-black tracking-[0.24em] text-stone-800">THANK YOU!</p>
-          <p className="mt-0.5 text-center text-[9.5px] tracking-wide text-stone-500">ENJOY THE SHOW · NO DELIVERY FEE</p>
-
-          {/* paper curl — bottom bows slightly, corners lift */}
-          <ReceiptCurl />
->>>>>>> origin/main
         </article>
       </div>
     </div>

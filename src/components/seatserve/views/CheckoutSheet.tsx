@@ -25,32 +25,6 @@ interface PlacedOrder {
   totalPaise: number
 }
 
-// brief M4: light one-shot confetti burst when payment succeeds
-function ConfettiBurst() {
-  const pieces = useMemo(
-    () =>
-      Array.from({ length: 14 }, (_, i) => ({
-        left: `${6 + Math.random() * 88}%`,
-        dx: `${Math.round(Math.random() * 60 - 30)}px`,
-        rot: `${Math.round(Math.random() * 540 - 270)}deg`,
-        delay: `${(Math.random() * 0.25).toFixed(2)}s`,
-        color: ['#D4AF37', '#22C55E', '#F59E0B', '#F43F5E'][i % 4],
-      })),
-    [],
-  )
-  return (
-    <div aria-hidden className="pointer-events-none absolute inset-x-0 top-0 h-24 overflow-hidden">
-      {pieces.map((p, i) => (
-        <span
-          key={i}
-          className="ss-confetti-piece"
-          style={{ left: p.left, background: p.color, animationDelay: p.delay, ['--dx' as never]: p.dx, ['--rot' as never]: p.rot } as React.CSSProperties}
-        />
-      ))}
-    </div>
-  )
-}
-
 export function CheckoutSheet({
   open,
   onOpenChange,
@@ -325,7 +299,6 @@ export function PaymentSheet({
 
         <div className="px-5 pb-6 pt-4">
           {phase === 'paid' ? (
-<<<<<<< HEAD
             <div className="py-1" role="status">
               {/* confirmation + code + copy come FIRST — they must never be
                   pushed below the fold by the (tall) receipt. Bug: on bigger
@@ -334,16 +307,6 @@ export function PaymentSheet({
                 <p className="text-sm font-bold text-emerald-800">Payment received — your order is in the kitchens</p>
                 <p className="mt-2 text-[11px] font-bold uppercase tracking-wider text-emerald-700/80">Your tracking number</p>
                 <p className="mt-1 select-all text-3xl font-black tracking-[0.14em] text-stone-900">{order.code}</p>
-=======
-            <div className="relative py-1" role="status">
-              <ConfettiBurst />
-              {/* the tracking number FIRST — always visible, no scrolling needed */}
-              <div className="mb-3 flex items-center justify-between gap-2 rounded-2xl border border-amber-300 bg-amber-50 px-4 py-3">
-                <div className="min-w-0">
-                  <p className="text-[10px] font-bold uppercase tracking-wider text-amber-700">Your tracking number</p>
-                  <p className="truncate text-xl font-black tracking-[0.1em] text-stone-900 select-all">{order.code}</p>
-                </div>
->>>>>>> origin/main
                 <button
                   onClick={async () => {
                     try {
@@ -353,48 +316,25 @@ export function PaymentSheet({
                       toast.error('Copy failed — long-press the code to copy it')
                     }
                   }}
-<<<<<<< HEAD
                   className="mt-3 inline-flex items-center gap-1.5 rounded-full border border-stone-300 bg-white px-4 py-2 text-xs font-extrabold text-stone-700 hover:bg-stone-50 print-hide"
-=======
-                  className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-amber-400 bg-white px-4 py-2.5 text-xs font-extrabold text-amber-800 hover:bg-amber-100"
-                  aria-label={`Copy tracking number ${order.code}`}
->>>>>>> origin/main
                 >
-                  <Copy className="h-3.5 w-3.5" aria-hidden /> Copy
+                  <Copy className="h-3.5 w-3.5" aria-hidden /> Copy tracking number
                 </button>
               </div>
               {/* the printed bill — thermal paper sliding out of the slot */}
-<<<<<<< HEAD
               {receipt && (
                 <div className="mt-4">
                   <PaperReceipt data={receipt} orderCode={order.code} paidLine={`PAID — ${method}${paidDetail ? ` ${paidDetail}` : ''}`} />
-=======
-              {receipt ? (
-                <PaperReceipt data={receipt} orderCode={order.code} paidLine={`PAID — ${method}${paidDetail ? ` ${paidDetail}` : ''}`} />
-              ) : (
-                <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-center">
-                  <p className="text-sm font-bold text-emerald-800">Payment received — your order is in the kitchens</p>
-                  <p className="mt-3 text-[11px] font-bold uppercase tracking-wider text-emerald-700/80">Your tracking number</p>
-                  <p className="mt-1 select-all text-3xl font-black tracking-[0.14em] text-stone-900">{order.code}</p>
->>>>>>> origin/main
                 </div>
               )}
               <button
                 onClick={() => onClose(true)}
-<<<<<<< HEAD
                 className="mt-4 w-full rounded-full bg-gradient-to-b from-amber-500 to-orange-500 py-3.5 text-sm font-extrabold text-white shadow-md shadow-orange-500/30 hover:from-amber-600 hover:to-orange-600 print-hide"
-=======
-                className="mt-3 w-full rounded-full bg-gradient-to-b from-amber-500 to-orange-500 py-3.5 text-sm font-extrabold text-white shadow-md shadow-orange-500/30 hover:from-amber-600 hover:to-orange-600 print-hide"
->>>>>>> origin/main
               >
                 Track my order
               </button>
               <p className="mt-2 text-center text-[11px] leading-relaxed text-stone-500 print-hide">
-<<<<<<< HEAD
                 Anyone who has the tracking number can follow this order — like a parcel.
-=======
-                Forgot to copy it? No problem — re-scan the seat QR and this device will remember your order.
->>>>>>> origin/main
               </p>
             </div>
           ) : phase === 'processing' ? (

@@ -12,8 +12,8 @@ import Kitchen from './views/Kitchen'
 import Runner from './views/Runner'
 import Admin from './views/Admin'
 import QrAdmin from './views/QrAdmin'
-import Support from './views/Support'
 import MenuManager from './views/MenuManager'
+import Support from './views/Support'
 import StaffLogin from './views/StaffLogin'
 import StaffPortal from './views/StaffPortal'
 import { OfflineBanner } from './ui-bits'
@@ -99,16 +99,9 @@ export default function SeatServeApp() {
         {route.name === 'staff-login' && <StaffLogin go={navigate} />}
         {route.name === 'staff' && <StaffPortal go={navigate} />}
       </main>
-<<<<<<< HEAD
       {route.name !== 'landing' && (
         <footer className="print-hide mt-auto border-t border-border/60 py-4 text-center text-[11px] text-muted-foreground/70">
           SeatServe · Phase 2 sandbox · mock payments, scoped staff portals, no real money moves
-=======
-      {/* shell footer only for in-app views — the landing has its own dark footer */}
-      {route.name !== 'landing' && (
-        <footer className="print-hide mt-auto border-t border-border/60 py-4 text-center text-[11px] text-muted-foreground/70">
-          SeatServe · In-seat ordering demo — no real payments are processed
->>>>>>> origin/main
         </footer>
       )}
     </div>

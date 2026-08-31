@@ -2,25 +2,16 @@
 
 // SeatServe — live order tracking (#/track/<code>)
 // Realtime via socket.io + 4s polling fallback. Per-store status timelines,
-<<<<<<< HEAD
 // runner leg, payment state (incl. retry), help entry. NO online refunds —
 // cinema policy: the counter resolves exceptions in person.
 import { useCallback, useEffect, useState } from 'react'
 import { Check, ChefHat, Bike, PackageCheck, CircleHelp, ChevronLeft, MapPin, CreditCard, ReceiptText, Copy } from 'lucide-react'
-=======
-// runner leg, payment state (incl. retry), support entry. Cinema-standard:
-// orders are final once placed — no refunds (see /legal/refund).
-import { useCallback, useEffect, useState } from 'react'
-import { Check, ChefHat, Bike, PackageCheck, CircleHelp, ChevronLeft, MapPin, CreditCard, Copy, History } from 'lucide-react'
->>>>>>> origin/main
 import { toast } from 'sonner'
 import { get, ApiError } from '@/lib/client/api'
 import { useRealtime, usePolling } from '@/lib/client/realtime'
-import { recentOrders, type RememberedOrder } from '@/lib/client/orderMemory'
 import type { TrackingResponse } from '@/lib/client/types'
 import { rupees, timeHM, StatusPill, RUN_STATUS_LABEL, Spinner, LoadError, EmptyState } from '../ui-bits'
 import { PaymentSheet } from './CheckoutSheet'
-import { ReceiptSlot, ReceiptCurl } from './PaperReceipt'
 
 const STEPS = [
   { key: 'NEW', label: 'Order sent' },
@@ -44,19 +35,6 @@ export default function Tracking({ code, go }: { code: string; go: (p: string) =
 
 function TrackEntry({ go }: { go: (p: string) => void }) {
   const [entry, setEntry] = useState('')
-  const [recents, setRecents] = useState<RememberedOrder[]>([])
-
-  useEffect(() => {
-    let alive = true
-    // microtask: localStorage read after mount (avoids sync setState in effect)
-    Promise.resolve().then(() => {
-      if (alive) setRecents(recentOrders(3))
-    })
-    return () => {
-      alive = false
-    }
-  }, [])
-
   return (
     <div className="mx-auto w-full max-w-md px-4 pb-16 pt-10">
       <button onClick={() => go('#/')} className="mb-3 inline-flex items-center gap-1 text-xs font-semibold text-muted-foreground hover:text-foreground">
@@ -93,29 +71,6 @@ function TrackEntry({ go }: { go: (p: string) => void }) {
         <p className="mt-3 text-[11px] leading-relaxed text-stone-500">
           The tracking number is shown right after payment — you can copy it there. Anyone who has it can follow the order, like a parcel tracking number; no account needed.
         </p>
-
-        {recents.length > 0 && (
-          <div className="mt-4 border-t border-dashed border-stone-200 pt-4">
-            <p className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-stone-500">
-              <History className="h-3.5 w-3.5" aria-hidden /> Recent on this device
-            </p>
-            <div className="mt-2 space-y-1.5">
-              {recents.map((o) => (
-                <button
-                  key={o.code}
-                  onClick={() => go(`#/track/${o.code}`)}
-                  className="flex w-full items-center justify-between gap-2 rounded-xl border border-stone-200 bg-stone-50 px-3 py-2.5 text-left text-xs font-bold text-stone-700 hover:border-amber-300 hover:bg-amber-50"
-                >
-                  <span className="tracking-wide">{o.code}</span>
-                  <span className="truncate text-stone-400">{o.screenName} · {o.seatCode}</span>
-                </button>
-              ))}
-            </div>
-            <p className="mt-2 text-[10px] leading-relaxed text-stone-400">
-              Orders this device placed in the last 24 hours — no need to retype the number.
-            </p>
-          </div>
-        )}
       </div>
     </div>
   )
@@ -298,13 +253,8 @@ function TrackingInner({ code, go }: { code: string; go: (p: string) => void }) 
                   }`}
                 >
                   {store.cancelledByRole === 'CUSTOMER'
-<<<<<<< HEAD
                     ? 'You cancelled this store before it was prepared. Your other stores are unaffected.'
                     : 'Cancelled by the store — this leg will not be prepared. The counter will sort this part out for you in person.'}
-=======
-                    ? 'You cancelled this store — your other stores are unaffected.'
-                    : 'Cancelled by the store — this item will not be prepared. Our support desk will assist you.'}
->>>>>>> origin/main
                 </p>
               )}
 
@@ -314,78 +264,22 @@ function TrackingInner({ code, go }: { code: string; go: (p: string) => void }) 
                   {RUN_STATUS_LABEL[store.deliveryRun.status] ?? store.deliveryRun.status} · {store.deliveryRun.runner} · {store.deliveryRun.dropLabel}
                 </p>
               )}
-<<<<<<< HEAD
-=======
-
->>>>>>> origin/main
             </article>
           )
         })}
       </section>
 
-      {/* bill — printed like the payment receipt: slot + thermal paper + curl */}
-      <div className="mt-4">
-        <ReceiptSlot />
-        <div className="relative z-10 -mt-1 overflow-hidden pb-4">
-          <section
-            aria-label="Bill"
-            className="receipt-anim receipt-paper receipt-zigzag relative mx-auto w-full max-w-[300px] rounded-b-sm px-5 pb-7 pt-5 font-mono text-[12px] leading-relaxed text-stone-800"
-          >
-            <ReceiptCurl />
-
-            <h2 className="text-center text-[13px] font-black tracking-[0.28em] text-stone-900">BILL</h2>
-            <p className="mt-0.5 text-center text-[9px] font-semibold tracking-[0.16em] text-stone-500">
-              {order.location.seat ? `SEAT ${order.location.seat} · ` : ''}{order.code}
-            </p>
-
-            <div className="my-3 border-t border-dashed border-stone-300" />
-
-            {/* per-store lines — cancelled legs stay printed, marked cancelled */}
-            {order.stores.map((s) => (
-              <div key={s.ticketId} className={`mb-2 ${s.status === 'CANCELLED' ? 'opacity-60' : ''}`}>
-                <p className="text-[11px] font-black tracking-wide text-stone-700">
-                  {s.emoji ? `${s.emoji} ` : ''}
-                  {s.storeName.toUpperCase()}
-                  {s.status === 'CANCELLED' && <span className="ml-1 font-bold text-red-600">✕ CANCELLED</span>}
-                </p>
-                <ul className="mt-0.5 space-y-0.5">
-                  {s.items.map((i) => (
-                    <li
-                      key={i.name}
-                      className={`flex items-baseline justify-between gap-3 ${s.status === 'CANCELLED' ? 'line-through decoration-stone-400' : ''}`}
-                    >
-                      <span className="truncate">
-                        {i.name} <span className="text-stone-500">× {i.qty}</span>
-                      </span>
-                      <span className="shrink-0 tabular">{rupees(i.lineTotalPaise)}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            ))}
-
-            <div className="my-3 border-t border-dashed border-stone-300" />
-
-            <dl className="space-y-0.5">
-              <div className="flex justify-between">
-                <dt className="text-stone-600">Item total</dt>
-                <dd className="tabular">{rupees(order.totals.subtotalPaise)}</dd>
-              </div>
-              <div className="flex justify-between">
-                <dt className="text-stone-600">Platform fee 5%</dt>
-                <dd className="tabular">{rupees(order.totals.platformFeePaise)}</dd>
-              </div>
-              <div className="mt-1 flex items-baseline justify-between border-t border-dashed border-stone-300 pt-1.5">
-                <dt className="text-[13px] font-black tracking-wide text-stone-900">TOTAL PAID</dt>
-                <dd className="text-[15px] font-black tabular text-stone-900">{rupees(order.totals.totalPaise)}</dd>
-              </div>
-            </dl>
-
-            <div className="receipt-barcode mx-auto mt-4 h-7 w-2/3 opacity-80" aria-hidden />
-            <p className="mt-2 text-center text-[8.5px] tracking-[0.14em] text-stone-500">GST INCLUDED AT STORE · NO DELIVERY FEE</p>
-          </section>
-        </div>
-      </div>
+      {/* bill + help */}
+      <section className="mt-4 rounded-2xl border border-border bg-card p-4">
+        <h2 className="mb-2 flex items-center gap-1.5 text-xs font-extrabold uppercase tracking-wider text-muted-foreground">
+          <ReceiptText className="h-3.5 w-3.5" aria-hidden /> Bill
+        </h2>
+        <dl className="space-y-1 text-sm">
+          <div className="flex justify-between"><dt className="text-muted-foreground">Item total (GST incl. at store)</dt><dd className="tabular">{rupees(order.totals.subtotalPaise)}</dd></div>
+          <div className="flex justify-between"><dt className="text-muted-foreground">Platform fee (5% of total)</dt><dd className="tabular">{rupees(order.totals.platformFeePaise)}</dd></div>
+          <div className="flex justify-between border-t border-border pt-1.5 font-black"><dt>Total paid</dt><dd className="tabular text-orange-600">{rupees(order.totals.totalPaise)}</dd></div>
+        </dl>
+      </section>
 
       <button
         onClick={() => go(`#/support/${order.code}`)}
@@ -394,18 +288,10 @@ function TrackingInner({ code, go }: { code: string; go: (p: string) => void }) 
         <CircleHelp className="h-4 w-4 text-orange-500" aria-hidden /> Help & support
       </button>
 
-<<<<<<< HEAD
       <p className="mt-3 text-center text-[11px] leading-relaxed text-muted-foreground">
         Something wrong with your order? Talk to staff at the counter — they can see this order by its tracking number.
       </p>
 
-=======
-      {order.refunds.length > 0 && (
-        <p className="mt-3 text-center text-[11px] text-muted-foreground">
-          Open support request: <b className="text-foreground">{order.refunds[0].reason}</b> · {order.refunds[0].status}
-        </p>
-      )}
->>>>>>> origin/main
       {retryOpen && (
         <PaymentSheet
           order={{ code: order.code, totalPaise: order.totals.totalPaise }}
@@ -433,7 +319,3 @@ function TrackingInner({ code, go }: { code: string; go: (p: string) => void }) 
       )}    </div>
   )
 }
-<<<<<<< HEAD
-=======
-
->>>>>>> origin/main
