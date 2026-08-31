@@ -530,3 +530,22 @@ Stage Summary:
 - Single remaining blocker is Vercel-side: "Deployment was blocked" — user must unblock (check the deployment page vercel.com/noti-fetch/ct_shop/JDPoWEGKX31WBmURcpHSPKT3VvNg) or provide a Vercel token; then redeploy via UI button or I push a retrigger commit
 - Pending user inputs: reference video (sound cloning), decision on FAQ/refund copy contradiction flagged by previous session
 - Security: GitHub token pasted in chat is fully-scoped classic (incl. delete_repo) — recommend rotation/scoping after deploy is confirmed
+
+---
+Task ID: sound-reference-analysis
+Agent: Super Z (main)
+Task: Extract/clone the sound palette from the user's reference video (WhatsApp Video 2026-09-01)
+
+Work Log:
+- Video probed: 76.6s, 1280x720/30fps, AAC 44.1k stereo; ffmpeg audio (WAV 44.1k mono + 16k) + 50 keyframes (scene-detect + 4s grid) under scripts/soundref/
+- ASR (z-ai, 3x26s chunks, 30s API limit) revealed: NOT a talk-through — it is a SOUND-DESIGN BREAKDOWN of the Ramp "$5 coffee" ad: transcript "...receipt, then a photo of the receipt, then an email, an attachment, a Slack ping, a reminder... with Ramp... swipe captured, coded, synced instantly"
+- Frames confirm: Foley ("heavy paper"), Logic Pro timeline ("Swooshes, Whoosh, Short, Low", "FLUTE", "Tapping fingers", "Glass", "SNARE + CLAPS"), EVOC 20 vocoder on the voice, ad frames: "$5 coffee -> Swipe" card, "Where's your receipt?" infinite grid (chaos), ramp logo end-card
+- Onset/spectral analysis (scripts/soundref/analyze.py): 248 onsets; key fingerprints: paper thump 9.85s (trans ratio 87.8, 430-475Hz), bright ping stack 20-23s (775Hz body + 4.9k sparkle), receipt boom 27.8s (43-65Hz), bright tick 31.4s (7.9k), knock region 36.2s (624-797Hz), swipe 59.7s (409-431Hz, 345ms decay), sync ticks 64.6s (1.4k), outro riser+impact 69-70s
+- 13 candidate slices cut (slices/*.wav) + contact-sheet.png verified visually; shimmer rejected (voice-contaminated)
+- 12 clean cues synthesized from scratch (scripts/soundref/synth.py, numpy DSP — zero assets, zero licensing): ping, ping-stack, swoosh, swipe, success-ticks (captured->coded->synced ascending 880/1320/1760), tap-glass, knock, shutter, paper, boom, resolve-riser, toggle; all -3dBFS, 200ms-1.2s, spectral checks match reference fingerprints
+- Deliverables: /home/z/my-project/download/sound-previews/ (12 WAVs + preview-all.mp3 17s + preview-core.mp3)
+
+Stage Summary:
+- Sound palette cloned as synth recipes awaiting user approval (preview-all.mp3)
+- On approval: port recipes into src/lib/sound/SoundManager.ts as WebAudio params (stays asset-free) and map cues to events (notif->ping, transitions->swoosh, success->ticks, tap->glass, toggle->knock-lite, CTA->resolve-riser)
+- Vercel deploy still blocked ("Deployment was blocked") — user side

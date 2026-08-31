@@ -1,0 +1,14 @@
+{
+  "created": 1788205675,
+  "id": "20260901034754e5e6d2f7318f4bda",
+  "request_id": "20260901034754e5e6d2f7318f4bda",
+  "text": "A five-dollar coffee becomes a receipt, then a photo of the receipt, then an email, an attachment, a Slack ping, a reminder, another reminder.",
+  "usage": {
+    "completion_tokens": 35,
+    "prompt_tokens": 387,
+    "prompt_tokens_details": {
+      "cached_tokens": 0
+    },
+    "total_tokens": 422
+  }
+}

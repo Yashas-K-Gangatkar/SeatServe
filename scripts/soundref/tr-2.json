@@ -1,0 +1,14 @@
+{
+  "created": 1788205676,
+  "id": "202609010347552487031138384565",
+  "request_id": "202609010347552487031138384565",
+  "text": "And the message nobody wants to send, now imagine ten thousand of them with Ramp. A five dollar coffee is just a swipe captured, coded, synced instantly. Handle your team's expenses with Ramp.",
+  "usage": {
+    "completion_tokens": 46,
+    "prompt_tokens": 370,
+    "prompt_tokens_details": {
+      "cached_tokens": 0
+    },
+    "total_tokens": 416
+  }
+}
