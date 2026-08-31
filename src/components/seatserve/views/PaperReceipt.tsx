@@ -3,10 +3,9 @@
 // SeatServe — PaperReceipt: the post-payment bill printed like a thermal
 // receipt sliding out of a POS slot. Just the slot + the paper (no machine
 // body, no hands — owner's brief). Warm hardware tones, white thermal paper,
-// monospace ink, torn zigzag bottom, scannable QR to the tracking screen.
+// monospace ink, torn zigzag bottom. No QR here — the only real QR is the
+// physical sticker on the seat; tracking is via the printed order code.
 
-import { useEffect, useState } from 'react'
-import QRCode from 'qrcode'
 import { rupees } from '../ui-bits'
 
 /** The warm hardware slot strip the paper slides out of (reused by the tracking page's bill). */
@@ -65,24 +64,6 @@ export default function PaperReceipt({
   /** e.g. "PAID — UPI ••••@okhdfc" */
   paidLine: string
 }) {
-  const [qr, setQr] = useState<string | null>(null)
-
-  // scannable QR → tracking screen (matches the reference bill's QR)
-  useEffect(() => {
-    let cancelled = false
-    const url = typeof window !== 'undefined' ? `${window.location.origin}/#/track/${orderCode}` : orderCode
-    QRCode.toDataURL(url, { margin: 1, width: 220, color: { dark: '#292524', light: '#ffffff' } })
-      .then((d) => {
-        if (!cancelled) setQr(d)
-      })
-      .catch(() => {
-        /* QR is decorative — bill stays complete without it */
-      })
-    return () => {
-      cancelled = true
-    }
-  }, [orderCode])
-
   return (
     <div className="relative pt-1.5" aria-label="Payment receipt">
       {/* machine slot — just the slot, no machine body, no hands */}
@@ -154,16 +135,6 @@ export default function PaperReceipt({
           <p className="mt-0.5 text-center text-[19px] font-black tracking-[0.12em] text-stone-900 select-all">{orderCode}</p>
 
           <div className="receipt-barcode mx-auto mt-3 h-9 w-3/4 opacity-90" aria-hidden />
-
-          {/* QR — scan to track this order */}
-          <div className="mt-4 flex flex-col items-center">
-            {qr ? (
-              <img src={qr} alt={`QR code linking to live tracking of order ${orderCode}`} className="h-24 w-24 rounded-[2px] border border-stone-200 p-1" />
-            ) : (
-              <div className="h-24 w-24 animate-pulse rounded-[2px] bg-stone-100" aria-hidden />
-            )}
-            <p className="mt-1.5 text-[9px] font-bold tracking-[0.18em] text-stone-500">SCAN FOR LIVE TRACKING</p>
-          </div>
 
           <p className="mt-4 text-center text-[11px] font-black tracking-[0.24em] text-stone-800">THANK YOU!</p>
           <p className="mt-0.5 text-center text-[9.5px] tracking-wide text-stone-500">ENJOY THE SHOW · NO DELIVERY FEE</p>

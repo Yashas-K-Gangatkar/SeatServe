@@ -6,9 +6,8 @@
 // small footer/header link. Payments are simulated — say it once, kindly.
 import { useCallback, useEffect, useRef, useState } from 'react'
 import Image from 'next/image'
-import QRCode from 'qrcode'
 import {
-  ScanLine, UtensilsCrossed, Wallet, BellRing, Zap, Target, Copy,
+  ScanLine, UtensilsCrossed, Wallet, BellRing, Zap, Target,
   ShieldCheck, BadgeCheck, Rocket, ArrowRight, MapPin, Check, CheckCircle2,
   Star, Clock, Clapperboard, Lock, RefreshCw,
 } from 'lucide-react'
@@ -237,7 +236,6 @@ function DrawCheck() {
 export default function SeatLanding({ go }: { go: (path: string) => void }) {
   const [entry, setEntry] = useState<DemoEntry | null>(null)
   const [menu, setMenu] = useState<PreviewItem[]>(FALLBACK_MENU)
-  const [qrData, setQrData] = useState<string | null>(null)
   const [activeStep, setActiveStep] = useState(0)
   const [playKey, setPlayKey] = useState(0)
   const [dot, setDot] = useState(0)
@@ -252,7 +250,6 @@ export default function SeatLanding({ go }: { go: (path: string) => void }) {
   }, [])
 
   const seatToken = entry?.aurora?.qrToken ?? null
-  const seatLabel = entry?.aurora ? `Seat ${entry.aurora.seat}` : 'the demo seat'
   const openDemo = useCallback((itemName?: string) => {
     if (seatToken) {
       go(`#/seat/${seatToken}`)
@@ -296,15 +293,6 @@ export default function SeatLanding({ go }: { go: (path: string) => void }) {
       })
       .catch(() => undefined)
     return () => { cancelled = true }
-  }, [seatToken])
-
-  // Live phone-QR: scanning it with a phone camera opens the demo seat there.
-  useEffect(() => {
-    if (!seatToken) return
-    const url = `${window.location.origin}/?qr=${seatToken}`
-    void QRCode.toDataURL(url, { width: 360, margin: 1, color: { dark: '#1A1A1A', light: '#FAF8F5' } })
-      .then(setQrData)
-      .catch(() => undefined)
   }, [seatToken])
 
   // Carousel pagination: active dot follows scroll position.
@@ -681,36 +669,6 @@ export default function SeatLanding({ go }: { go: (path: string) => void }) {
           </Reveal>
         </section>
 
-        {/* ── try on your phone (live QR) ── */}
-        {qrData && seatToken && (
-          <section aria-label="Try on your phone" className="mx-auto max-w-5xl px-4 pb-16 sm:px-6 sm:pb-24">
-            <Reveal>
-              <div className="mx-auto flex max-w-md flex-col items-center gap-4 rounded-2xl border border-[#E7E2D8] bg-white p-6 text-center shadow-[0_4px_12px_rgba(0,0,0,0.06)] sm:flex-row sm:text-left">
-                <Image src={qrData} alt={`QR code that opens ${seatLabel} on your phone`} width={120} height={120} className="rounded-xl border border-[#EFEAE0]" unoptimized />
-                <div>
-                  <h2 className="text-base font-bold">Try it on your phone</h2>
-                  <p className="mt-1 text-sm leading-[1.6] text-[#6F6F6F]">
-                    Point your phone camera here to open {seatLabel} — the exact flow a movie-goer gets.
-                  </p>
-                  <button
-                    type="button"
-                    onClick={async () => {
-                      try {
-                        await navigator.clipboard.writeText(`${window.location.origin}/?qr=${seatToken}`)
-                        toast.success('Link copied', { duration: 4000 })
-                      } catch {
-                        toast.error('Copy failed — long-press the QR instead', { duration: 4000 })
-                      }
-                    }}
-                    className="mt-2 inline-flex min-h-[44px] items-center gap-1.5 rounded-xl border border-[#D8D3C8] px-3 py-2 text-[13px] font-bold text-[#1A1A1A] hover:bg-[#FBF9F3] active:scale-[0.98]"
-                  >
-                    <Copy className="h-3.5 w-3.5" aria-hidden /> Copy link
-                  </button>
-                </div>
-              </div>
-            </Reveal>
-          </section>
-        )}
       </main>
 
       {/* ── footer: Product / Legal / Access ── */}
