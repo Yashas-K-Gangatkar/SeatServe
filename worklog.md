@@ -211,3 +211,25 @@ Work Log:
 
 Stage Summary:
 - Post-payment bill is now a printed thermal receipt sliding out of a slot — exactly the reference vibe (no machine body, no hands), with a scannable tracking QR as a functional bonus
+
+---
+Task ID: no-refund + qrmemory + store-open + copyfix
+Agent: Super Z (main)
+Task: User's 5 asks before tomorrow's cinema pitch — check DB orders, remove refund feature, fix 2nd-order copy-code bug, QR-rescan order memory (localStorage), same-mall store opening + sold-out toggle; report completion %
+
+Work Log:
+- DB check: 20 orders inspected (scripts/check-orders.ts) — PAID/PARTIALLY_CANCELLED/COMPLETED all consistent, seat A-1/E-4 test data
+- COPY-BUG ROOT CAUSE (browser-verified): "Copy tracking number" rendered BELOW the tall thermal receipt → y≈890 on a 844px phone = below the fold; 1-item orders showed it, bigger orders pushed it off-screen. FIX: confirmation card (code + copy) now renders ABOVE the receipt; button measured at y=287/577 after fix
+- QR-RESCAN MEMORY: new src/lib/client/orderMemory.ts (localStorage per-seat cap-12, best-effort); rememberOrder() at placement in CheckoutSheet; new MyOrders.tsx strip on SeatPage ("YOUR ORDERS HERE" live cards, 10s polling, chevron → tracking); browser-verified end-to-end incl. click-through to #/track/<code>
+- NO-REFUND POLICY sweep: dropped Refund model + Order.refundedPaise (db push); deleted lib/refunds.ts → new slim src/lib/leg-voids.ts (computeLegReversal + voidStoreLeg, NO customer money); deleted routes admin/refunds action, orders/[code]/cancel-leg, orders/[code]/support; Support view → non-money counter-guidance page; Tracking lost CancelLegButton + refund copy; Admin lost refund inbox; kitchen cancel keeps ledger VOID only; gateway-client refund fns removed; reconcile R2/R3 rewritten (R2_ADJUST_NEGATIVE, R3_VOID_BOUND, legacy REFUNDED rows tolerated); settlement refundAdjustPaise → voidAdjustPaise; docs (README/LEGAL/SECURITY/DEPLOYMENT) updated; unit tests updated (65/65)
+- LEGACY DATA: 6 pre-money-model orders had double-counted refund+void rows (adjustments > total) → scripts/clean-legacy-orders.ts removed them; reconciliation now healthy
+- STORE OPENING: POST /api/stores (MALL_ADMIN, mall-scoped, dup-name guard, slug+random suffix, opening menu in one call, KYC=PENDING payout gate, STORE_CREATED audit + realtime); Admin board "+ Open a new store" form (emoji/name/tagline + dynamic menu rows with veg mark, ₹ price, prep min); browser-verified: "Bubble Boba Bar" created with 2 items → appears on customer menu instantly; sold-out toggle re-verified end-to-end (admin toggle → customer sees "Sold out right now" + Add disabled)
+- DEMO-FREEZE FIX (found during golden path): audit #42 v1 never rolled order-holding showtimes → test orders permanently froze screens at "Ordering closed". v2 SUPERSEDES: retire stale showtime (isActive=false, order history intact) + create fresh future showtime; demo/entry hero screen works again
+- GOLDEN PATH: updated for new policy (store picks by NAME not index — new store shifted name order; customer-cancel checks → endpoint-removed 404 checks; kitchen PREPARING-cancel allowed; settlement ≥4 stores). Also discovered standalone server must load RAZORPAY/CASHFREE sandbox webhook secrets → added to .env (documented in file)
+- Tooling incidents: leftover `next dev` on :3000 served stale code (500s) → killed, standalone restarted; MyOrders effect setState lint → deferred via setTimeout(0)
+- FINAL: tsc 0, lint 0, 65/65 unit, golden path 88/88 exit 0, browser-verified all 5 asks
+- DEPLOY GAP: git has NO remote in this sandbox + no GitHub/Vercel token available this session → commit 9c3573e is local-only; production ctshop-five.vercel.app still runs the pre-fix build (POST /api/stores → 405 there). Push + Vercel build is the ONE remaining step
+
+Stage Summary:
+- All 5 user asks DONE and verified locally; cinema policy is now "no online refunds, counter resolves" end-to-end
+- Completion for tomorrow's pitch: platform ~95% — customer + staff flows 100% demo-ready on local sandbox; 1 commit away from production (push blocked on token availability)
