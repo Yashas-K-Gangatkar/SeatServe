@@ -586,3 +586,20 @@ Stage Summary:
 - Vercel deployment block RESOLVED; production runs the motion/sound build + haptics
 - Token workflow locked in; reference-video analysis artifacts confirmed at scripts/soundref/ (13 slices, 50 frames, events.json)
 - Pending: landing/FAQ refund-copy decision; deeper ad-grade polish rounds
+
+---
+Task ID: 11
+Agent: Super Z (main)
+Task: Razorpay-review readiness — unify refund copy, remove demo framing, gate staff directory
+
+Work Log:
+- Fixed the FAQ contradiction (was: "cancel for full refund"; policy: orders final) in both /faq and landing Faq — now mirrors /legal/refund exactly (two technical reversals only, RBI failed-transaction rule, 5-7 days)
+- Terms: "Demo status — nothing is charged" section replaced with production "Payments" section (Razorpay, amount shown before confirm, pilot test-mode notice); privacy payment sentence updated; "demo pilot" softened to "pilot"
+- Grievance contact unified to grievance@seatserve.in in 4 files — PLACEHOLDER, user must confirm real domain/email
+- /staff: publicly listed staff emails + shared password demo1234 now gated behind pilot access code (useSyncExternalStore, SSR-safe, localStorage-remembered); sign-in CTA always visible
+- scripts/rotate-staff-password.ts created for go-live day (rotates 9 pilot users on the Neon DB, exact scrypt$16384$8$1 format of lib/auth.ts)
+- Gates: tsc 0, eslint 0, 67/67 tests, build OK; pushed 574cfd1; live-verified /faq new copy + /staff gate markers on ctshop-five.vercel.app
+
+Stage Summary:
+- Site is Razorpay-review ready content-wise; remaining items are OWNER-side: custom domain (vercel.app subdomain fails KYC), real grievance email + entity details, Razorpay KYC + test keys, then password rotation on go-live
+- Pending: sound polish rounds after user phone test
