@@ -313,3 +313,24 @@ Work Log:
 
 Stage Summary:
 - Both repos (SeatServe + whatsappg) now permanently unblocked with GitHub-verified commit identity; owner has an actionable India compliance brief in-repo; pending owner inputs = realtime provider key (recommended Ably free tier) OR stay on 4s polling for pilot, rotated tokens (order: create new -> paste -> verify/store -> revoke old), entity details for the 4 legal pages, monetization decision, custom domain name
+
+---
+Task ID: apple-redesign + feedback-fixes
+Agent: Super Z (main)
+Task: Execute the full "Apple-Level UX" redesign brief (owner: "list every one and do all in a row and don't miss any") + external feedback fixes (broken preview URLs, no-refund perception, landing jargon)
+
+Work Log:
+- Assets: generated 5 images via z-ai CLI (pizza/popcorn/chai/samosa food shots + cinema auditorium bg -> public/landing/); bun add jsqr for scanner fallback
+- Landing.tsx fully rewritten (Apple-style): sticky minimal header (logo + tiny staff link), hero "Snacks at Your Seat"/"Scan QR. Order. Delivered." with gold #D4AF37 primary CTA (Scan QR Code -> /scan) + ghost Try Demo, all phase/ledger/RBAC/webhook/mock jargon removed
+- FlowDemo: 45s looping code-built "video" (5 scenes: scan/browse/pay/cook/delivered in phone frame over cinema bg, captions + clickable dots, framer-motion crossfades, reduced-motion aware) — real mp4 slot ready
+- Sections: notification mockup ("Your pizza is ready. Seat B7 — coming now!" + Arrived 2 min early), How-it-works 4 icon steps (64px), Why-SeatServe 3 stat cards, menu preview with LIVE products from /api/context mapped to generated images + rounded Add buttons, FAQ accordion (4, rotating chevrons), trust signals, live phone-QR strip (real scannable QR of origin/?qr=<demoToken> + copy link), dark footer (Explore/Legal/Team incl. "Staff? Sign in here ->")
+- New routes: /scan (full-screen camera scanner: BarcodeDetector + jsQR fallback, torch toggle, tap-to-focus hint, scanline viewfinder, green check + confetti on success -> /?qr=<token> normalization, red shake on non-seat QR, manual code entry + demo-seat fallback), /faq (8 answers + search + support card), /staff (demo credentials table + copyable demo1234 + sign-in hand-off), /developers (all moved technical content: stack, phases, RBAC table, API surface, realtime, split ledger, data model), /legal/{privacy,terms,refund} (DPDP/e-com aligned, grievance officer placeholder)
+- Microinteractions: add-to-cart green flash + Check icon (900ms), cart badge ss-pop, success confetti burst in CheckoutSheet paid phase, sonner duration=4000 top-center
+- Palette/typography per brief: #FAF8F5 bg, #1A1A1A ink, ONE accent gold #D4AF37 (charcoal text on gold for AA contrast), system fonts, 56/40px headlines, 48px buttons (56 mobile), 44px+ touch targets, next/image lazy loading
+- layout.tsx: jargon-free meta description, themeColor #FAF8F5; App.tsx: shell footer hidden on landing, neutral wording elsewhere
+- Verified locally via agent-browser: desktop + mobile screenshots, full golden path (landing -> Try Demo -> add items -> mock pay -> confetti receipt SS-PWRH3V Rs.315.79 with 5% fee Rs.15.79), scanner manual entry invalid+valid, no console errors. Fixed stale demo showtime ("Ordering closed") via MALL_ADMIN /api/simulator/reset + reseeded demo tokens
+- Vercel: disabled SSO preview protection via PATCH ssoProtection=null (fixes "redirected to Vercel login" feedback); committed f56e066, deployment READY, all 8 prod routes 200 + /api/stores 5 stores
+- Deferred: testimonial avatars (brief says "if added later"); recommendation: make demo showtime cutoffs rolling so the demo never goes stale overnight
+
+Stage Summary:
+- Public surface fully redesigned per brief with zero jargon, real scanner page, legal/policy pages (refund perception fixed), preview links public; production ctshop-five.vercel.app serving the redesign; pending owner inputs unchanged (webhook secret/Razorpay go-live, token rotation, custom domain, Ably key if realtime upgrade wanted)
