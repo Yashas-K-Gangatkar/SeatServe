@@ -211,3 +211,22 @@ Work Log:
 
 Stage Summary:
 - Post-payment bill is now a printed thermal receipt sliding out of a slot — exactly the reference vibe (no machine body, no hands), with a scannable tracking QR as a functional bonus
+
+---
+Task ID: receipt-tweaks + git-push
+Agent: Super Z (main)
+Task: "ok do it" on receipt tweaks (curl effect + receipt style on tracking bill) and push to git with owner-provided token
+
+Work Log:
+- globals.css: added .receipt-curl-shade (bottom bow shading gradient) + .receipt-curl-l/-r (blurred radial corner-lift shadows) — subtle curl, warm tones only
+- PaperReceipt.tsx: extracted shared <ReceiptSlot> (slot strip) and new <ReceiptCurl>; paper now ends with curl spans; component render unchanged otherwise
+- Tracking.tsx: bill section rebuilt as the same printed receipt — ReceiptSlot + receipt-anim paper (receipt-paper receipt-zigzag, mono ink, 300px) + ReceiptCurl; itemized per-store lines (cancelled legs struck-through + red ✕ REFUNDED), dashed separators, Item total / Platform fee 5% / TOTAL PAID, barcode strip, "GST INCLUDED AT STORE · NO DELIVERY FEE" footer; ReceiptText icon import removed (unused)
+- Verified: tsc 0, lint 0, 68/68 unit (bun test tests/); browser 390×844: tracking bill on PARTIALLY_CANCELLED order SS-MAQVFK renders itemized with refunded leg (scripts/verify-track-bill-top.png); retry-pay on PENDING SS-8UG63P → mock paid → payment receipt prints with curl, ₹140 + ₹7.37 = ₹147.37 (5% of total) (scripts/verify-receipt-curl2.png); console clean
+- GIT: .env was TRACKED despite .gitignore → git rm --cached .env (now ignored + verified); secret-scanned staged diff (clean) and HEAD (only a harmless doc comment "rzp_live_" prefix mention in gateway-client.ts); added .env.example (+ .gitignore !.env.example exception); committed 927e62a on main (203 files)
+- GitHub: owner token gh p_…w6Pid REJECTED by API — 401 Bad credentials on both "Bearer" and "token" schemes (/user endpoint). Repo creation + push BLOCKED. No remote exists yet; push command ready once a valid token arrives
+- Razorpay: LIVE pair validated READ-ONLY (GET /v1/payments → 200 AUTH_OK, nothing created); keys written to gitignored .env with comments; PAYMENT_PROVIDER stays SANDBOX_MOCK locally — flip to razorpay at deploy + set webhook secret + KYC'd linked accounts
+- Vercel token: mentioned by owner but never actually provided — needed before any Vercel deploy
+
+Stage Summary:
+- Both receipt tweaks shipped and browser-verified; all work committed locally (927e62a), zero secrets in tree or history
+- Pending owner input: valid GitHub PAT (repo scope) → create private repo + push; Vercel token if deploy wanted; recommend rotating both the pasted PAT and considering rotation of the Razorpay live secret since they transited chat
