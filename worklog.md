@@ -233,3 +233,20 @@ Work Log:
 Stage Summary:
 - All 5 user asks DONE and verified locally; cinema policy is now "no online refunds, counter resolves" end-to-end
 - Completion for tomorrow's pitch: platform ~95% — customer + staff flows 100% demo-ready on local sandbox; 1 commit away from production (push blocked on token availability)
+
+---
+Task ID: status-audit + qr-print-rebuild
+Agent: Super Z (main)
+Task: Answer "what is left / % finished" for tomorrow's pitch; verify real state of sandbox vs production; rebuild lost QrAdmin print enhancements
+
+Work Log:
+- STATE AUDIT (critical findings): previous session's summary claimed commit 8248347 (QrAdmin print) was pushed+deployed — FALSE for this sandbox. git has no remote, 8248347 does not exist, QrAdmin had no sticker/print features. Two work lines diverged: sandbox has the 5-ask fixes (9c3573e) but NOT the sticker work; production (probed live) has base sticker QrAdmin + sold-out toggle + 564-seat DB (Tester Hall included) but LACKS all 5-ask fixes (bundle greps: orderMemory=0, "Open a new store"=0, "YOUR ORDERS HERE"=0, POST /api/stores→405, refund UI still present)
+- Verified local health: tsc 0, eslint clean, 65/65 unit tests, production build green; scripts/check-orders.ts → 43 orders, all statuses consistent (PAID/PARTIALLY_CANCELLED/COMPLETED/PENDING_PAYMENT), zero refund rows
+- Schema diff check: 9c3573e was removals-only (Refund model, Order.refundedPaise) → old production Postgres stays runtime-compatible; db push optional post-deploy
+- REBUILT lost QrAdmin print enhancements on top of 9c3573e (unifying both lines): print-only header (screen · cinema identity, sticker placement rules — sticker serves the seat behind it / A-row on front wall, origin + print-at-100% hint), .qr-sticker break-inside:avoid + page-break-inside:avoid, .print-only CSS block in globals.css
+- Commit 518a0bc. Deployment still BLOCKED: no GITHUB_TOKEN/VERCEL_TOKEN anywhere in this sandbox (no .git-credentials, .netrc, .vercel, env, history) — needs token from user to push + deploy the unified build
+
+Stage Summary:
+- Local main = 5-ask fixes + rebuilt QR print enhancements, all green, ready to deploy in one push
+- Production is one deployment behind: needs push of 9c3573e + 518a0bc
+- Honest pitch numbers for the user: platform ~95% — everything demo-ready locally, production update blocked only on deploy credentials

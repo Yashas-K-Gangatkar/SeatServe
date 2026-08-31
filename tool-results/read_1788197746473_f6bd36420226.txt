@@ -1,0 +1,236 @@
+     1→# Worklog
+     2→
+     3→---
+     4→Task ID: 1
+     5→Agent: Super Z (main agent)
+     6→Task: Build SeatServe Phase 1 — production-grade multi-store in-seat cinema food ordering demo (Next.js full-stack), from uploaded seatserve-demo.zip concept + detailed spec
+     7→
+     8→Work Log:
+     9→- Reviewed uploaded seatserve-demo.zip (vanilla JS concept demo) as product context
+    10→- Initialized fullstack environment (Next.js 16, TypeScript, Tailwind 4, shadcn/ui, Prisma/SQLite, bun)
+    11→- Presented architecture, normalized DB schema (22 tables), page list, API list, 4-phase plan to user before building
+    12→- Installed socket.io, socket.io-client, qrcode
+    13→- Wrote full Prisma schema: Mall/Cinema/Screen/Seat(qrToken)/Showtime(cutoff)/DeliveryZone/Store(KYC,commission)/Product(paise,GST,prepETA,veg,allergens)/Cart/CartItem/Order/OrderItem(price snapshots)/StoreTicket/Runner/DeliveryRun/Payment/PaymentEvent/Refund/Split/Settlement/User(6 roles)/AuditLog/AppSetting; SQLite has no enums → String + zod/TS unions
+    14→- Seeded: 1 mall (Aurora Mall Mumbai), 2 cinemas, 6 screens, 432 seats (deterministic QR tokens like A3-F12), 6 showtimes (incl. one past-cutoff for blocked-state demo), 4 stores, 18 products, 3 runners, 13 role users, 3 settings, 2 pre-built orders (one completed, one live PAID)
+    15→- Domain libs (pure, testable): pricing.ts (integer-paise money, GST-inclusive extraction, per-store commission, platform fee w/ min-max, prep ETA, split ledger with Σ=total invariant), cutoff.ts, order-state.ts (ticket state machine + order status derivation), webhook-sig.ts (HMAC-SHA256 timing-safe), ids.ts (unambiguous codes), payment-webhook.ts (verify→dedupe→state→audit→realtime fanout), realtime.ts (emit bridge), audit.ts, settings.ts
+    16→- APIs: health, context?qr, orders (server-side cutoff/availability/money), orders/[code] tracking, orders/[code]/support (deduped refund requests), payments/mock-pay (idempotency-key; builds signed event and calls the real webhook endpoint end-to-end), payments/webhook (HMAC verify + eventId dedupe), kitchen tickets (per-store isolation, accepts id OR slug), kitchen ticket status (state machine guards + runner auto-assign on READY), runner queue/assign/status, admin overview (KPIs/live orders/refunds/settlement/audit), admin qr (72 QR data-URLs per screen), stores/products toggles, audit, simulator/reset
+    17→- Realtime mini-service (mini-services/realtime-service): socket.io :3003 path '/' with rooms (order:<code>, store:<id>, runners, admin) + internal loopback emit bus :3004 (socket.io owns all '/' requests on 3003, so HTTP bridge needed its own port)
+    18→- Frontend SPA (single route per sandbox gateway constraint, hash-routed views): Landing hub, SeatPage (menu/cart/sticky bar/seat switcher), CheckoutSheet (bill breakdown, per-item kitchen notes), PaymentSheet (UPI/Card/Netbanking mock + failure simulator + masked details only), Tracking (6-step per-store timelines, runner leg, payment retry, refund entry), Kitchen dashboards ×4 (sound chime via WebAudio, busy mode, open/close), Runner console, Admin board (KPIs, live orders, refund inbox, store/inventory controls, settlement summary, audit feed), QR generator (printable white sheet), Support/refund
+    19→- Fixed during verify loop: NextResponse init type (201), cinema.mall include, lucide BanRotate→CircleSlash, lint (ref-during-render, setState-in-effect), kitchen slug vs CUID mismatch (API + realtime room), kitchen items query using slug, payment sheet unmounted by premature navigation (now: pay → then navigate; cart clears only on success)
+    20→- Tests: 35 bun unit tests (pricing invariants, cutoff, state machine, webhook sig, IDs) = 96.57% line coverage on domain layer; scripts/api-golden-path.sh = 28/28 end-to-end API assertions (bill invariant, idempotent replay, already-paid 409, illegal transition 409, runner auto-assign, full deliver→COMPLETED, refund dedupe, cutoff 423, forged webhook 401)
+    21→- Agent Browser verification: landing → seat F-12 → multi-store cart → checkout (₹430+₹48+₹12.90=₹490.90 correct) → UPI mock pay → success toast → tracking PAID → kitchen accept/prepare/ready (runner auto-assigned) → runner pickup/deliver → tracking DELIVERED timeline → admin KPIs → QR sheet (72 codes) → blocked-cutoff seat → mobile 390×844 layout → payment-failure sim → retry → reset. No console/page errors.
+    22→- Wrote README.md (setup, env vars, API surface, sandbox payment design, data model, testing, phased roadmap, honest limitations)
+    23→
+    24→Stage Summary:
+    25→- Phase 1 COMPLETE and browser-verified: clickable demo, mock payments w/ signed webhooks + idempotency + dedupe, realtime staff dashboards, QR generator, support/refunds, audit trail, seed data, 35 unit tests + 28 API tests, README
+    26→- Key decisions: integer-paise money; split ledger invariant (Σ=total) unit-tested; gateway fee modeling deferred to Phase 3 (real provider numbers); auth intentionally deferred to Phase 2 (open demo consoles, documented); hash-routing due to single-port sandbox gateway
+    27→- Dev server healthy (port 3000), realtime service on :3003/:3004, demo data freshly reset
+    28→
+    29→---
+    30→Task ID: fix-session-2
+    31→Agent: Super Z (main)
+    32→Task: Fix hydration error, broken add-to-cart, missing payment page; replace dark theme with light theme (user request)
+    33→
+    34→Work Log:
+    35→- Diagnosed hydration mismatch: useOnline() read navigator.onLine in the useState initializer — Node ≥21 exposes a navigator global WITHOUT onLine, so SSR rendered online=undefined → offline banner shown on server but not client (OfflineBanner boundary in React diff). Fixed: useState(true) + requestAnimationFrame-deferred sync + online/offline listeners (lint-clean, hydration-safe)
+    36→- Diagnosed "cannot add to cart": DB had 2 stores CLOSED + 4 products SOLD OUT (audit trail showed Admin-board toggles at 11:45 PM) → all "+" buttons disabled
+    37→- Diagnosed "no payment page": seeded showtimes were relative to seed time; hours later every cutoff had passed → "View cart" disabled + POST /api/orders returned 423
+    38→- Added Showtime.demoAutoRoll (schema) + src/lib/demo-roll.ts guardian: stale autoRoll shows roll to now+120min; the intentionally blocked Screen 1 show re-arms to now+20min after falling out of the 3h window → demo never dead-ends, blocked demo stays demonstrable
+    39→- Wired rollStaleShowtimes into GET /api/context and POST /api/orders (before showtime resolution); business cutoff math untouched
+    40→- Updated seed: Screen 1 showtime demoAutoRoll=false; re-pushed schema + re-seeded (all stores open, all products available, fresh showtimes)
+    41→- Full light-theme redesign ("Warm Ivory Cinema"): globals.css tokens (cream #fbf7ef bg, white cards, warm borders, orange-600 primary, amber ring) + fixed gradient background blooms; layout.tsx removed .dark class, light sonner (richColors); ui-bits status pills/banner/errors; Landing (gradient hero, tinted console cards); SeatPage (amber steppers, white cart bar, gradient CTAs); CheckoutSheet+PaymentSheet; Tracking (amber timeline, seat chip); Kitchen (amber new-ticket highlight); Runner; Admin; QrAdmin; Support — zero dark backgrounds remain
+    42→- Infra incident: Turbopack served stale CSS after edits → killed dev server; learned sandbox reaps setsid/nohup children at Bash-call end; double-fork pattern (setsid nohup cmd &) survives → dev server restored on :3000
+    43→- Agent Browser verification (light theme): landing → seat F-12 (83m left to order) → added items from 3 stores (₹610·4 items·3 stores correct) → checkout → payment sheet appeared (order SS-7HYVEV ₹701.30) → UPI pay → success toast → tracking PAID with per-store timelines → kitchen accept→prepare→ready (Live socket dot green) → runner pickup→deliver ("Delivered — nice work") → admin KPIs ₹1,455.70/2 orders incl. test order → Screen 1 A-1 still correctly "Ordering closed" → QR sheet renders → mobile iPhone-14 viewport → support page → console+errors EMPTY (no hydration warnings), dev.log clean
+    44→
+    45→Stage Summary:
+    46→- All three user-reported bugs fixed and browser-verified end-to-end; dark theme fully replaced by warm light theme
+    47→- Demo is now time-decay-proof (rolling showtimes) and state-decay-proof (re-seed + reset button restores open stores/available products)
+    48→- Lint passes; dev server healthy on :3000, realtime on :3003
+    49→
+    50→---
+    51→Task ID: phase-2
+    52→Agent: Super Z (main)
+    53→Task: Phase 2 — authentication + RBAC + separate staff portal with tenant scoping (user assigned virtual team: CTO/Assets/Lawyer/Design/UIUX/Sales/Developer); answer multi-cinema/multi-store isolation design
+    54→
+    55→Work Log:
+    56→- Answered architecture question: one platform, two portals (customer app login-free via seat QR; staff portal #/staff with email+password). Isolation = session-derived tenant scope (mallId/cinemaId/storeId/runnerId), enforced server-side on every staff API — never from client params
+    57→- Schema: User + mallId/cinemaId scope columns (+ Mall.users/Cinema.users relations), new Session model (unique tokenHash, expiresAt, userAgent, cascade delete); db:push OK
+    58→- src/lib/auth.ts (pure): scrypt hashPassword/verifyPassword (timingSafeEqual), newSessionToken (32B random), hashSessionToken (sha256 — raw token never stored), SESSION_TTL 7d, STAFF_ROLES, roleAllowed, scopeErrorFor, canAccessStore
+    59→- src/lib/auth-server.ts: tokenFromRequest (cookie parse), sessionUser (loads user + expiry/isActive checks), requireStaff(request, roles) route guard → 401/403, sessionCookieOptions (httpOnly, SameSite=Lax)
+    60→- APIs: POST /api/auth/login (email+password → cookie + scoped profile, LOGIN/LOGIN_FAILED audit), GET /api/auth/me, POST /api/auth/logout (revokes row + clears cookie)
+    61→- Seed: demo password demo1234 (scrypt) for all 13 staff users; runner users got emails (ravi@/sana@runner.demo); scope assignments: asha→mall, vikram→cinema A, per-store manager/kitchen, runners→mall
+    62→- Server-side scoping wired into: kitchen tickets GET (cook pinned to own store; MALL_ADMIN supervises mall), kitchen ticket status POST (canAccessStore + session actor), runner GET (RUNNER pinned to own runnerId), runner assign (self-assign only for RUNNER), runner ticket status (must own the run), admin overview (mall admin=own mall, cinema manager=own cinema, store manager=own store incl. per-store ticket filtering in liveOrders + scope label), admin/qr (cinema-scoped screens), audit (order-scoped; store/product events pass for mall admin w/ documented single-mall note), stores/[id] + products/[id] PATCH (canAccessStore), simulator/reset (MALL_ADMIN only)
+    63→- Frontend: src/lib/client/auth.ts (login/logout/useStaffAuth hook with tick-based refresh), StaffGate.tsx (loading/unauthenticated→sign-in card/forbidden→wrong-role card/ok→children), views/StaffLogin.tsx (portal identity, tap-to-fill demo chips, lawyer disclosure), views/StaffPortal.tsx (role-based console cards + scope badge + sign out + mall-admin reset), App.tsx routes #/staff #/staff/login (+ param==='login' parse fix, duplicate case cleanup)
+    64→- Staff views gated: Kitchen (store staff PINNED to own store — URL cannot widen; picker only for mall admin; canSwitch prop), Runner, Admin (scope banner "Scoped view · Mall-wide/Your cinema only", dynamic header), QrAdmin; Tracking gained TrackEntry (code-entry form) as wrapper+inner components (hooks-order safe); Landing redesigned to customer-front-door + staff entry, reset moved to staff portal
+    65→- FIXED REAL CUSTOMER BUG: parseRoute re-bounced every hashchange to the seat page while ?qr= remained in the query — QR-entry customers got yanked back to the menu after paying instead of tracking. Now normalized ONCE via history.replaceState (query stripped); verified: pay → lands #/track/<code>
+    66→- Dev-server incident: db.session undefined after schema change (old Prisma client cached by long-lived server) → restarted via double-fork setsid pattern; healthy
+    67→- Lint: fixed react-hooks use-memo deps (rolesKey string), set-state-in-effect (inline async IIFE + cancelled flag + tick refresh)
+    68→- Tests: tests/auth.test.ts (14 unit: scrypt round-trip/salt uniqueness/tamper-safety, token randomness/hash determinism, roleAllowed, scopeErrorFor, canAccessStore matrix) — 49 total pass; scripts/api-golden-path.sh rewritten: 48 assertions incl. full auth matrix (wrong-password 401, anon 401s on kitchen/runner/admin/audit/qr, cook-cross-store 403, runner pinning, cinema-manager scope label, store-toggle 403, reset 403, logout revocation)
+    69→- Browser-verified (agent-browser): login page chips → cook (only own kitchen, URL-hack #/kitchen/pizza-corner stays pinned, wrong-role card for runner→admin), mall admin (portal cards, admin board Mall-wide KPIs ₹1,407.20/3 orders), runner (own runs), customer flow via ?qr=A3-F12 → 3-store cart ₹550→₹633.50 earlier run & ₹347 rerun → payment → TRACKING (bug fix proven) → mobile 390px tracking + login screenshots saved; console clean
+    70→- README: Phase 2 status, two-portals table, demo credentials table, tenant isolation explainer, API surface updated (auth endpoints + scoping notes), testing section (49+48), roadmap (PG migration documented as Phase 4 provider swap), honest limitations
+    71→
+    72→Stage Summary:
+    73→- Phase 2 COMPLETE: staff portal live at #/staff/login (demo1234), customer app still login-free, every staff API session-scoped with server-enforced 403s, 49 unit + 48 API tests green, lint clean, browser-verified end-to-end
+    74→- Multi-tenancy answer delivered: same code serves N malls/cinemas/stores — role + scope columns drive all filters; new tenants are seed data, not new code
+    75→- Known deferrals (documented): PostgreSQL swap (sandbox is SQLite-only), Playwright E2E + rate limiting + full admin CRUD → Phase 3, invite/password flows → Phase 4
+    76→
+    77→---
+    78→Task ID: audit-1
+    79→Agent: Super Z (main)
+    80→Task: Full self-audit — find all logical mistakes in the codebase (user challenge)
+    81→
+    82→Work Log:
+    83→- Re-read every API route, domain lib, schema, seed, realtime service, and key views from disk
+    84→- Compiled 44-item logical mistake list, grouped: Money/Payments (11), Multi-tenancy (8), Cutoff (3), Races (4), Auth (4), Frontend (7), Data hygiene (5), Requirement gaps (2)
+    85→- Critical findings: cross-mall ordering possible (orders route never validates store.mallId vs seat mall; /api/context returns all stores); predictable + leaked seat QR tokens; unauthenticated socket.io rooms; ticket state machine role boundaries not enforced server-side; unpaid orders can reach status PAID via kitchen API; refund workflow dead-ends (no actioning API); payment.failed-after-captured corrupts state; stale INITIATED payment deadlock; cancelled tickets keep full settlement splits; wrong showtime selection blocks orderable customers; KPI counts refunded orders as sales
+    86→
+    87→Stage Summary:
+    88→- Audit delivered to user; awaiting user's verdict on which findings are valid/missed before fixing
+    89→- Proposed priority: critical block = items 12-17 (multi-tenancy) + 1-8 (payments)
+    90→
+    91→---
+    92→Task ID: audit-fix-1
+    93→Agent: Super Z (main)
+    94→Task: Fix ALL 44 logical mistakes from the self-audit, one by one, in the user's priority order (#12-17 isolation -> #1-8 money -> #20 showtime selection -> the rest), re-verifying each — user demand: "now get started do all those things now one by one and check again are they correct"
+    95→
+    96→Work Log:
+    97→- Re-read every file from disk (context had been compressed); re-confirmed all 44 audit items against live code before touching anything
+    98→- SCHEMA: AuditLog.mallId (exact audit scoping), Order.refundedPaise (refund-aware money), Split settlementStatus extended to REFUNDED|VOIDED; db push OK
+    99→- SEED (#38-42): SECOND MALL (Nexora Mall Pune: cinema, screen, Dosa Junction store, 3 products, zone, runner, 4 staff users) to make isolation TESTABLE; random QR tokens via generateQrToken() (#15 — predictable A1-A1-style tokens were capabilities for any seat); beverage GST 12% (#41); Settlement row for the delivered demo order (#39); /api/demo/entry publishes current demo tokens (#14/#14 support)
+   100→- ISOLATION (#12-19): orders route validates store.mallId === seat mall (409 cross-mall) (#12); /api/context returns only seat's mall stores (#13); runner queue/assign/status scoped by runner-zone mall / admin mallId (#16,#17); realtime rooms mall-scoped + HMAC token-gated (lib/realtime-auth.ts + /api/realtime/token + socket.io subscribe verification + client token fetch/cache; order rooms stay public — order code = capability) (#18); AuditLog.mallId used for exact audit scoping at every write site (#19); Admin header uses scope.mallName instead of hardcoded AURORA MALL
+   101→- MONEY (#1-11): kitchen status route requires paymentStatus PAID for non-cancel transitions (#1); kitchenControls() now ENFORCED — kitchen cannot do runner leg (#1 role boundaries); refunds.ts (new): computeLegReversal + computeProportionalReversal (largest-remainder, exact paise) + voidStoreLeg + applyRefundToLedger; kitchen CANCELLED now voids the leg's splits and auto-opens an APPROVED refund (#5); /api/admin/refunds/[id]/action (APPROVE/REJECT/PROCESS) writes negative REFUNDED rows, bumps refundedPaise, flips PARTIALLY_REFUNDED/REFUNDED (#2,#43); payment.failed AFTER capture returns already_paid — no more state corruption (#3); mock-pay expires INITIATED attempts older than 10 min (#4,#9) and does check+create inside a serialized transaction (#23); support route: paid orders only + amount clamped to refundable balance (#6); admin overview KPIs net of refunds + per-store sales from ledger + ordersLast24h counts ALL tickets (#7,#8); PaymentSheet: double-tap guard + unknown-outcome state (network drop mid-payment no longer lies) (#10,#33)
+   102→- CUTOFF (#20-22): lib/showtime.ts pickCurrentShow — single source of truth used by BOTH orders and context: earliest show with OPEN cutoff wins; blocked-state fallback only when nothing is orderable (#20,#21); minutesUntilCutoff ceil (no "0m left" while open) (#22); demo-roll no longer rolls shows referenced by existing orders — order history stops mutating (#42)
+   103→- RACES (#23-26): runner assign catches P2002 -> honest 409 (#24); kitchen+runner transitions use optimistic updateMany status guards (#25,#26)
+   104→- AUTH (#27-30): login rate limiter 5 fails/10min per email+IP -> 429 (#29); reset message admits session wipe (#30); #27/#28 (public tracking by code, public mock-pay) documented as capability model in README
+   105→- FRONTEND (#31-37): "Estimated total" labels + server-authority note (#31); est-delivery uses the real pricing formula on the actual cart, store cards show slowest-item+buffer (#32); Tracking shows a red cancelled banner instead of a lying step-0 timeline (#36); runner switcher hidden for RUNNER role (server pins anyway) (#34); dead actorRole/actorRef payloads removed from Kitchen/Runner/Admin calls (#35); busy mode labelled "Busy view" with display-only disclosure (#37); SeatPage prunes stale cart lines (sold out / store closed) with a toast (#40)
+   106→- REQUIREMENTS (#43,#44): refund actioning = #43; #44 partial: products PATCH accepts pricePaise, stores PATCH accepts commissionPct/deliveryFeePaise (audited, scoped)
+   107→- TESTS: tests/audit-fixes.test.ts (14: pickCurrentShow 4 cases incl. closer-but-closed show, cutoff ceil, leg reversal exactness, proportional reversal exactness+clamp, room token sign/verify/reject matrix, staff-room classification) -> 63 unit tests pass; scripts/realtime-auth-check.ts (socket join/deny verifier); api-golden-path.sh rewritten to 76 assertions incl. cross-mall 409, Nexora zero-leak board, unpaid-advance 409, kitchen-runner-leg 409, late-failed-webhook no-op, socket valid-join/forged-deny, full refund lifecycle (REQUESTED->APPROVED->PROCESSED->REFUNDED, double-process 409, re-request 409), cancel-leg auto-refund with EXACT amount check, KPI net-of-refunds, mallName scope, realtimeMallId, rate limiting
+   108→- Verified in browser (agent-browser): landing resolves random demo tokens; seat page (Aurora: 4 stores; Nexora: ONLY Dosa Junction, 0 console errors); 2-store cart -> checkout (~490.90 estimated-total label) -> mock pay -> tracking; kitchen console pinned (1 active paid ticket); admin board header MALL ADMIN · AURORA MALL; refund inbox Approve/Process/Reject buttons WORK (clicked Process -> order paymentStatus REFUNDED via UI)
+   109→- DEBUGGED during verification: 3 test-script bugs (stale product-index assumption after beverage GST change — the CODE was right, 16320 paise was exact; realtimeMallId compared against wrong mall; rate-limit test locking a real account across runs) + one infra zombie (old realtime-service process on :3003 answering without token gate — pkill, single clean restart, JOINED/DENIED verified)
+   110→- Lint clean; README updated (random tokens, second mall, new endpoints, rate limiting, refund flow, isolation proof)
+   111→
+   112→Stage Summary:
+   113→- ALL 44 audit items addressed and verified: 63 unit + 76 API assertions green, lint clean, browser-verified end-to-end incl. working refund money flow and cross-mall isolation proof
+   114→- Key designs: negative-amount split rows (VOIDED/REFUNDED) keep the ledger self-consistent without mutating history; realtime staff rooms = mall-scoped + HMAC room token; QR tokens and order codes are capabilities
+   115→- Dev server :3000 + realtime :3003 healthy on fresh seed (2 malls, 21 products, 18 staff users); worklog continues
+   116→
+   117→---
+   118→Task ID: recheck-1
+   119→Agent: Super Z (main)
+   120→Task: "check again everything if you find any thing failing then correct them then and there and start phase 3"
+   121→
+   122→Work Log:
+   123→- Full re-verification sweep: /api/health 200; /api/context correct mall-scoped behavior (A3-F12 404 is CORRECT — random capability tokens are audit fix #15); realtime :3003 up
+   124→- 63/63 unit tests pass; 76/76 API golden-path assertions pass
+   125→- Found + fixed 30 TypeScript errors "then and there":
+   126→  * runner/assign: Prisma conditional-type collapse across ternary union silently dropped `zone` from inferred type → restructured with explicit `(Runner & { zone }) | null` annotation + include on both branches (also needed at runtime)
+   127→  * pricing.ts StoreLineGroup.lines: PricedLine[] → PricedLineInput[] (computeBill prices internally; callers pass unpriced lines) — fixed orders route, seed, pricing tests
+   128→  * StaffGate made generic <R> so children receive role-narrowed profile (no casts at call sites; one sound cast inside the gate, justified by useStaffAuth runtime filter)
+   129→  * tsconfig excludes non-app dirs (skills/upload/examples); mini-services got its own tsconfig (0 errors); @types/bun installed for bun:test types
+   130→- Post-fix re-check: tsc 0 errors, lint clean, 63/63 + 76/76, browser smoke (staff login, runner console renders, runner→admin gate correctly forbidden, 0 console errors)
+   131→
+   132→Stage Summary:
+   133→- Codebase fully green: types, lint, 63 unit, 76 API, browser-verified gates
+   134→- Phase 3 (payments provider abstraction, partial cancel, settlement runs, reconciliation) starting now
+   135→
+   136→---
+   137→Task ID: phase-3-complete + user-bugfixes
+   138→Agent: Super Z (main)
+   139→Task: Finish Phase 3 verification (found mid-flight when session resumed), then fix user-reported customer bugs: case/paste-tolerant tracking, copy-code popup, wrong cancel attribution, seat-QR anti-scam trace
+   140→
+   141→Work Log:
+   142→- RESUMED after context compression: worklog showed recheck-1 done (63 unit + 76 API green) and Phase 3 files present but UNVERIFIED (provider.ts, settlement.ts, reconcile.ts, cancel-leg, admin settlement/reconciliation routes, SettlementPanel, phase3 tests)
+   143→- Fixed 3 tsc errors then-and-there: refunds.ts computeProportionalReversal id optional (pure SplitRow has no id, never used positionally), p3probe.ts include splits + relation-connect syntax
+   144→- CRITICAL RUNTIME BUG found by probe: POST /api/orders 500 — nested splits.create used scalar storeId; Split.store is a RELATION so Prisma rejects it in nested creates ("Unknown argument storeId") → fixed with store:{connect} / omit for null. Same bug in p3probe.ts
+   145→- Stale Prisma client incidents ×2 (commissionPaise unknown, cancelledByRole unknown after schema push): long-lived dev server caches old client → restart via double-fork setsid pattern (documented sandbox behavior)
+   146→- Golden path expanded to 102 assertions incl. Phase 3 sections; 3 failures all diagnosed:
+   147→  * test bug: kitchen payload {"status":...} → API expects {"to":...} (script fixed)
+   148→  * seed: PAID demo orders had NO payment.captured PaymentEvent (R5 fails) → seed now synthesizes signed captured event + STORE split rows now carry commissionPaise/taxPaise (Phase 3 ledger-driven settlement)
+   149→  * Cashfree adapter stored eventType=rawType ('PAYMENT_SUCCESS') but R5 checks normalized 'payment.captured' → payment-webhook.ts now stores NORMALIZED type (raw stays in payload+audit meta)
+   150→  * two more test-script bugs: CF cf_payment_id hardcoded 987654 → dedupeKey collision across runs (now run-unique); Nexora isolation assertion assumed empty mall (user's real Nexora order exists) → now asserts scope=Nexora AND no Aurora code leak
+   151→- RESULT: 102/102 API, 73/73 unit, tsc 0, lint clean
+   152→
+   153→USER-REPORTED FIXES (all browser-verified):
+   154→1. Track lookup: GET /api/orders/[code] paste-tolerant (trim+uppercase+SS- prefix auto-add+illegal-char strip); TrackEntry normalizes input too. Lowercase `gatde4` resolves SS-GATDE4 (200), junk → 404
+   155→2. PaymentSheet new 'paid' phase: Order confirmed popup with 3xl tracking number + Copy button + share note + Track my order. Tracking header code is now a copy chip. TrackEntry explains the code is shareable, no account needed
+   156→3. Cancel attribution: StoreTicket.cancelledByRole column (db push); cancel-leg sets CUSTOMER, kitchen status route sets session role; tracking payload+UI branch: customer → amber "You cancelled this store…", store → red "Cancelled by the store…" (orders cancelled BEFORE the fix keep the old message)
+   157→4. Seat-QR anti-scam: confirmed 432 unique per-seat QR tokens; every order records seatId; kitchen/runner payloads already carry screen/cinema/seat; NEW GET /api/admin/seat-trace?q=<QR|seat code> (MALL_ADMIN/CINEMA_MANAGER/STORE_MANAGER, scope-filtered via screen.cinema.mallId, SEAT_TRACE audit event) + Admin board Seat trace section (browser-verified: 'e-4' → Seat E-4 + QR 2AELK7ASAC + orders). Fixed my own Prisma relation-path bug in first version (screen.mallId → screen.cinema.mallId)
+   158→5. Two-portal confirmed: customer app login-free (QR + order code as capabilities), staff portal scoped logins — no customer accounts
+   159→
+   160→Stage Summary:
+   161→- Phase 3 COMPLETE and fully verified: multi-provider webhooks (SANDBOX_MOCK | RAZORPAY hex-HMAC | CASHFREE base64(ts+body) HMAC), linked-account/vendor split instruction builders, partial cancel with exact auto-refund, full/partial refunds, ledger-driven settlement batches (PENDING→PROCESSED+UTR, double-payout structurally impossible), R1–R5 reconciliation, admin SettlementPanel + SeatTrace UIs
+   162→- 102 API + 73 unit tests green, tsc/lint clean, all user-reported bugs fixed and browser-verified
+   163→- Production HTTP calls to gateways (checkout session creation, refund submission) documented as Phase 4 deployment work (needs real credentials)
+   164→
+   165→---
+   166→Task ID: money-model + phase-3/4-complete
+   167→Agent: Super Z (main)
+   168→Task: User decisions — remove delivery fee, remove platform GST handling, fix platform fee at 5% of customer total; fix staff-login confusion; complete Phase 3 and Phase 4
+   169→
+   170→Work Log:
+   171→- LOGIN: reproduced (asha@gmail.com → bare 401). Server-side logins all fine (rate limiter only ever locked a dummy rl-<runkey>@ratecheck.demo account). Root cause = typing Gmail-style addresses. Fixed StaffLogin 401 message: "NOT Gmail — tap a role chip, password demo1234"
+   172→- MONEY MODEL (owner decision) — full refactor with per-step verification:
+   173→  * pricing.ts rewritten: NO deliveryFeePaise anywhere, NO tax extraction (stores remit own GST — Product.taxRatePct kept as receipt info only), platform fee FIXED 5% of customer total via gross-up: total=round(sub/0.95), fee=total−sub (exactly 5% ±1 paisa). SplitRow = STORE×n + PLATFORM_COMMISSION (taxPaise legacy column, always 0)
+   174→  * refunds.ts: leg reversal = legSubtotal + platformShare (no tax/delivery components); proportional reversal commission-only
+   175→  * schema: dropped Store.deliveryFeePaise, Order.taxPaise, Order.deliveryFeePaise; added Store.kycDetail (JSON masked KYC snapshot); db push
+   176→  * routes updated: orders, orders/[code], context (settings → {platformFeePct:5, walkBufferMin}), stores/[id] (commission only), stores route select
+   177→  * UI: CheckoutSheet (Item total GST-incl-at-store / Platform fee 5% of total / Total to pay), SeatPage store header ("delivered to your seat"), Tracking bill, SettlementPanel (GST card removed), Admin labels, Landing copy
+   178→  * tests rewritten: pricing.test.ts (5% gross-up cases), phase3.test.ts ledger math, audit-fixes.test.ts reversals; golden path bill invariant + refund math (round not floor); >100% commission guard test (tax removal changed boundary)
+   179→  * verified LIVE: ₹600 + ₹31.58 = ₹631.58, fee = 5.000% of total
+   180→- PHASE 3 FINISH — real gateway rails, env-activated (src/lib/payments/gateway-client.ts):
+   181→  * Razorpay Route: create order WITH transfers (linked accounts from env or acct_<slug>), refund submission
+   182→  * Cashfree Easy Split: create order WITH vendor splits (order_splits), refund submission (sandbox/production base by CASHFREE_ENV)
+   183→  * POST /api/payments/session: SANDBOX_MOCK → {mode} (client keeps mock-pay); configured → real sandbox order + INITIATED Payment; providerRef echoed via gateway order id (webhook contract)
+   184→  * refund PROCESS route: gateway-first (GATEWAY_REFUND_SUBMITTED audit), ledger only after acceptance
+   185→  * NOT executed here: live HTTP to provider sandboxes (no keys/network in this environment) — honest limitation, documented
+   186→- PHASE 4:
+   187→  * PostgreSQL: Prisma 6 forbids env() provider → dual-schema approach: scripts/make-postgres-schema.mjs generates prisma/schema.postgres.prisma (byte-identical, provider swapped; VALIDATED with prisma validate for both dialects); bun run db:schema:pg / db:push:pg; docs/DEPLOYMENT.md migration steps
+   188→  * KYC onboarding: POST /api/stores/[id]/kyc (STORE_MANAGER; GSTIN/PAN/FSSAI format-validated, PAN+bank stored MASKED) → PENDING; POST /api/admin/kyc/[storeId] (MALL_ADMIN VERIFY/REJECT, audited, realtime); settlement payout GATE (unverified stores skipped with reason — verified live: paid [Cinema Snacks, Pizza Corner], skipped Mithai (KYC pending) + Wrap House (no ledger)); UI: StaffPortal KYC form + Admin board Verify/Reject buttons
+   189→  * security: next.config headers (CSP, X-Frame-Options DENY, nosniff, Referrer-Policy, Permissions-Policy); docs/SECURITY-REVIEW.md (threat model, 7 fixed findings, 7 honest open gaps)
+   190→  * legal: docs/LEGAL-NOTES.md (money flow, marketplace classification, GST/TCS flags for CA, KYC design, pre-launch checklist)
+   191→  * deployment: Dockerfile (multi-stage, standalone), .env.example, docs/DEPLOYMENT.md
+   192→- FINAL VERIFICATION: 70/70 unit, 102/102 API, tsc 0, lint 0, fresh seed + server restart, browser: customer flow (bill → ₹231.58 pay → confirmation popup → tracking), admin board KYC statuses/buttons, console clean
+   193→- README roadmap updated (Phase 3 ✅, Phase 4 ✅ demo-grade with honest scope)
+   194→
+   195→Stage Summary:
+   196→- All four phases delivered within sandbox limits: Phase 3 rails are structurally complete and env-activated; Phase 4 artifacts (PG kit, KYC, security, legal, deploy) done; remaining real-world steps (provider keys, actual PG host, counsel sign-off) are documented, not hallucinated
+   197→
+   198→---
+   199→Task ID: receipt-redesign
+   200→Agent: Super Z (main)
+   201→Task: Redesign the post-payment bill as a thermal paper receipt sliding out of a machine slot — slot only, no machine body, no hands (user reference photo)
+   202→
+   203→Work Log:
+   204→- New src/components/seatserve/views/PaperReceipt.tsx: warm-hardware slot strip (rounded bar, inset dark slit, pulsing amber print LED, SEATSERVE engraving) + white thermal paper emerging underneath with print-out animation
+   205→- globals.css: receipt-slide keyframes (slide + feed jiggle), slot-led blink, .receipt-zigzag torn bottom edge (dual 45° gradient sawtooth), .receipt-paper warm tint + drop shadow, .receipt-barcode irregular stripe gradient (v1 background-blend-mode: multiply silently failed to render — replaced with single-layer repeating gradient), prefers-reduced-motion support
+   206→- Receipt content (mirrors reference photo): SEATSERVE header / cinema · screen / seat · movie, per-store item lines, dashed separators, Subtotal / Platform fee 5% / TOTAL, PAID — <method + masked detail>, timestamp + deterministic REF number, big tracking number, fake barcode, REAL scannable QR (qrcode lib → #/track/<code>), THANK YOU! + ENJOY THE SHOW · NO DELIVERY FEE
+   207→- PaymentSheet: new optional receipt prop; paid phase renders the paper + Copy tracking + Track my order below (print-hide on buttons); masked payment detail promoted to state (paidDetail) so it prints on the paper
+   208→- CheckoutSheet passes receipt from live cart selection + ctx (seat/screen/cinema/movie); Tracking retry passes it from tracking data (cancelled legs excluded)
+   209→- FIXED during verification: PaymentSheet SheetContent had no height cap — tall receipt pushed the top above the viewport, unreachable (bottom-anchored fixed sheet). Added max-h-[92dvh] + overflow-y-auto + ref; auto-scrolls to top when the receipt prints
+   210→- Verified: tsc 0, lint 0, 70/70 unit, 102/102 API, desktop + 390×844 mobile screenshots (scripts/verify-receipt-*.png), console clean; QR + barcode render; slot/paper animation on mount
+   211→
+   212→Stage Summary:
+   213→- Post-payment bill is now a printed thermal receipt sliding out of a slot — exactly the reference vibe (no machine body, no hands), with a scannable tracking QR as a functional bonus
+   214→
+   215→---
+   216→Task ID: no-refund + qrmemory + store-open + copyfix
+   217→Agent: Super Z (main)
+   218→Task: User's 5 asks before tomorrow's cinema pitch — check DB orders, remove refund feature, fix 2nd-order copy-code bug, QR-rescan order memory (localStorage), same-mall store opening + sold-out toggle; report completion %
+   219→
+   220→Work Log:
+   221→- DB check: 20 orders inspected (scripts/check-orders.ts) — PAID/PARTIALLY_CANCELLED/COMPLETED all consistent, seat A-1/E-4 test data
+   222→- COPY-BUG ROOT CAUSE (browser-verified): "Copy tracking number" rendered BELOW the tall thermal receipt → y≈890 on a 844px phone = below the fold; 1-item orders showed it, bigger orders pushed it off-screen. FIX: confirmation card (code + copy) now renders ABOVE the receipt; button measured at y=287/577 after fix
+   223→- QR-RESCAN MEMORY: new src/lib/client/orderMemory.ts (localStorage per-seat cap-12, best-effort); rememberOrder() at placement in CheckoutSheet; new MyOrders.tsx strip on SeatPage ("YOUR ORDERS HERE" live cards, 10s polling, chevron → tracking); browser-verified end-to-end incl. click-through to #/track/<code>
+   224→- NO-REFUND POLICY sweep: dropped Refund model + Order.refundedPaise (db push); deleted lib/refunds.ts → new slim src/lib/leg-voids.ts (computeLegReversal + voidStoreLeg, NO customer money); deleted routes admin/refunds action, orders/[code]/cancel-leg, orders/[code]/support; Support view → non-money counter-guidance page; Tracking lost CancelLegButton + refund copy; Admin lost refund inbox; kitchen cancel keeps ledger VOID only; gateway-client refund fns removed; reconcile R2/R3 rewritten (R2_ADJUST_NEGATIVE, R3_VOID_BOUND, legacy REFUNDED rows tolerated); settlement refundAdjustPaise → voidAdjustPaise; docs (README/LEGAL/SECURITY/DEPLOYMENT) updated; unit tests updated (65/65)
+   225→- LEGACY DATA: 6 pre-money-model orders had double-counted refund+void rows (adjustments > total) → scripts/clean-legacy-orders.ts removed them; reconciliation now healthy
+   226→- STORE OPENING: POST /api/stores (MALL_ADMIN, mall-scoped, dup-name guard, slug+random suffix, opening menu in one call, KYC=PENDING payout gate, STORE_CREATED audit + realtime); Admin board "+ Open a new store" form (emoji/name/tagline + dynamic menu rows with veg mark, ₹ price, prep min); browser-verified: "Bubble Boba Bar" created with 2 items → appears on customer menu instantly; sold-out toggle re-verified end-to-end (admin toggle → customer sees "Sold out right now" + Add disabled)
+   227→- DEMO-FREEZE FIX (found during golden path): audit #42 v1 never rolled order-holding showtimes → test orders permanently froze screens at "Ordering closed". v2 SUPERSEDES: retire stale showtime (isActive=false, order history intact) + create fresh future showtime; demo/entry hero screen works again
+   228→- GOLDEN PATH: updated for new policy (store picks by NAME not index — new store shifted name order; customer-cancel checks → endpoint-removed 404 checks; kitchen PREPARING-cancel allowed; settlement ≥4 stores). Also discovered standalone server must load RAZORPAY/CASHFREE sandbox webhook secrets → added to .env (documented in file)
+   229→- Tooling incidents: leftover `next dev` on :3000 served stale code (500s) → killed, standalone restarted; MyOrders effect setState lint → deferred via setTimeout(0)
+   230→- FINAL: tsc 0, lint 0, 65/65 unit, golden path 88/88 exit 0, browser-verified all 5 asks
+   231→- DEPLOY GAP: git has NO remote in this sandbox + no GitHub/Vercel token available this session → commit 9c3573e is local-only; production ctshop-five.vercel.app still runs the pre-fix build (POST /api/stores → 405 there). Push + Vercel build is the ONE remaining step
+   232→
+   233→Stage Summary:
+   234→- All 5 user asks DONE and verified locally; cinema policy is now "no online refunds, counter resolves" end-to-end
+   235→- Completion for tomorrow's pitch: platform ~95% — customer + staff flows 100% demo-ready on local sandbox; 1 commit away from production (push blocked on token availability)
+   236→
