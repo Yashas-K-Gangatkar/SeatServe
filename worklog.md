@@ -262,3 +262,21 @@ Work Log:
 
 Stage Summary:
 - Cloud Postgres fully initialized + seeded; deployed site will go data-complete the moment DATABASE_URL env var exists on Vercel; local sqlite demo unaffected
+
+---
+Task ID: vercel-env-automation + prod-verification
+Agent: Super Z (main)
+Task: Use owner Vercel token to fix env vars, redeploy, verify production; store all owner secrets safely
+
+Work Log:
+- Created gitignored .env.secrets vault (verified via git check-ignore) holding: GH PATs (1 invalid marked, 1 active), Razorpay live pair, db.prisma.io URL, Vercel token, URLs — future secrets to be appended per owner instruction
+- Vercel token validated (account clash2yashas-4207); project ct_shop == ctshop-five.vercel.app (prj_r9FRGMhgZYcnkD3G3asUqlEK3X2a)
+- INSPECTED decrypted envs: owner had created var NAMES but all values EMPTY (sensitive-masking blocked them) → that was the production 500 cause
+- Upserted via API (201): DATABASE_URL=db.prisma.io URL (all 3 envs), PAYMENT_PROVIDER=SANDBOX_MOCK, RAZORPAY_KEY_ID/SECRET staged for go-live (provider still mock). Deliberately did NOT set dev webhook secrets on prod
+- Redeployed (v13, needed name+deploymentId): dpl_GN8i... → READY
+- PROD VERIFICATION: / 200, /api/stores 200 (5 stores), /api/demo/entry 200 (QR tokens) — data flowing from seeded cloud PG
+- Ran scripts/api-golden-path.sh against PRODUCTION: 74 core assertions ✅ incl. full order flow (QR→cart→checkout→mock pay→splits→tracking→partial cancel+refund), RBAC 403s, mall scoping/isolation, audit trail, cutoffs, QR sheet 401/72 seats, forged webhook → 401. 1 ❌ = login rate-limit artifact from running suite twice back-to-back (passed on first run). Suite then stops at Phase 3 webhook-signature section (set -e + server correctly 401s webhooks signed with the repo's dev test secret, which production must never trust)
+- Deliberate security posture: RAZORPAY_WEBHOOK_SECRET/CASHFREE_WEBHOOK_SECRET stay EMPTY on prod until owner creates real webhook secrets in dashboards at go-live (then flip PAYMENT_PROVIDER=razorpay)
+
+Stage Summary:
+- Production ctshop-five.vercel.app FULLY LIVE with seeded cloud DB and verified end-to-end order flow; secrets vault established; go-live checklist = real webhook secrets + provider flip + store KYC linked accounts + token deletion by owner

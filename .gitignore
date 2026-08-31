@@ -54,3 +54,6 @@ server.log
 /skills/
 # but keep the template
 !.env.example
+
+# sandbox tool output dumps (may contain file previews incl. secrets) — never commit
+/tool-results/
