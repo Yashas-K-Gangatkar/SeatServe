@@ -620,3 +620,24 @@ Work Log:
 
 Stage Summary:
 - Code is 100% ready for real money; production flip is 2 config steps owned by the user (Vercel env vars, Razorpay webhook) — secrets never touched the repo
+
+---
+Task ID: 12
+Agent: Super Z (main agent)
+Task: Strip ALL refund language per owner directive ("there is no refund — stores deal with it, not us"); answer remaining-work checklist
+
+Work Log:
+- Grepped entire src/ for customer-facing refund/demo language; found 9 files still carrying it (faq-data.ts had old pro-refund copy "full refund... 5-7 days", SiteFooter/AuxChrome still said "Demo — no real payments are processed")
+- Rewrote /legal/refund page: retitled "Cancellation & payments policy"; orders final, outlet owns received orders and resolves at counter, platform never returns money on completed orders; ONLY two never-made-order corrections kept (RBI failed-capture auto-reversal + outlet cannot fulfil at all) — framed as payment corrections, not refunds. Route slug /legal/refund kept (Razorpay-verified links)
+- Terms: "Cancellation & refunds" -> "Cancellations" (SeatServe does not issue refunds; outlet owns orders)
+- FAQ page + landing faq-data: "Can I cancel or get a refund?" -> "Can I cancel my order?" — No; store resolves at counter; killed last "live demo / simulates payment" copy
+- Footers (SiteFooter, AuxChrome, LegalShell): "Demo — no real payments are processed" removed; "Refunds" labels -> "Payments"; SiteFooter now "Payments by Razorpay · Orders fulfilled by venue outlets"
+- staff page scope text + developers page (Phase 3, STORE_MANAGER row, cancel-leg, admin API) de-refunded
+- layout.tsx meta: "Phase 1 sandbox demo" -> "Payments by Razorpay"
+- Gates: tsc 0, eslint 0, 67/67 tests, build OK. Commit a693674 pushed (correct author identity), Vercel deployed
+- Live-verified on ctshop-git-main-noti-fetch.vercel.app: /legal/refund new title+copy, /faq "Can I cancel my order?", footer "Payments by Razorpay · Orders fulfilled by venue outlets" all present
+
+Stage Summary:
+- Zero refund promises remain anywhere user-facing; only RBI failed-payment auto-reversal + outlet-cannot-fulfil corrections survive (legally required, framed as corrections not refunds)
+- Money model confirmed to owner: customer pays platform's Razorpay, Route splits 12% commission at source, weekly settlement per store — no separate store billing needed
+- Waiting on: Razorpay Key ID + Secret (test first) to wire env vars and flip gateway-client.ts off SANDBOX_MOCK; grievance email confirmation; .in domain migration (owner doing tomorrow)
