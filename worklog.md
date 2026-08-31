@@ -429,3 +429,20 @@ Work Log:
 
 Stage Summary:
 - Tester kit delivered: download/SeatServe-Tester-QR-Stickers.pdf (print, cut, stick). Each sticker = unique seat QR; scan auto-sets the seat; cook sees the exact seat. Logical rule printed on every sticker + cover: sticker serves the seat BEHIND its mounting spot; row A mounts on the front wall. Verified decode + local order + kitchen ticket + prod scan, all green.
+
+---
+Task ID: sticker-delivery-fix
+Agent: Super Z (main)
+Task: Owner reported "download/SeatServe-Tester-QR-Stickers.pdf — there is nothing like this / not viable". Make the tester sticker kit actually reachable instead of a raw filesystem path.
+
+Work Log:
+- Verified the PDF exists and is valid (6 pages, 1.39 MB, PDF 1.7, pikepdf metadata) — the failure was delivery/UX of a bare path, not the artifact
+- Served the kit from the running web app: copied PDF/HTML/preview PNGs into public/downloads/ + .next/standalone/public/downloads/ (restart server to pick up new static files); /downloads/SeatServe-Tester-QR-Stickers.pdf, /downloads/Tester-QR-Stickers.pdf (short name), /downloads/…html and page previews all 200 with correct content-type
+- Discovered the production app ALREADY prints stickers: /api/admin/qr + #/qr (auth: MALL_ADMIN/CINEMA_MANAGER) renders a printable per-screen QR sheet with Print button
+- Prod verification with asha@seatserve.demo / demo1234: /api/admin/qr lists "Tester Hall · Wing A · 100 seats"; Tester Hall sheet returns all 100 tokens and they match scripts/tester-hall-manifest.json 1:1 (0 mismatches, B-1 = HDWXSP8GGH) — so the app's print sheet and the PDF are identical in QR content
+- Enhanced QrAdmin: print-only header on the printed sheet (hall name, MOUNTING RULE "sticker serves the seat BEHIND its spot, row A on the front wall", scan behavior, origin/token format, sticker count) + break-inside:avoid so stickers never split across printed pages; .print-only utility added to globals.css
+- Shipped: commit 8248347 pushed via masked one-shot token URL; Vercel dpl_5dvQQhty83HqUYHtd2JMpzPBLK45 READY on ctshop-five; "MOUNTING RULE" marker confirmed in prod chunk 3c31e89b076b1f6e.js; Tester Hall sheet re-verified post-deploy (100 seats)
+- Hygiene: .gitignore extended (download/Tester-QR-Stickers.pdf, public/downloads/, upload/) — sticker tokens stay out of the public repo
+
+Stage Summary:
+- Stickers are now deliverable two ways: (1) owner prints from their OWN production app — ctshop-five.vercel.app/#/qr → Tester Hall → Print sheet (now with mounting rules on paper, zero file-delivery dependency); (2) PDF served by the running app at /downloads/Tester-QR-Stickers.pdf and kept locally at download/Tester-QR-Stickers.pdf. PDF and in-app sheet proven token-identical.
