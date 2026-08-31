@@ -247,3 +247,18 @@ Work Log:
 
 Stage Summary:
 - App on :3000 now runs PRODUCTION build with a lineage-trusted watchdog; GitHub repo Yashas-K-Gangatkar/SeatServe private, main up to date, zero secrets in tree/history (only .env.example template)
+
+---
+Task ID: cloud-db-init + vercel-env-fix
+Agent: Super Z (main)
+Task: Initialize db.prisma.io cloud database from connection strings owner pasted; fix Vercel env var naming
+
+Work Log:
+- Owner connected the Prisma Postgres Vercel integration with prefix "database" → vars became database_DATABASE_URL / database_POSTGRES_URL / database_PRISMA_DATABASE_URL (all same postgres://...@db.prisma.io:5432 URL) — deployed app reads DATABASE_URL, hence 500s on data APIs
+- From sandbox, with per-command env override (local .env untouched): prisma db push --schema schema.postgres.prisma → synced in 29.85s (direct TCP to db.prisma.io works); bun prisma/seed.ts → seeded OK; verified counts {malls:2, cinemas:3, stores:5, products:21, seats:464, showtimes:7}; prisma generate back to sqlite schema for local dev; local app still 200
+- No secrets committed: URL used only via ephemeral env override + gitignored .env; worklog mentions host only
+- Remaining (owner action): add env var DATABASE_URL = that postgres:// URL in Vercel project settings (all environments) → Redeploy; OR provide Vercel token for me to automate env var + redeploy via API
+- Known simplifications on Vercel: socket.io :3003 not deployed (tracking falls back to 4s polling — built-in); PAYMENT_PROVIDER unset on Vercel → SANDBOX_MOCK (no real money until owner adds Razorpay keys + webhook secret + KYC'd linked accounts)
+
+Stage Summary:
+- Cloud Postgres fully initialized + seeded; deployed site will go data-complete the moment DATABASE_URL env var exists on Vercel; local sqlite demo unaffected
