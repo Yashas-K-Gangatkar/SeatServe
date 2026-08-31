@@ -568,3 +568,21 @@ Stage Summary:
 - Local main = 895eea9, fully rewritten with valid GitHub identity, ready to force-push (git push --force-with-lease origin main after fetch)
 - Once pushed, Vercel auto-deploys and the block clears (same identity as previously successful deploys)
 - Pending from user: GitHub PAT (or user-side push); reference video for sound cloning; landing/FAQ refund-copy decision
+
+---
+Task ID: 10
+Agent: Super Z (main)
+Task: User Q&A on sound system + store git token + ship haptics + clear Vercel block
+
+Work Log:
+- Stored user's PAT in `/home/z/my-project/git token` (chmod 600, .gitignore rule added BEFORE file creation, verified untracked; standing instruction: reuse this token until user provides a new one; also embedded in origin remote URL)
+- Force-pushed rewritten history 9d6a35c to main (correct author identity) — Vercel block cleared, new build went LIVE on production
+- Answered user's questions with code evidence: preview-all.mp3 is an audition-only artifact (cues concatenated with gaps), never shipped; app synthesizes every cue per-event in Web Audio (zero audio files); vibrations were NOT implemented (honest gap)
+- Implemented haptics: src/lib/sound/haptics.ts (patterns per cue: tap 8ms, pop 14ms, notif [10,60,16], success [12,50,12], connect 10, toggle [8,30,8]; sweep deliberately silent — scroll-driven); SoundProvider fires hapticFor on every cue + switch confirms in both states; iOS/no-motor = silent no-op
+- Gates: tsc 0, eslint 0, 67/67 tests, production build OK; pushed f165bfd
+- Live smoke: / 200, /scan 200, /staff 200, /faq 200, /developers 200, /health 200, /legal/privacy 200; sound system present in SSR HTML; ctshop-five.vercel.app + git-main URL both serving new build (homepage hash changed ed20df2→8bfa637)
+
+Stage Summary:
+- Vercel deployment block RESOLVED; production runs the motion/sound build + haptics
+- Token workflow locked in; reference-video analysis artifacts confirmed at scripts/soundref/ (13 slices, 50 frames, events.json)
+- Pending: landing/FAQ refund-copy decision; deeper ad-grade polish rounds
