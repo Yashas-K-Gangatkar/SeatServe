@@ -116,7 +116,12 @@ body {
   body { background: #ffffff !important; }
   .print-hide { display: none !important; }
   .print-area { display: block !important; }
+  .print-only { display: block !important; }
+  .print-area figure { break-inside: avoid; }
 }
+
+/* hidden on screen, shown on paper (print header with mounting rules) */
+.print-only { display: none; }
 
 /* ───────────────── thermal receipt (post-payment bill) ───────────────── */
 /* Paper bill sliding out of a POS slot — no machine body, no hands.       */

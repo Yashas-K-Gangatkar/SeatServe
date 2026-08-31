@@ -88,6 +88,23 @@ function QrSheet({ go }: { go: (p: string) => void }) {
         </div>
       </div>
 
+      {/* printable header — visible only on paper, carries the mounting rules */}
+      <div className="print-only mb-4 border-b-2 border-gray-900 pb-3">
+        <h2 className="text-lg font-black tracking-tight text-gray-900">
+          {data.screen.name} — Seat QR Stickers ({data.screen.cinema})
+        </h2>
+        <p className="mt-1 text-[11px] font-bold text-gray-800">
+          MOUNTING RULE — each sticker serves the seat BEHIND its spot: stick it on the back of the seat in front.
+          Row {data.seats[0]?.rowLabel ?? 'A'} seats go on the front wall (nothing in front of them).
+        </p>
+        <p className="mt-0.5 text-[10px] text-gray-700">
+          Scan a sticker → the phone opens that exact seat&apos;s menu — no seat typing needed. Kitchen tickets and receipts show the same seat code.
+        </p>
+        <p className="mt-0.5 text-[9px] text-gray-500">
+          {data.origin}/?qr=&lt;token&gt; · {data.seats.length} stickers · cut along the borders and mount in seat order
+        </p>
+      </div>
+
       {/* printable grid — white background for print legibility */}
       <div className="print-area mt-6 grid grid-cols-3 gap-3 rounded-2xl bg-white p-4 sm:grid-cols-6" aria-label={`Seat QR codes for ${data.screen.name}`}>
         {data.seats.map((seat) => (
