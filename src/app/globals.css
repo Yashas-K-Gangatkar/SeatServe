@@ -119,10 +119,19 @@ body {
   .print-hide { display: none !important; }
   .print-area { display: block !important; }
   .print-only { display: block !important; }
+<<<<<<< HEAD
   /* a sticker row must never split across two printed pages */
   .qr-sticker { break-inside: avoid; page-break-inside: avoid; }
 }
 
+=======
+  .print-area figure { break-inside: avoid; }
+}
+
+/* hidden on screen, shown on paper (print header with mounting rules) */
+.print-only { display: none; }
+
+>>>>>>> origin/main
 /* ───────────────── thermal receipt (post-payment bill) ───────────────── */
 /* Paper bill sliding out of a POS slot — no machine body, no hands.       */
 
@@ -173,10 +182,42 @@ body {
     #292524 15px 16px, transparent 16px 21px);
 }
 
+<<<<<<< HEAD
+=======
+/* paper curl — the bottom of the sheet bows toward the viewer and the
+   corners lift with soft shadows (shared by payment + tracking receipts) */
+.receipt-curl-shade {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 48px;
+  pointer-events: none;
+  background: linear-gradient(180deg, transparent 0%, rgba(120, 84, 30, 0.05) 55%, rgba(120, 84, 30, 0.12) 100%);
+}
+.receipt-curl {
+  position: absolute;
+  bottom: 7px;
+  width: 30%;
+  height: 14px;
+  pointer-events: none;
+  filter: blur(2px);
+}
+.receipt-curl-l {
+  left: 2px;
+  background: radial-gradient(ellipse at left bottom, rgba(87, 60, 24, 0.32), transparent 68%);
+}
+.receipt-curl-r {
+  right: 2px;
+  background: radial-gradient(ellipse at right bottom, rgba(87, 60, 24, 0.32), transparent 68%);
+}
+
+>>>>>>> origin/main
 @media (prefers-reduced-motion: reduce) {
   .receipt-anim, .slot-led { animation: none; }
 }
 
+<<<<<<< HEAD
 /* ─────────────────────────────────────────────────────────────────────────────
    LANDING MOTION LAYER — NotiFetch marketing site
    Baseline reconstructed from the live deployment, then extended by the
@@ -255,6 +296,132 @@ body {
   0%, 6%   { left: 4%; }
   78%, 100% { left: 84%; }
 }
+=======
+/* ── Public site (Apple-style landing & pages) ─────────────────────── */
+.site-root {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+}
+
+@keyframes ss-rise {
+  from { opacity: 0; transform: translateY(14px); }
+  to { opacity: 1; transform: none; }
+}
+.ss-rise { animation: ss-rise 0.7s cubic-bezier(0.16, 1, 0.3, 1) both; }
+
+@keyframes ss-pop {
+  0% { transform: scale(1); }
+  40% { transform: scale(1.4); }
+  100% { transform: scale(1); }
+}
+.ss-pop { display: inline-block; animation: ss-pop 0.45s cubic-bezier(0.2, 0.8, 0.3, 1.4); }
+
+@keyframes ss-shake {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-9px); }
+  40% { transform: translateX(9px); }
+  60% { transform: translateX(-6px); }
+  80% { transform: translateX(6px); }
+}
+.ss-shake { animation: ss-shake 0.45s ease; }
+
+@keyframes ss-confetti {
+  0% { opacity: 1; transform: translate3d(0, -12px, 0) rotate(0deg); }
+  100% { opacity: 0; transform: translate3d(var(--dx, 0px), 64px, 0) rotate(var(--rot, 180deg)); }
+}
+.ss-confetti-piece {
+  position: absolute;
+  top: 0;
+  width: 7px;
+  height: 11px;
+  border-radius: 2px;
+  animation: ss-confetti 1.15s ease-out forwards;
+}
+
+@keyframes ss-scanline {
+  0% { top: 8%; }
+  50% { top: 90%; }
+  100% { top: 8%; }
+}
+.ss-scanline { animation: ss-scanline 2.6s ease-in-out infinite; }
+
+@keyframes ss-pulse-ring {
+  0% { box-shadow: 0 0 0 0 rgba(212, 175, 55, 0.45); }
+  70% { box-shadow: 0 0 0 18px rgba(212, 175, 55, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(212, 175, 55, 0); }
+}
+.ss-pulse-ring { animation: ss-pulse-ring 2s ease-out infinite; }
+
+.ss-imgzoom img { transition: transform 0.5s cubic-bezier(0.16, 1, 0.3, 1); }
+.ss-imgzoom:hover img { transform: scale(1.05); }
+
+@media (prefers-reduced-motion: reduce) {
+  .ss-rise, .ss-pop, .ss-shake, .ss-scanline, .ss-pulse-ring { animation: none; }
+  .ss-confetti-piece { display: none; }
+}
+
+/* ── Landing v2: hero fade+zoom, scroll-reveal, iPhone notif loop, step demos ── */
+/* hero: fades in on load (1.2s), THEN a continuous slow zoom loop (starts after the fade) */
+@keyframes ss-hero-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes ss-hero-zoom-loop {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+  100% { transform: scale(1); }
+}
+.ss-hero-media {
+  animation: ss-hero-fade 1.2s ease-out both, ss-hero-zoom-loop 8s ease-in-out infinite;
+  animation-delay: 0s, 1.2s;
+}
+
+/* scroll-reveal (IntersectionObserver toggles .ss-reveal-in) */
+.ss-reveal { opacity: 0; transform: translateY(40px); transition: opacity 0.6s cubic-bezier(0.34, 1.56, 0.64, 1), transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1); }
+.ss-reveal-in { opacity: 1; transform: none; }
+
+/* iPhone notification: slides in from top, bounces, holds, exits — 5.5s loop */
+@keyframes ss-notif {
+  0% { transform: translateY(-130%); opacity: 0; }
+  6% { transform: translateY(0); opacity: 1; }
+  9% { transform: translateY(-7px); }
+  12% { transform: translateY(0); opacity: 1; }
+  80% { transform: translateY(0); opacity: 1; }
+  92%, 100% { transform: translateY(-130%); opacity: 0; }
+}
+.ss-notif { animation: ss-notif 5.5s cubic-bezier(0.22, 1, 0.36, 1) infinite; }
+
+/* success check that pops early in a 6s cycle, then holds (base state = visible) */
+@keyframes ss-check-pop {
+  0% { transform: scale(0); opacity: 0; }
+  8% { transform: scale(1.18); opacity: 1; }
+  12%, 100% { transform: scale(1); opacity: 1; }
+}
+.ss-check-pop { animation: ss-check-pop 6s ease-out infinite; }
+
+/* menu rows rising in, staggered */
+@keyframes ss-row-rise {
+  0% { transform: translateY(12px); opacity: 0; }
+  9%, 100% { transform: translateY(0); opacity: 1; }
+}
+.ss-row-rise { animation: ss-row-rise 6s ease-out infinite; }
+
+/* pay button press */
+@keyframes ss-pay-tap {
+  0%, 40% { transform: scale(1); }
+  46%, 56% { transform: scale(0.94); }
+  62%, 100% { transform: scale(1); }
+}
+.ss-pay-tap { animation: ss-pay-tap 6s ease-in-out infinite; }
+
+/* runner scooter travelling kitchen → seat (base parked near the seat) */
+@keyframes ss-run {
+  0%, 6% { left: 4%; }
+  78%, 100% { left: 84%; }
+}
+.ss-run { left: 84%; animation: ss-run 6s cubic-bezier(0.45, 0, 0.55, 1) infinite; }
+
+/* bell ring at arrival */
+>>>>>>> origin/main
 @keyframes ss-bell {
   0%, 74% { transform: rotate(0); }
   79% { transform: rotate(16deg); }
@@ -263,10 +430,17 @@ body {
   94% { transform: rotate(-4deg); }
   100% { transform: rotate(0); }
 }
+<<<<<<< HEAD
+=======
+.ss-bell { animation: ss-bell 6s ease-in-out infinite; transform-origin: top center; }
+
+/* delivery-time bars growing */
+>>>>>>> origin/main
 @keyframes ss-bars {
   0%, 20% { transform: scaleY(0.4); }
   45%, 100% { transform: scaleY(1); }
 }
+<<<<<<< HEAD
 @keyframes ss-draw {
   to { stroke-dashoffset: 0; }
 }
@@ -342,4 +516,24 @@ body {
   .ss-hero-media, .ss-notif, .ss-check-pop, .ss-row-rise, .ss-pay-tap, .ss-run, .ss-bell, .ss-bar { animation: none; }
   .ss-draw-check .ss-draw-circle, .ss-draw-check .ss-draw-path { stroke-dashoffset: 0; animation: none; }
   .ss-reveal { opacity: 1; transition: none; transform: none; }
+=======
+.ss-bar { transform-origin: bottom; animation: ss-bars 6s ease-out infinite; }
+
+/* one-tap checkmark replays on card hover */
+.benefit-card:hover .tap-check { animation: ss-pop 0.45s cubic-bezier(0.2, 0.8, 0.3, 1.4); }
+
+/* self-drawing checkmark (SVG stroke) — plays once when the card is revealed */
+.ss-draw-check .ss-draw-circle,
+.ss-draw-check .ss-draw-path { stroke-dasharray: 90; stroke-dashoffset: 90; }
+.ss-reveal-in .ss-draw-check .ss-draw-circle { animation: ss-draw 0.7s ease-out 0.1s forwards; }
+.ss-reveal-in .ss-draw-check .ss-draw-path { animation: ss-draw 0.5s ease-out 0.75s forwards; }
+@keyframes ss-draw { to { stroke-dashoffset: 0; } }
+
+@media (prefers-reduced-motion: reduce) {
+  .ss-hero-media, .ss-notif, .ss-check-pop, .ss-row-rise,
+  .ss-pay-tap, .ss-run, .ss-bell, .ss-bar { animation: none; }
+  .ss-draw-check .ss-draw-circle,
+  .ss-draw-check .ss-draw-path { animation: none; stroke-dashoffset: 0; }
+  .ss-reveal { opacity: 1; transform: none; transition: none; }
+>>>>>>> origin/main
 }

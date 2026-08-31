@@ -17,14 +17,14 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "SeatServe — order food to your cinema seat",
   description:
-    "Multi-store food ordering and delivery inside malls with cinemas. Scan the seat QR, pay once, get snacks delivered to Screen & Seat. Phase 1 sandbox demo.",
+    "Order snacks to your cinema seat. Scan the QR on your seat, order from every store in the venue, pay once, and track it live to your row.",
   icons: {
     icon: "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍿</text></svg>",
   },
 };
 
 export const viewport: Viewport = {
-  themeColor: "#fbf7ef",
+  themeColor: "#FAF8F5",
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",
@@ -40,7 +40,7 @@ export default function RootLayout({
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased bg-background text-foreground`}>
         {children}
         <Toaster />
-        <SonnerToaster position="top-center" theme="light" richColors closeButton />
+        <SonnerToaster position="top-center" theme="light" richColors closeButton duration={4000} />
       </body>
     </html>
   );

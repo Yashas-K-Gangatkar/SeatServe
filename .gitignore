@@ -52,3 +52,25 @@ prompt
 server.log
 # Skills directory
 /skills/
+# but keep the template
+!.env.example
+
+# sandbox tool output dumps (may contain file previews incl. secrets) — never commit
+/tool-results/
+
+# throwaway clones / scratch
+/tmp/
+
+# local verification screenshots
+scripts/*.png
+
+# Tester sticker kit — printed-QR tokens stay out of the public repo.
+# Keep these files locally next to the printed kit; deleting them invalidates the printed stickers.
+scripts/tester-hall-manifest.json
+download/tester-qr/
+download/SeatServe-Tester-QR-Stickers.html
+download/SeatServe-Tester-QR-Stickers.pdf
+prisma/pg-client/
+download/Tester-QR-Stickers.pdf
+public/downloads/
+upload/

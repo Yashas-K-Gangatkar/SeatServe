@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>SeatServe — Store Onboarding Kit</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+  /* ── SeatServe brand: one warm-ivory/gold family ─────────────────── */
+  :root {
+    --c-bg:        #FAF8F5;   /* XL · warm ivory canvas          */
+    --c-card:      #FFFFFF;   /* L  · card surface               */
+    --c-tint:      rgba(212, 175, 55, 0.08); /* L · gold wash    */
+    --c-stripe:    #F5F1E8;   /* L  · table stripe               */
+    --c-headfill:  #EFE9DA;   /* M  · table header fill (low-sat) */
+    --c-border:    #E7E0D2;   /* S  · hairlines                  */
+    --c-gold:      #D4AF37;   /* XS · brand accent               */
+    --c-gold-ink:  #8A6D1F;   /* XS · readable gold for text     */
+    --c-ink:       #1A1A1A;   /* text primary                    */
+    --c-muted:     #6F6F6F;   /* text secondary                  */
+  }
+  @page { size: 794px 1123px; margin: 0; }
+  html, body { margin: 0; padding: 0; width: 794px; background: #FAF8F5; }
+  * { box-sizing: border-box; }
+  body {
+    font-family: Inter, 'Segoe UI', Arial, sans-serif, 'Noto Color Emoji';
+    color: var(--c-ink);
+    line-break: strict; word-break: normal;
+  }
+  p, td, li, div { overflow-wrap: break-word; }
+
+  .poster { width: 794px; height: 1123px; position: relative; background: var(--c-bg); display: flex; flex-direction: column; }
+
+  /* decorative containment: inside bounds, low opacity, ≤3 elements */
+  .deco-arc { position: absolute; width: 42%; height: 26%; top: 0; right: 0; border-bottom-left-radius: 100%; border-right: 1px solid var(--c-gold); border-bottom: 1px solid var(--c-gold); opacity: 0.35; }
+
+  /* ── header ── */
+  .hdr { display: flex; align-items: center; justify-content: space-between; padding: 22px 44px 0 44px; }
+  .brand { display: flex; align-items: center; gap: 8px; font-weight: 900; font-size: 17px; letter-spacing: -0.2px; }
+  .brand .pop { display: inline-flex; align-items: center; justify-content: center; width: 30px; height: 30px; border-radius: 9px; background: var(--c-gold); font-size: 16px; }
+  .hdr-meta { font-size: 10px; font-weight: 700; letter-spacing: 1.6px; color: var(--c-muted); text-transform: uppercase; text-align: right; line-height: 1.7; }
+
+  /* ── title ── */
+  .title-block { padding: 14px 44px 0 44px; }
+  h1 { margin: 0; font-size: 38px; line-height: 1.04; letter-spacing: -1px; font-weight: 900; }
+  h1 .gold { color: var(--c-gold-ink); }
+  .pitch { margin: 10px 0 0 0; font-size: 13.5px; line-height: 1.6; color: var(--c-muted); max-width: 620px; }
+
+  /* ── stat chips ── */
+  .chips { display: flex; flex-wrap: wrap; gap: 10px; padding: 13px 44px 0 44px; }
+  .chip { flex: 1 1 200px; min-width: 180px; max-width: 100%; background: var(--c-card); border: 1px solid var(--c-border); border-radius: 12px; padding: 12px 16px; }
+  .chip b { display: block; font-size: 21px; font-weight: 900; letter-spacing: -0.5px; }
+  .chip b em { font-style: normal; color: var(--c-gold-ink); }
+  .chip span { display: block; margin-top: 2px; font-size: 10.5px; font-weight: 600; color: var(--c-muted); text-transform: uppercase; letter-spacing: 0.8px; }
+
+  /* ── section scaffolding ── */
+  .sec { padding: 14px 44px 0 44px; }
+  .sec-title { display: flex; align-items: baseline; gap: 8px; font-size: 12px; font-weight: 800; letter-spacing: 2px; text-transform: uppercase; color: var(--c-ink); margin: 0 0 9px 0; }
+  .sec-title::after { content: ""; flex: 1; height: 1px; background: var(--c-border); transform: translateY(-3px); }
+  .sec-title .no { color: var(--c-gold-ink); }
+
+  /* ── steps ── */
+  .steps { display: flex; flex-wrap: wrap; gap: 8px; }
+  .step { flex: 1 1 120px; min-width: 118px; max-width: 100%; background: var(--c-card); border: 1px solid var(--c-border); border-radius: 12px; padding: 10px 12px 11px 12px; }
+  .step .n { display: inline-flex; align-items: center; justify-content: center; width: 21px; height: 21px; border-radius: 50%; background: var(--c-gold); color: #1A1A1A; font-size: 11px; font-weight: 900; }
+  .step h3 { margin: 7px 0 2px 0; font-size: 12.5px; font-weight: 800; letter-spacing: -0.1px; }
+  .step p { margin: 0; font-size: 10px; line-height: 1.45; color: var(--c-muted); }
+
+  /* ── two columns ── */
+  .cols { display: flex; flex-wrap: wrap; gap: 14px; }
+  .col-kyc { flex: 1.25 1 340px; min-width: 300px; }
+  .col-terms { flex: 1 1 260px; min-width: 240px; }
+  .kyc-list { list-style: none; margin: 0; padding: 0; background: var(--c-card); border: 1px solid var(--c-border); border-radius: 12px; overflow: hidden; }
+  .kyc-list li { display: flex; align-items: center; gap: 9px; padding: 6.5px 12px; font-size: 11px; font-weight: 600; border-top: 1px solid var(--c-border); }
+  .kyc-list li:first-child { border-top: 0; }
+  .kyc-list li:nth-child(odd) { background: var(--c-stripe); }
+  .box { flex: 0 0 auto; width: 12px; height: 12px; border: 1.6px solid var(--c-gold); border-radius: 3.5px; background: #fff; }
+  .kyc-list li small { margin-left: auto; font-size: 10px; font-weight: 700; letter-spacing: 0.6px; color: var(--c-gold-ink); text-transform: uppercase; }
+  .terms { background: var(--c-tint); border: 1px solid var(--c-border); border-radius: 12px; padding: 12px 14px; }
+  .terms ul { margin: 0; padding: 0; list-style: none; }
+  .terms li { position: relative; padding: 0 0 8px 14px; font-size: 11px; line-height: 1.5; }
+  .terms li::before { content: ""; position: absolute; left: 0; top: 6px; width: 6px; height: 6px; border-radius: 50%; background: var(--c-gold); }
+  .terms li b { font-weight: 800; }
+  .terms li:last-child { padding-bottom: 0; }
+
+  /* ── menu format table ── */
+  table { width: 100%; border-collapse: collapse; background: var(--c-card); border: 1px solid var(--c-border); border-radius: 12px; overflow: hidden; font-size: 10.5px; }
+  thead th { background: var(--c-headfill); color: #1A1A1A; text-align: left; font-weight: 800; font-size: 10px; letter-spacing: 1.2px; text-transform: uppercase; padding: 7px 12px; }
+  tbody td { padding: 5.5px 12px; border-top: 1px solid var(--c-border); vertical-align: top; line-height: 1.4; }
+  tbody tr:nth-child(odd) td { background: var(--c-stripe); }
+  td.code { font-weight: 800; color: var(--c-gold-ink); white-space: nowrap; }
+  td.ex { color: var(--c-muted); font-style: italic; }
+  .menu-note { margin: 8px 0 0 0; font-size: 10px; line-height: 1.55; color: var(--c-muted); }
+  .menu-note b { color: var(--c-ink); }
+
+  /* ── footer ── */
+  .ftr { margin-top: auto; background: #141414; color: #D8D3C8; padding: 12px 44px 13px 44px; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; }
+  .ftr .left { font-size: 10.5px; line-height: 1.65; }
+  .ftr .left b { color: #fff; font-weight: 800; }
+  .ftr .right { text-align: right; font-size: 10px; line-height: 1.6; color: #A8A29A; }
+  .ftr .gold { color: var(--c-gold); font-weight: 800; }
+
+  /* browser preview auto-scale (print via page.pdf is unaffected) */
+  @media screen {
+    html { height: auto; display: flex; justify-content: center; background: #FAF8F5; }
+    body { transform-origin: top center; scale: min(1, calc(100vw / 794)); margin: 0 auto; box-shadow: 0 0 60px rgba(0,0,0,0.12); }
+  }
+</style>
+</head>
+<body>
+<div class="poster">
+  <div class="deco-arc" aria-hidden="true"></div>
+
+  <header class="hdr">
+    <div class="brand"><span class="pop" aria-hidden="true">🍿</span> SeatServe</div>
+    <div class="hdr-meta">Store Onboarding Kit<br>v1.0 · Aug 2026 · Aurora Mall Pilot</div>
+  </header>
+
+  <section class="title-block">
+    <h1>Sell to every seat<br>in the <span class="gold">cinema.</span></h1>
+    <p class="pitch">SeatServe takes your counter to the customer's seat. Guests scan the seat QR, build one cart across every store, and pay once — your kitchen fires the ticket, our runner delivers, and the money settles to your bank. This one-pager is everything a store manager needs to go live.</p>
+  </section>
+
+  <section class="chips">
+    <div class="chip"><b><em>10–14%</em></b><span>Store commission · by category</span></div>
+    <div class="chip"><b><em>5%</em></b><span>Platform fee · paid by customer</span></div>
+    <div class="chip"><b><em>T+2</em></b><span>Settlement to your bank account</span></div>
+  </section>
+
+  <section class="sec">
+    <p class="sec-title"><span class="no">01</span> Go live in 5 steps</p>
+    <div class="steps">
+      <div class="step"><span class="n">1</span><h3>Sign agreement</h3><p>Commission %, zones and SLA fixed in writing</p></div>
+      <div class="step"><span class="n">2</span><h3>KYC check</h3><p>7 documents at right, verified in 48h</p></div>
+      <div class="step"><span class="n">3</span><h3>Upload menu</h3><p>Sheet or CSV in the format below</p></div>
+      <div class="step"><span class="n">4</span><h3>Test order</h3><p>Day-0 walkthrough with our team</p></div>
+      <div class="step"><span class="n">5</span><h3>Go live</h3><p>Visible at the next show, same evening</p></div>
+    </div>
+  </section>
+
+  <section class="sec">
+    <p class="sec-title"><span class="no">02</span> KYC checklist &amp; commission terms</p>
+    <div class="cols">
+      <div class="col-kyc">
+        <ul class="kyc-list">
+          <li><span class="box"></span> FSSAI license copy <small>mandatory</small></li>
+          <li><span class="box"></span> GST registration certificate (or signed declaration) <small>mandatory</small></li>
+          <li><span class="box"></span> PAN card of the business owner <small>mandatory</small></li>
+          <li><span class="box"></span> Cancelled cheque or bank letter for settlements <small>mandatory</small></li>
+          <li><span class="box"></span> Food Safety Supervisor certificate <small>if held</small></li>
+          <li><span class="box"></span> Store logo (PNG) + 3 dish photos <small>for the menu</small></li>
+          <li><span class="box"></span> Signed store agreement <small>step 1</small></li>
+        </ul>
+      </div>
+      <div class="col-terms">
+        <div class="terms">
+          <ul>
+            <li><b>Commission 10–14%</b> of item value, by category and fixed in your agreement, with no hidden charges.</li>
+            <li><b>Customer pays a 5% platform fee</b> on top of menu prices; it is never deducted from your payout.</li>
+            <li><b>Gateway fee (~2%)</b> is absorbed by the platform, not the store.</li>
+            <li><b>Settlements every T+2</b> to your bank account via Razorpay Route, with a per-order ledger.</li>
+            <li><b>GST on food is yours</b> to remit; we invoice the platform fee monthly.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="sec">
+    <p class="sec-title"><span class="no">03</span> Menu upload format — sheet or CSV</p>
+    <table>
+      <thead><tr><th style="width:19%">Column</th><th style="width:47%">Format &amp; rules</th><th style="width:34%">Example</th></tr></thead>
+      <tbody>
+        <tr><td class="code">item_name</td><td>Max 40 characters, no ALL-CAPS</td><td class="ex">Butter Popcorn (L)</td></tr>
+        <tr><td class="code">category</td><td>Snacks · Drinks · Meals · Sweets</td><td class="ex">Snacks</td></tr>
+        <tr><td class="code">price_inr</td><td>Whole rupees, GST-inclusive</td><td class="ex">220</td></tr>
+        <tr><td class="code">veg_status</td><td>V or N (FSSAI mark applies)</td><td class="ex">V</td></tr>
+        <tr><td class="code">prep_time_min</td><td>Realistic kitchen time, 3–15 min</td><td class="ex">6</td></tr>
+        <tr><td class="code">description</td><td>Max 90 characters</td><td class="ex">Real butter, served warm</td></tr>
+        <tr><td class="code">allergens</td><td>Comma list, or write "none"</td><td class="ex">Dairy, Gluten</td></tr>
+        <tr><td class="code">photo_file</td><td>4:3 JPG or PNG, ≥ 800px wide</td><td class="ex">popcorn.jpg</td></tr>
+      </tbody>
+    </table>
+    <p class="menu-note"><b>Menu rules:</b> prices include GST · mark sold-out items before every show · price or item changes are live within 24 hours of your store manager's edit.</p>
+  </section>
+
+  <footer class="ftr">
+    <div class="left"><b>SeatServe Store Operations</b> · Aurora Mall, Mumbai<br>Onboarding pack &amp; agreement: <span class="gold">ops@seatserve.in</span> · Test order before every go-live</div>
+    <div class="right">Hand this page to your store manager.<br>Demo — no real payments are processed.</div>
+  </footer>
+</div>
+</body>
+</html>

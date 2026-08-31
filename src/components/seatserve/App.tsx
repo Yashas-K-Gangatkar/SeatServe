@@ -2,7 +2,7 @@
 
 // SeatServe — single-route hash router + app shell.
 // Views: #/ · #/seat/<qrToken> · #/track/<code> · #/kitchen(/<storeId>)
-//        #/runner(/<runnerId>) · #/admin · #/qr · #/support(/<code>)
+//        #/runner(/<runnerId>) · #/admin · #/qr · #/menu · #/support(/<code>)
 //        #/staff · #/staff/login   ← Phase 2 staff portal (separate site)
 import { useEffect, useState, useCallback } from 'react'
 import Landing from '@/components/landing/Landing'
@@ -13,13 +13,14 @@ import Runner from './views/Runner'
 import Admin from './views/Admin'
 import QrAdmin from './views/QrAdmin'
 import Support from './views/Support'
+import MenuManager from './views/MenuManager'
 import StaffLogin from './views/StaffLogin'
 import StaffPortal from './views/StaffPortal'
 import { OfflineBanner } from './ui-bits'
 import { useOnline } from '@/lib/client/realtime'
 
 export interface Route {
-  name: 'landing' | 'seat' | 'track' | 'kitchen' | 'runner' | 'admin' | 'qr' | 'support' | 'staff' | 'staff-login'
+  name: 'landing' | 'seat' | 'track' | 'kitchen' | 'runner' | 'admin' | 'qr' | 'menu' | 'support' | 'staff' | 'staff-login'
   param?: string
 }
 
@@ -51,6 +52,8 @@ function parseRoute(): Route {
       return { name: 'admin' }
     case 'qr':
       return { name: 'qr' }
+    case 'menu':
+      return { name: 'menu' }
     case 'support':
       return { name: 'support', param }
     case 'staff-login':
@@ -91,13 +94,21 @@ export default function SeatServeApp() {
         {route.name === 'runner' && <Runner runnerId={route.param} go={navigate} onRouteChange={refreshRoute} />}
         {route.name === 'admin' && <Admin go={navigate} />}
         {route.name === 'qr' && <QrAdmin go={navigate} />}
+        {route.name === 'menu' && <MenuManager go={navigate} />}
         {route.name === 'support' && <Support code={route.param ?? ''} go={navigate} />}
         {route.name === 'staff-login' && <StaffLogin go={navigate} />}
         {route.name === 'staff' && <StaffPortal go={navigate} />}
       </main>
+<<<<<<< HEAD
       {route.name !== 'landing' && (
         <footer className="print-hide mt-auto border-t border-border/60 py-4 text-center text-[11px] text-muted-foreground/70">
           SeatServe · Phase 2 sandbox · mock payments, scoped staff portals, no real money moves
+=======
+      {/* shell footer only for in-app views — the landing has its own dark footer */}
+      {route.name !== 'landing' && (
+        <footer className="print-hide mt-auto border-t border-border/60 py-4 text-center text-[11px] text-muted-foreground/70">
+          SeatServe · In-seat ordering demo — no real payments are processed
+>>>>>>> origin/main
         </footer>
       )}
     </div>
