@@ -16,8 +16,8 @@ export const LANDING_FAQ: FaqItem[] = [
     a: 'Yes. One phone can order for the whole row — items from different stores go into one cart, and each store still gets only its own kitchen ticket.',
   },
   {
-    q: 'What if my order gets here late?',
-    a: 'You can watch every store live while you wait. If something goes wrong, open Support from tracking — cancellations are refunded automatically to your original payment method.',
+    q: 'What if my order gets here late or an item is cancelled?',
+    a: 'You watch every store live while you wait. If a store cancels an item (sold out, or something goes wrong), that item is refunded automatically — your receipt shows "REFUNDED" against it and the money returns to your original payment method. No forms, no chasing.',
   },
   {
     q: 'Is this actually free to try?',

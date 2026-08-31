@@ -261,3 +261,82 @@ body {
   .ss-rise, .ss-pop, .ss-shake, .ss-scanline, .ss-pulse-ring { animation: none; }
   .ss-confetti-piece { display: none; }
 }
+
+/* ── Landing v2: hero zoom, scroll-reveal, iPhone notif loop, step demos ── */
+@keyframes ss-hero-zoom {
+  from { transform: scale(1.04); }
+  to { transform: scale(1); }
+}
+.ss-hero-zoom { animation: ss-hero-zoom 2.2s cubic-bezier(0.16, 1, 0.3, 1) both; }
+
+/* scroll-reveal (IntersectionObserver toggles .ss-reveal-in) */
+.ss-reveal { opacity: 0; transform: translateY(16px); transition: opacity 0.3s ease-out, transform 0.3s ease-out; }
+.ss-reveal-in { opacity: 1; transform: none; }
+
+/* iPhone notification: slides in from top, bounces, holds, exits — 5.5s loop */
+@keyframes ss-notif {
+  0% { transform: translateY(-130%); opacity: 0; }
+  6% { transform: translateY(0); opacity: 1; }
+  9% { transform: translateY(-7px); }
+  12% { transform: translateY(0); opacity: 1; }
+  80% { transform: translateY(0); opacity: 1; }
+  92%, 100% { transform: translateY(-130%); opacity: 0; }
+}
+.ss-notif { animation: ss-notif 5.5s cubic-bezier(0.22, 1, 0.36, 1) infinite; }
+
+/* success check that pops early in a 6s cycle, then holds (base state = visible) */
+@keyframes ss-check-pop {
+  0% { transform: scale(0); opacity: 0; }
+  8% { transform: scale(1.18); opacity: 1; }
+  12%, 100% { transform: scale(1); opacity: 1; }
+}
+.ss-check-pop { animation: ss-check-pop 6s ease-out infinite; }
+
+/* menu rows rising in, staggered */
+@keyframes ss-row-rise {
+  0% { transform: translateY(12px); opacity: 0; }
+  9%, 100% { transform: translateY(0); opacity: 1; }
+}
+.ss-row-rise { animation: ss-row-rise 6s ease-out infinite; }
+
+/* pay button press */
+@keyframes ss-pay-tap {
+  0%, 40% { transform: scale(1); }
+  46%, 56% { transform: scale(0.94); }
+  62%, 100% { transform: scale(1); }
+}
+.ss-pay-tap { animation: ss-pay-tap 6s ease-in-out infinite; }
+
+/* runner scooter travelling kitchen → seat (base parked near the seat) */
+@keyframes ss-run {
+  0%, 6% { left: 4%; }
+  78%, 100% { left: 84%; }
+}
+.ss-run { left: 84%; animation: ss-run 6s cubic-bezier(0.45, 0, 0.55, 1) infinite; }
+
+/* bell ring at arrival */
+@keyframes ss-bell {
+  0%, 74% { transform: rotate(0); }
+  79% { transform: rotate(16deg); }
+  84% { transform: rotate(-12deg); }
+  89% { transform: rotate(7deg); }
+  94% { transform: rotate(-4deg); }
+  100% { transform: rotate(0); }
+}
+.ss-bell { animation: ss-bell 6s ease-in-out infinite; transform-origin: top center; }
+
+/* delivery-time bars growing */
+@keyframes ss-bars {
+  0%, 20% { transform: scaleY(0.4); }
+  45%, 100% { transform: scaleY(1); }
+}
+.ss-bar { transform-origin: bottom; animation: ss-bars 6s ease-out infinite; }
+
+/* one-tap checkmark replays on card hover */
+.benefit-card:hover .tap-check { animation: ss-pop 0.45s cubic-bezier(0.2, 0.8, 0.3, 1.4); }
+
+@media (prefers-reduced-motion: reduce) {
+  .ss-hero-zoom, .ss-notif, .ss-check-pop, .ss-row-rise,
+  .ss-pay-tap, .ss-run, .ss-bell, .ss-bar { animation: none; }
+  .ss-reveal { opacity: 1; transform: none; transition: none; }
+}
