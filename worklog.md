@@ -508,3 +508,25 @@ Work Log:
 Stage Summary:
 - Stickers are now deliverable two ways: (1) owner prints from their OWN production app — ctshop-five.vercel.app/#/qr → Tester Hall → Print sheet (now with mounting rules on paper, zero file-delivery dependency); (2) PDF served by the running app at /downloads/Tester-QR-Stickers.pdf and kept locally at download/Tester-QR-Stickers.pdf. PDF and in-app sheet proven token-identical.
 >>>>>>> origin/main
+
+---
+Task ID: notifetch-deploy-integration
+Agent: Super Z (main)
+Task: Use user-provided GitHub token to deploy pending work (SeatServe 5-ask line + NotiFetch motion/sound landing); answer sound-from-video question
+
+Work Log:
+- Token verified: classic PAT (Yashas-K-Gangatkar), full repo scope; git ops OK on SeatServe (earlier failure was env-var loss between shell calls, not permissions)
+- DISCOVERY: remote main (a9860d3) = parallel production line — original landing (f56e066/154d9c1/17f20c7), Vercel/Neon deploy config, watchdog, tester hall, receipt polish, AND duplicate implementations of the 5-ask + QR-print work; local main (d07dbb2) = independent 5-ask line + THE motion/sound transformation (bcfb178). Histories diverged at b986850
+- Merged origin/main into local: 27 conflicts resolved; auto-merge left markers in 19 src files + tsc 399 errors → decisive repair: wholesale restore of src/package.json/bun.lock/prisma to verified local build, then re-add remote-only additive files (store menu APIs, MenuManager, health page+lib, site/* components, vercel.json, .env.example, onboarding kit, tester-hall scripts, chai/samosa assets)
+- Dropped remote refund-schema files (lib/refunds.ts, admin/refunds action, orders/[code]/support, orders/[code]/cancel-leg) — they need the removed Refund model and contradict the no-refund policy ask
+- Wired MenuManager into SPA router (#/menu) + StaffPortal cards (MALL_ADMIN + STORE_MANAGER) to avoid regressing the production menu-manager feature; deleted broken scripts/seed-tester-hall-pg.ts (imports non-existent generated pg-client); eslint now ignores **/*.cjs
+- Verified: tsc 0, eslint 0, 65/65 unit tests, production build green (35 static pages), standalone prod server smoke: /, /api/health, /faq, /scan, /staff, /developers, /legal/privacy all 200
+- PUSHED: a9860d3..ec1a559 → GitHub main (merge b2c824b + integration ec1a559)
+- DEPLOY BLOCKED (NOT a build failure): Vercel status on ec1a559 = "Deployment was blocked" @ 19:07:56Z, right after user enabled firewall/bot-management. Reproduced Vercel buildCommand locally (make-postgres-schema + prisma generate --schema pg + next build) — all pass. Live URLs still serve a9860d3's old build (no sound system markup; plain-curl probes get 200, firewall not challenging)
+- Audio/video plan agreed with user: send reference video → extract audio, ASR-transcribe explanations to map sounds→events, slice clean SFX moments, recreate tiny clean WebAudio/synthesized cues (never ship ripped audio)
+
+Stage Summary:
+- GitHub main now = integrated build (upgraded landing + all verified fixes + production menu-manager feature + deploy infra). Repo-side work COMPLETE
+- Single remaining blocker is Vercel-side: "Deployment was blocked" — user must unblock (check the deployment page vercel.com/noti-fetch/ct_shop/JDPoWEGKX31WBmURcpHSPKT3VvNg) or provide a Vercel token; then redeploy via UI button or I push a retrigger commit
+- Pending user inputs: reference video (sound cloning), decision on FAQ/refund copy contradiction flagged by previous session
+- Security: GitHub token pasted in chat is fully-scoped classic (incl. delete_repo) — recommend rotation/scoping after deploy is confirmed
