@@ -409,3 +409,23 @@ Work Log:
 
 Stage Summary:
 - Customer web is now QR-free end to end: landing, scan, menu, checkout, payment, receipt, tracking. The only real QR in the system is the physical seat sticker (printed via operator QrAdmin), which is exactly the owner's flow: scan sticker -> venue pre-registered -> multiple stores, one cart.
+
+---
+Task ID: tester-qr-sticker-kit
+Agent: Super Z (main)
+Task: Printable PDF of tester seat-QR stickers (famous-theatre layout, 10x10 per side, unique QR per seat). Scan auto-sets the seat on the web; kitchen/cook sees the exact seat. QRs exist ONLY on paper, never in the web. Logical check: sit B-1 (row 2 seat 1), scan the sticker in front (on back of A-1) -> app shows YOUR seat B-1.
+
+Work Log:
+- Mechanism (already in app, now proven): Seat.qrToken unique per seat; /?qr=<token> normalizes to #/seat/<token>; /api/context?qr= resolves seat -> screen -> cinema -> mall -> stores with rollStaleShowtimes guard; SeatPage h1 shows "<Screen> · Seat <code>"; kitchen ticket shows "TKT-x · Seat <code>"; receipt header shows "SEAT <code>"
+- New Tester Hall: scripts/seed-tester-hall.ts (idempotent) — Aurora Cineplex Wing A, screen "Tester Hall", 10 rows A-J x 10 seats, rolling showtime (demoAutoRoll=true, never stale); tokens frozen in scripts/tester-hall-manifest.json (created once, reused forever, gitignored)
+- Seeded sandbox SQLite (100 seats) AND production Postgres (prisma/pg-client generated from schema.postgres.prisma via temp output schema; DATABASE_URL from vault) — same manifest tokens both sides; prod: created screen + 100 seats + rolling showtime
+- Sticker kit: scripts/gen-tester-qr-pngs.mjs -> 100 QR PNGs encoding https://ctshop-five.vercel.app/?qr=<token>; scripts/build-tester-pdf-html.py -> 6-page A4 HTML (cover: PVR-style auditorium map w/ curved screen + aisle, 3-step scan flow, THE LOGICAL CHECK dark callout, sticker anatomy, kitchen-ticket mock; sheets 1-5: 20 stickers/page, dashed cut lines, mount rule per sticker: row A = FRONT WALL, rows B-J = BACK OF <prev row seat>)
+- PDF pipeline: poster_validate check-html PASS (0 errors; fixed .seat class collision that crushed the kitchen-ticket chip) -> html2pdf-next.js --nopaged (fixed-canvas pages) -> pdf_qa PASS -> metadata set; 6 pages, 1.3MB, vector text
+- QR artifact proof: OpenCV decoded B-1/A-1/J-10/F-5 PNGs -> all equal the exact manifest prod URLs
+- End-to-end locally: ?qr=<B-1 token> -> header "Tester Hall · Seat B-1" auto-set; order Masala Chai -> paid -> receipt "AURORA CINEPLEX — WING A · TESTER HALL / SEAT B-1"; kitchen login (kitchen@cinema-snacks.demo) board shows "TKT-HKY8UL · Seat B-1 · Tester Hall"; zero console errors
+- End-to-end on prod: /api/context?qr=<B-1 token> -> seat B-1, Tester Hall, 4 Aurora stores; browser scan of J-10 token -> #/seat/<token> -> "Tester Hall · Seat J-10" + "4 stores · one cart"
+- Token hygiene: .gitignore now excludes manifest, tester-qr PNGs, sticker PDF/HTML, prisma/pg-client — printed QR capabilities stay out of the public repo; scripts committed
+- Proof files: download/proof-kitchen-sees-B1.png, download/proof-prod-j10-scan.png, download/tester-qr/page-{1,2}-preview.png
+
+Stage Summary:
+- Tester kit delivered: download/SeatServe-Tester-QR-Stickers.pdf (print, cut, stick). Each sticker = unique seat QR; scan auto-sets the seat; cook sees the exact seat. Logical rule printed on every sticker + cover: sticker serves the seat BEHIND its mounting spot; row A mounts on the front wall. Verified decode + local order + kitchen ticket + prod scan, all green.

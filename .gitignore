@@ -63,3 +63,11 @@ server.log
 
 # local verification screenshots
 scripts/*.png
+
+# Tester sticker kit — printed-QR tokens stay out of the public repo.
+# Keep these files locally next to the printed kit; deleting them invalidates the printed stickers.
+scripts/tester-hall-manifest.json
+download/tester-qr/
+download/SeatServe-Tester-QR-Stickers.html
+download/SeatServe-Tester-QR-Stickers.pdf
+prisma/pg-client/
