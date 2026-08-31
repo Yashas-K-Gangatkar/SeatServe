@@ -641,3 +641,23 @@ Stage Summary:
 - Zero refund promises remain anywhere user-facing; only RBI failed-payment auto-reversal + outlet-cannot-fulfil corrections survive (legally required, framed as corrections not refunds)
 - Money model confirmed to owner: customer pays platform's Razorpay, Route splits 12% commission at source, weekly settlement per store — no separate store billing needed
 - Waiting on: Razorpay Key ID + Secret (test first) to wire env vars and flip gateway-client.ts off SANDBOX_MOCK; grievance email confirmation; .in domain migration (owner doing tomorrow)
+
+---
+Task ID: 13
+Agent: Super Z (main agent)
+Task: Build accept-to-lock cancel window feature; wire owner's LIVE Razorpay keys
+
+Work Log:
+- Read rzp-key-3.csv: keys are rzp_live_ (LIVE, not test — account fully activated). Confirmed already in gitignored .env with PAYMENT_PROVIDER=RAZORPAY
+- CRITICAL FIX: real Razorpay webhook would have 404'd — adapter expected sandbox pay_<ref> payment ids. Now resolves our Payment row from order receipt/notes ("SS-XXXX|<ref>"); captured event adopts the REAL pay_ id onto Payment.providerRef; refund.processed events normalized + audited (REFUND_PROCESSED)
+- Order creation carries notes.seatserve_order for the webhook contract
+- NEW POST /api/orders/[code]/cancel (owner's feature): guards = PAID + all legs NEW + 10-min capture window; atomic claim via $transaction updateMany (acceptance always wins race); voids all legs' settlement splits (voidStoreLeg); RAZORPAY → real refund to source via payments/{id}/refund, SANDBOX_MOCK → local record; refund failure → 502 + REFUND_FAILED_NEEDS_SUPPORT audit (never silent)
+- Tracking UI: cancel section (two-step confirm) visible ONLY while all legs NEW; "Accepted by the kitchen — locked in" status line after; Kitchen UI: "Accept fast" warning on NEW tickets
+- Policy copy rewritten to match: accept window = one free cancel; after acceptance final, outlet owns order (faq, faq-data, terms, refund policy)
+- scripts/cancel-window-test.sh (9/9 PASS): cancel→full refund→CANCELLED; double-cancel 409; accept→cancel 409 "locked in now"; unpaid 409. Golden path 65 ✅ + 1 environmental socket failure (next dev runs no socket host — pre-existing)
+- Gates: tsc 0, eslint 0, 67/67 tests, build OK. Commit 1c4860c pushed
+- SECURITY: keys/CSV confirmed gitignored; never committed
+
+Stage Summary:
+- Feature live-pending-Vercel: store Accept kills the customer refund option (exactly as owner specified)
+- Blocking on USER: add 4 env vars in Vercel dashboard (RAZORPAY_KEY_ID, RAZORPAY_KEY_SECRET, PAYMENT_PROVIDER=razorpay, RAZORPAY_WEBHOOK_SECRET) + create webhook in Razorpay dashboard → then ₹1 live test
