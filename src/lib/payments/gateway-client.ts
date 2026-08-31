@@ -105,6 +105,10 @@ export async function createRazorpayOrder(input: SplitInstructionInput & { recei
     amount: input.amountPaise,
     currency: 'INR',
     receipt: input.receipt,
+    // notes ride along on every webhook event's payment entity — the webhook
+    // resolves our Payment row from receipt/notes even though Razorpay owns
+    // the payment id namespace
+    notes: { seatserve_order: input.receipt },
     ...(transfers.length > 0 ? { transfers } : {}),
   })
   if (!res.ok) throw new Error(`Razorpay order creation failed: ${res.error}`)
@@ -139,6 +143,29 @@ export async function createCashfreeOrder(input: SplitInstructionInput & { order
   if (!res.ok) throw new Error(`Cashfree order creation failed: ${res.error}`)
   const order = res.data as { order_id: string; payment_session_id: string }
   return { gatewayOrderId: order.order_id, paymentSessionId: order.payment_session_id, splits, platformAmount: platform_amount }
+}
+
+/**
+ * Refunds a captured Razorpay payment to the source (UPI/card). Used ONLY by
+ * the customer cancel-before-accept window: the order was never made, so the
+ * money goes back. paymentId is the REAL gateway payment id (pay_...) — the
+ * webhook adopts it onto the Payment row at capture time.
+ */
+export async function refundRazorpayPayment(input: {
+  paymentId: string
+  amountPaise: number
+  orderCode: string
+}): Promise<{ ok: true; refundId: string; status: string } | { ok: false; error: string }> {
+  const creds = razorpayCreds()
+  const res = await gatewayJson(creds, `/payments/${encodeURIComponent(input.paymentId)}/refund`, 'POST', {
+    amount: input.amountPaise,
+    speed: 'normal',
+    notes: { seatserve_order: input.orderCode, reason: 'cancelled_before_accept' },
+  })
+  if (!res.ok) return { ok: false, error: res.error ?? 'refund failed' }
+  const refund = res.data as { id?: string; status?: string }
+  if (!refund?.id) return { ok: false, error: 'Razorpay refund response missing id' }
+  return { ok: true, refundId: refund.id, status: refund.status ?? 'pending' }
 }
 
 /**

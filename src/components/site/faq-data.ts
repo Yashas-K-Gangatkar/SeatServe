@@ -37,7 +37,7 @@ export const ALL_FAQ: FaqItem[] = [
   },
   {
     q: 'Can I cancel my order?',
-    a: 'No — like every cinema food counter, orders are final once placed: kitchens begin preparing for your show window the moment you pay. If anything is wrong with the order you receive, the store resolves it with you at the counter, on the spot. Money moves back only when an order was never made.'
+    a: 'Until the store accepts — yes. Open tracking and tap Cancel: the money returns to your original payment method automatically. Kitchens accept fast — usually within a minute — and the moment they do, the order is locked: no cancellations, no refunds.'
   },
   {
     q: 'Is my data safe?',

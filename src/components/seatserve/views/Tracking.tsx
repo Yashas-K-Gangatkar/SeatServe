@@ -2,12 +2,16 @@
 
 // SeatServe — live order tracking (#/track/<code>)
 // Realtime via socket.io + 4s polling fallback. Per-store status timelines,
-// runner leg, payment state (incl. retry), help entry. NO online refunds —
-// cinema policy: the counter resolves exceptions in person.
+// runner leg, payment state (incl. retry), help entry.
+// CANCEL WINDOW (owner rule): a paid order can be cancelled by the customer
+// ONLY while every store leg is still NEW — the moment a store taps Accept,
+// the button disappears and the API refuses. Money returns to source
+// automatically inside that window; after acceptance the store owns the
+// order and resolves issues at the counter.
 import { useCallback, useEffect, useState } from 'react'
-import { Check, ChefHat, Bike, PackageCheck, CircleHelp, ChevronLeft, MapPin, CreditCard, ReceiptText, Copy } from 'lucide-react'
+import { Check, ChefHat, Bike, PackageCheck, CircleHelp, ChevronLeft, MapPin, CreditCard, ReceiptText, Copy, Lock, Undo2 } from 'lucide-react'
 import { toast } from 'sonner'
-import { get, ApiError } from '@/lib/client/api'
+import { get, post, ApiError } from '@/lib/client/api'
 import { useRealtime, usePolling } from '@/lib/client/realtime'
 import type { TrackingResponse } from '@/lib/client/types'
 import { rupees, timeHM, StatusPill, RUN_STATUS_LABEL, Spinner, LoadError, EmptyState } from '../ui-bits'
@@ -81,6 +85,8 @@ function TrackingInner({ code, go }: { code: string; go: (p: string) => void }) 
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [retryOpen, setRetryOpen] = useState(false)
+  const [cancelOpen, setCancelOpen] = useState(false)
+  const [cancelling, setCancelling] = useState(false)
 
   const load = useCallback(async () => {
     try {
@@ -113,6 +119,41 @@ function TrackingInner({ code, go }: { code: string; go: (p: string) => void }) 
 
   const paymentFailed = order.paymentStatus === 'FAILED'
   const awaitingPayment = order.status === 'PENDING_PAYMENT' || paymentFailed
+
+  // THE ACCEPT WINDOW: cancelable only while every store leg is still NEW.
+  // Once any kitchen taps Accept the window is gone — server enforces it too.
+  const canCancel =
+    order.paymentStatus === 'PAID' &&
+    order.status !== 'CANCELLED' &&
+    order.stores.length > 0 &&
+    order.stores.every((s) => s.status === 'NEW')
+  const lockedByAccept =
+    order.paymentStatus === 'PAID' &&
+    !canCancel &&
+    order.status !== 'COMPLETED' &&
+    order.status !== 'CANCELLED' &&
+    !order.stores.some((s) => s.status === 'CANCELLED')
+
+  const cancelOrder = async () => {
+    setCancelling(true)
+    try {
+      const res = await post<{ cancelled: boolean; refund: { provider: string; status: string; amountPaise: number } }>(
+        `/api/orders/${encodeURIComponent(order.code)}/cancel`,
+        {},
+      )
+      toast.success('Order cancelled — money is on its way back', {
+        description: `${rupees(res.refund.amountPaise)} returns to your original payment method (typically 5–7 working days).`,
+        duration: 8000,
+      })
+      setCancelOpen(false)
+    } catch (err) {
+      toast.error(err instanceof ApiError ? err.message : 'Could not cancel the order')
+      setCancelOpen(false)
+    } finally {
+      setCancelling(false)
+      void load()
+    }
+  }
 
   return (
     <div className="mx-auto w-full max-w-md px-4 pb-16 pt-6">
@@ -280,6 +321,52 @@ function TrackingInner({ code, go }: { code: string; go: (p: string) => void }) 
           <div className="flex justify-between border-t border-border pt-1.5 font-black"><dt>Total paid</dt><dd className="tabular text-orange-600">{rupees(order.totals.totalPaise)}</dd></div>
         </dl>
       </section>
+
+      {/* cancel window — closes the moment any store accepts */}
+      {canCancel && (
+        <section className="mt-4 rounded-2xl border border-stone-200 bg-card p-4">
+          {!cancelOpen ? (
+            <>
+              <p className="text-xs leading-relaxed text-muted-foreground">
+                Changed your mind? The store hasn’t accepted yet — you can still cancel and the money returns to your original payment method automatically.
+              </p>
+              <button
+                onClick={() => setCancelOpen(true)}
+                className="mt-2 flex w-full items-center justify-center gap-1.5 rounded-full border border-red-300 bg-red-50 py-3 text-sm font-extrabold text-red-700 transition hover:bg-red-100"
+              >
+                <Undo2 className="h-4 w-4" aria-hidden /> Cancel order · {rupees(order.totals.totalPaise)} back to source
+              </button>
+            </>
+          ) : (
+            <>
+              <p className="text-sm font-bold text-red-800">
+                Really cancel? {rupees(order.totals.totalPaise)} returns to your payment method — this cannot be undone.
+              </p>
+              <div className="mt-3 grid grid-cols-2 gap-2">
+                <button
+                  onClick={() => setCancelOpen(false)}
+                  disabled={cancelling}
+                  className="rounded-full border border-stone-300 bg-white py-3 text-sm font-bold text-foreground hover:bg-stone-50 disabled:opacity-50"
+                >
+                  Keep order
+                </button>
+                <button
+                  onClick={cancelOrder}
+                  disabled={cancelling}
+                  className="rounded-full bg-red-600 py-3 text-sm font-extrabold text-white shadow-sm transition hover:bg-red-700 disabled:opacity-50"
+                >
+                  {cancelling ? 'Cancelling…' : 'Yes, cancel'}
+                </button>
+              </div>
+            </>
+          )}
+        </section>
+      )}
+      {lockedByAccept && (
+        <p role="status" className="mt-4 flex items-center justify-center gap-1.5 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2.5 text-[11px] font-bold text-emerald-800">
+          <Lock className="h-3.5 w-3.5" aria-hidden /> Accepted by the kitchen — your order is locked in and being made.
+        </p>
+      )}
 
       <button
         onClick={() => go(`#/support/${order.code}`)}

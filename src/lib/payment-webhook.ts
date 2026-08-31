@@ -11,7 +11,7 @@ import { emitToRooms } from '@/lib/realtime'
 import { verifyWebhookMultiProvider, type NormalizedPaymentEvent } from '@/lib/payments/provider'
 
 export type ProcessResult =
-  | { ok: true; outcome: 'captured' | 'failed' | 'duplicate' | 'already_paid'; eventId: string; orderCode?: string }
+  | { ok: true; outcome: 'captured' | 'failed' | 'duplicate' | 'already_paid' | 'refund_processed'; eventId: string; orderCode?: string }
   | { ok: false; status: number; error: string }
 
 /**
@@ -64,12 +64,41 @@ export async function processNormalizedEvent(event: NormalizedPaymentEvent, rawB
     },
   })
 
+  if (event.type === 'refund.processed') {
+    // informational confirmation that a refund we initiated reached the
+    // gateway — money state is already reflected by the cancellation flow
+    await audit({
+      actorRole: 'GATEWAY',
+      actorRef: event.provider,
+      action: 'REFUND_PROCESSED',
+      entityType: 'Payment',
+      entityId: payment.id,
+      orderId: payment.orderId,
+      mallId: payment.order.mallId,
+      meta: { refundId: event.refundId, amountPaise: event.refundAmountPaise, gatewayPaymentId: event.providerRef, provider: event.provider },
+    })
+    await emitToRooms({ rooms: [`order:${payment.order.code}`], event: 'order:update', data: { code: payment.order.code, refundProcessed: true } })
+    return { ok: true, outcome: 'refund_processed', eventId: event.eventId, orderCode: payment.order.code }
+  }
+
   if (event.type === 'payment.captured') {
     if (alreadyPaid) return { ok: true, outcome: 'already_paid', eventId: event.eventId, orderCode: payment.order.code }
 
+    // REAL gateway adoption: Razorpay owns the payment id namespace (pay_…).
+    // Once verified, the event's gateway payment id REPLACES our internal
+    // session ref on the Payment row — refunds + future events address the
+    // payment the way the gateway does. (The event was matched through the
+    // order receipt/notes, so this update cannot misfire onto another row.)
+    const isGatewayId = event.providerRef !== payment.providerRef && event.providerRef.length > 0
     await db.payment.update({
       where: { id: payment.id },
-      data: { status: 'SUCCESS', method: event.method ?? payment.method, methodDetail: event.methodDetail ?? payment.methodDetail, failureReason: null },
+      data: {
+        status: 'SUCCESS',
+        method: event.method ?? payment.method,
+        methodDetail: event.methodDetail ?? payment.methodDetail,
+        failureReason: null,
+        ...(event.provider === 'RAZORPAY' && isGatewayId ? { providerRef: event.providerRef } : {}),
+      },
     })
     await db.order.update({ where: { id: payment.orderId }, data: { status: 'PAID', paymentStatus: 'PAID' } })
 

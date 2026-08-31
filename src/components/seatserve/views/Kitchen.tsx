@@ -292,6 +292,12 @@ function KitchenDashboard({ storeSlugOrId, canSwitch, go }: { storeSlugOrId: str
                     )}
                     {!action && <span className="text-[11px] font-bold text-emerald-600">Waiting for runner</span>}
                   </div>
+
+                  {t.status === 'NEW' && (
+                    <p className="mt-2 rounded-lg bg-amber-100/70 px-3 py-2 text-[11px] font-bold text-amber-800" role="note">
+                      Accept fast — the customer can still cancel until you accept. Accepting locks the order.
+                    </p>
+                  )}
                 </li>
               )
             })}

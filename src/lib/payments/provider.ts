@@ -18,13 +18,16 @@ export type ProviderId = 'SANDBOX_MOCK' | 'RAZORPAY' | 'CASHFREE'
 /** SeatServe-normalized webhook event — all providers map to this. */
 export interface NormalizedPaymentEvent {
   eventId: string
-  type: 'payment.captured' | 'payment.failed'
+  type: 'payment.captured' | 'payment.failed' | 'refund.processed'
   provider: ProviderId
   /** our Payment.providerRef — adapters resolve gateway ids onto it */
   providerRef: string
   method?: string
   methodDetail?: string
   failureReason?: string
+  /** refund.processed: gateway refund id + amount, for the audit trail */
+  refundId?: string
+  refundAmountPaise?: number
   /** raw provider event type, for the audit trail */
   rawType: string
 }
@@ -184,10 +187,14 @@ const razorpayAdapter: PaymentProviderAdapter = {
     if (!razorpayVerify(secret, rawBody, signature)) {
       return { ok: false, status: 401, error: 'Invalid webhook signature' }
     }
-    // Razorpay payload: { event, payload: { payment: { entity: {...} } } }
+    // Razorpay payload: { event, payload: { payment: { entity }, order?: { entity }, refund?: { entity } } }
     let body: {
       event?: string
-      payload?: { payment?: { entity?: { id?: string; method?: string; vpa?: string; card?: { last4?: string }; error_description?: string } } }
+      payload?: {
+        payment?: { entity?: { id?: string; method?: string; vpa?: string; card?: { last4?: string }; error_description?: string; notes?: Record<string, string> } }
+        order?: { entity?: { id?: string; receipt?: string } }
+        refund?: { entity?: { id?: string; payment_id?: string; amount?: number } }
+      }
     }
     try {
       body = JSON.parse(rawBody)
@@ -195,13 +202,44 @@ const razorpayAdapter: PaymentProviderAdapter = {
       return { ok: false, status: 400, error: 'Webhook body is not valid JSON' }
     }
     const entity = body.payload?.payment?.entity
-    if (!body.event || !entity?.id) return { ok: false, status: 422, error: 'Razorpay event missing event/payload.payment.entity.id' }
+    if (!body.event) return { ok: false, status: 422, error: 'Razorpay event missing event' }
 
-    // Sandbox contract: gateway payment id carries our providerRef as pay_<providerRef>.
-    const providerRef = entity.id.startsWith('pay_') ? entity.id.slice(4) : entity.id
+    // refund.processed carries payload.refund.entity (payment_id links back);
+    // there may be no payment entity on the event (refund webhooks include it
+    // under payload.payment too — accept either shape)
+    if (body.event === 'refund.processed') {
+      const refund = body.payload?.refund?.entity
+      const paymentId = refund?.payment_id ?? entity?.id
+      if (!refund?.id || !paymentId) {
+        return { ok: false, status: 422, error: 'Razorpay refund event missing refund.id/payment_id' }
+      }
+      return {
+        ok: true,
+        normalized: {
+          eventId: `rzp_${refund.id}_refund.processed`,
+          type: 'refund.processed',
+          provider: 'RAZORPAY',
+          providerRef: paymentId,
+          refundId: refund.id,
+          refundAmountPaise: refund.amount,
+          rawType: body.event,
+        },
+      }
+    }
+
+    if (!entity?.id) return { ok: false, status: 422, error: 'Razorpay event missing payload.payment.entity.id' }
     if (body.event !== 'payment.captured' && body.event !== 'payment.failed') {
       return { ok: false, status: 422, error: `Unsupported Razorpay event: ${body.event}` }
     }
+
+    // REAL gateway contract: our Payment.providerRef travels inside the order's
+    // receipt ("SS-XXXX|<providerRef>") and the order notes — Razorpay echoes
+    // both back on every payment event. The sandbox contract (pay_<providerRef>
+    // as the payment id) stays as a legacy fallback. The captured event's REAL
+    // pay_ id is adopted onto the Payment row by the state processor.
+    const fromReceipt = body.payload?.order?.entity?.receipt ?? entity.notes?.seatserve_order ?? ''
+    const pipe = fromReceipt.indexOf('|')
+    const providerRef = pipe >= 0 ? fromReceipt.slice(pipe + 1) : entity.id.startsWith('pay_') ? entity.id.slice(4) : entity.id
     return {
       ok: true,
       normalized: {
