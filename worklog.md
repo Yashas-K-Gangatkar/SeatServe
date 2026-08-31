@@ -280,3 +280,21 @@ Work Log:
 
 Stage Summary:
 - Production ctshop-five.vercel.app FULLY LIVE with seeded cloud DB and verified end-to-end order flow; secrets vault established; go-live checklist = real webhook secrets + provider flip + store KYC linked accounts + token deletion by owner
+
+---
+Task ID: git-author-fix + deployment-unblock
+Agent: Super Z (main)
+Task: Fix Vercel "Deployment Blocked — commit author email dev@seatserve.local is not valid"; keep owner secrets vaulted
+
+Work Log:
+- Diagnosed blocked dpl (ArSXg5iCg, sha 72e4896): Vercel git-integration check rejects author email not associated with a GitHub account; earlier API-redeploy (dpl_GN8i) was unaffected, prod stayed up
+- Re-validated owner tokens: Vercel vcp_... -> 200 (clash2yashas-4207, team NFWz...); GitHub PAT -> login Yashas-K-Gangatkar (id 239087007)
+- Fixed identity: set global+repo git user to "Yashas-K-Gangatkar <239087007+Yashas-K-Gangatkar@users.noreply.github.com>" so every future commit attributes to the repo owner's GitHub account
+- Amended tip (72e4896 -> cd752b2) with --reset-author (+ .gitignore now ignores /tool-results/ so sandbox output dumps with possible secret previews can never be auto-committed), pushed via one-shot credentialed URL with --force-with-lease=refs/heads/main:72e4896...
+- Vercel auto-built cd752b2: dpl_9865qj BUILDING -> READY (~2 min); BLOCKED entry remains only as history
+- PROD VERIFIED: ctshop-five.vercel.app / 200, /api/stores 200 (5 seeded stores: Cinema Snacks, Dosa Junction, Mithai & More, Pizza Corner, Wrap House), /api/demo/entry 200; local sandbox 200
+- Secrets: confirmed canonical vault .env.secrets (gitignored via .env* rule) already holds active GH PAT, Vercel token, Razorpay live pair, db.prisma.io URL, prod/repo URLs; reverted a duplicate vault block added to .env so runtime env file stays minimal and the vault has a single source of truth; future owner secrets to be appended to .env.secrets
+- Noted: owner's OTHER Vercel project my-project (repo Yashas-K-Gangatkar/whatsappg) latest deployment is BLOCKED for the same author-email reason; not touched (no local clone / unsolicited force-push), offered same fix
+
+Stage Summary:
+- Git->Vercel pipeline unblocked permanently: commits now authored as GitHub-verified repo-owner identity; cd752b2 live on ctshop-five.vercel.app with seeded cloud DB; secrets centralized in gitignored .env.secrets; pending owner decisions = monetization model, whatsappg unblock (on request), token rotation/deletion after go-live
