@@ -43,7 +43,7 @@ export function AuxFooter({ legal = false }: { legal?: boolean }) {
           </Link>{' '}
           ·{' '}
           <Link href="/legal/refund" className="hover:text-[#1A1A1A]">
-            Refunds
+            Payments
           </Link>{' '}
           ·{' '}
           <Link href="/" className="hover:text-[#1A1A1A]">
@@ -55,8 +55,7 @@ export function AuxFooter({ legal = false }: { legal?: boolean }) {
           © 2026 SeatServe ·{' '}
           <Link href="/" className="hover:text-[#1A1A1A]">
             Home
-          </Link>{' '}
-          · Demo — no real payments are processed.
+          </Link>
         </>
       )}
     </footer>

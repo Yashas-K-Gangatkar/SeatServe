@@ -19,7 +19,7 @@ const FAQS = [
   },
   {
     q: 'What if my order gets here late or an item is cancelled?',
-    a: 'You watch every store live while you wait. If an outlet cannot prepare an item at all — sold out before cooking starts, for example — that item’s amount is reversed automatically: your receipt marks it and the money returns to your original payment method within 5–7 working days. No forms, no chasing.',
+    a: 'You watch every store live while you wait. If an outlet cannot prepare an item at all — sold out before cooking starts, for example — you don’t pay for it: that amount is corrected back to your original payment method automatically and your receipt marks it clearly. No forms, no chasing.',
   },
   {
     q: 'Is this actually free to try?',
@@ -34,8 +34,8 @@ const FAQS = [
     a: 'Pay once at the end: UPI, card or netbanking. The single payment is split behind the scenes so each store receives its share automatically — you never queue twice.',
   },
   {
-    q: 'Can I cancel or get a refund?',
-    a: 'No — like every cinema food counter, orders are final once placed: kitchens begin preparing for your show window the moment you pay. Money moves back only in two technical cases — a payment captured without a working order (auto-reversed per RBI rules), or an outlet that cannot prepare your item at all. Details in the cancellation & refund policy.',
+    q: 'Can I cancel my order?',
+    a: 'No — like every cinema food counter, orders are final once placed: kitchens begin preparing for your show window the moment you pay. If anything is wrong with the order you receive, the store resolves it with you at the counter, on the spot. Money moves back only when an order was never made — a failed payment auto-reversal, or an item the outlet could not prepare at all. Details in the cancellation & payments policy.',
   },
   {
     q: 'Is my data safe?',

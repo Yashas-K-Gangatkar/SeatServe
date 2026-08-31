@@ -17,7 +17,7 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "SeatServe — order food to your cinema seat",
   description:
-    "Multi-store food ordering and delivery inside malls with cinemas. Scan the seat QR, pay once, get snacks delivered to Screen & Seat. Phase 1 sandbox demo.",
+    "Multi-store food ordering and delivery inside malls with cinemas. Scan the seat QR, pay once by UPI or card, get snacks delivered to Screen & Seat. Payments by Razorpay.",
   icons: {
     icon: "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍿</text></svg>",
   },

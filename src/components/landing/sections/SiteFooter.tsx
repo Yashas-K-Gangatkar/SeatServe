@@ -75,7 +75,7 @@ export function SiteFooter() {
             </li>
             <li>
               <a href="/legal/refund" className="inline-flex min-h-[44px] items-center hover:text-[#D4AF37] hover:underline">
-                Cancellation &amp; refund policy
+                Cancellation &amp; payments policy
               </a>
             </li>
           </ul>
@@ -100,7 +100,7 @@ export function SiteFooter() {
         </nav>
       </div>
       <div className="border-t border-white/10 py-5 text-center text-[13px] text-stone-500">
-        © 2026 SeatServe · Demo — no real payments are processed.
+        © 2026 SeatServe · Payments by Razorpay · Orders fulfilled by venue outlets.
       </div>
     </footer>
   )

@@ -18,7 +18,7 @@ const ACCOUNTS: { role: string; email: string; scope: string }[] = [
   { role: 'Kitchen', email: 'kitchen@pizza-corner.demo', scope: 'Pizza Corner kitchen tickets' },
   { role: 'Kitchen', email: 'kitchen@wrap-house.demo', scope: 'Wrap House kitchen tickets' },
   { role: 'Kitchen', email: 'kitchen@mithai-more.demo', scope: 'Mithai & More counter tickets' },
-  { role: 'Store manager', email: 'manager@cinema-snacks.demo', scope: 'Cinema Snacks — menu, availability, refunds' },
+  { role: 'Store manager', email: 'manager@cinema-snacks.demo', scope: 'Cinema Snacks — menu, availability, tickets' },
   { role: 'Runner', email: 'ravi@runner.demo', scope: 'Ravi — Wing A delivery runs' },
   { role: 'Runner', email: 'sana@runner.demo', scope: 'Sana — Wing B delivery runs' },
 ]

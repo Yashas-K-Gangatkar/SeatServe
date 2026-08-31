@@ -17,11 +17,11 @@ export const LANDING_FAQ: FaqItem[] = [
   },
   {
     q: 'What if my order gets here late or an item is cancelled?',
-    a: 'You watch every store live while you wait. If a store cancels an item (sold out, or something goes wrong), that item is refunded automatically — your receipt shows "REFUNDED" against it and the money returns to your original payment method. No forms, no chasing.',
+    a: 'You watch every store live while you wait. If a store cannot prepare an item at all — sold out before cooking starts, for example — you don\u2019t pay for it: that amount is corrected back to your original payment method automatically and your receipt marks it clearly. No forms, no chasing.'
   },
   {
-    q: 'Is this actually free to try?',
-    a: 'Yes — this is a live demo. Checkout simulates the payment, so nothing is ever charged. Real payments arrive at launch with Razorpay.',
+    q: 'Is there a fee to use this?',
+    a: 'There is no fee to use the service — you pay only for your order, once, at checkout (UPI, card or netbanking). The payment screen always shows the exact amount before you confirm.'
   },
 ]
 
@@ -36,8 +36,8 @@ export const ALL_FAQ: FaqItem[] = [
     a: 'Pay once at the end: UPI, card or netbanking. The single payment is split behind the scenes so each store receives its share automatically — you never queue twice.',
   },
   {
-    q: 'Can I cancel or get a refund?',
-    a: 'Yes. Cancel before kitchens start cooking for a full refund. If a store cancels your item, that item is refunded automatically. Refunds return to the original payment method within 5–7 working days (instantly, in this demo).',
+    q: 'Can I cancel my order?',
+    a: 'No — like every cinema food counter, orders are final once placed: kitchens begin preparing for your show window the moment you pay. If anything is wrong with the order you receive, the store resolves it with you at the counter, on the spot. Money moves back only when an order was never made.'
   },
   {
     q: 'Is my data safe?',
@@ -45,6 +45,6 @@ export const ALL_FAQ: FaqItem[] = [
   },
   {
     q: "I'm staff — where do I sign in?",
-    a: 'Head to the staff page for the demo account list, then use the staff sign-in console. Kitchen, runner, store, cinema and mall roles each see only their own scope.',
+    a: 'Head to the staff page, enter the pilot access code your venue gave you, then use the staff sign-in console. Kitchen, runner, store, cinema and mall roles each see only their own scope.',
   },
 ]

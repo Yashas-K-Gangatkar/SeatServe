@@ -35,7 +35,7 @@ export default function LegalShell({
       <footer className="border-t border-[#EFEAE0] py-6 text-center text-[13px] text-[#8B8B8B]">
         <a href="/legal/privacy" className="hover:text-[#1A1A1A]">Privacy</a> ·{' '}
         <a href="/legal/terms" className="hover:text-[#1A1A1A]">Terms</a> ·{' '}
-        <a href="/legal/refund" className="hover:text-[#1A1A1A]">Refunds</a> ·{' '}
+        <a href="/legal/refund" className="hover:text-[#1A1A1A]">Payments</a> ·{' '}
         <a href="/" className="hover:text-[#1A1A1A]">Home</a>
       </footer>
     </div>
