@@ -88,10 +88,24 @@ function QrSheet({ go }: { go: (p: string) => void }) {
         </div>
       </div>
 
+      {/* print-only header — screen identity + sticker placement rules (appears on paper only) */}
+      <div className="print-only mb-4 border-b-2 border-gray-800 pb-3">
+        <h2 className="text-lg font-black tracking-tight text-gray-900">
+          Seat stickers — {data.screen.name} · {data.screen.cinema}
+        </h2>
+        <p className="mt-1 text-[11px] font-semibold leading-snug text-gray-700">
+          Placement rule: each sticker serves the seat BEHIND it — stick it on the seatback in front.
+          A-row stickers go on the front wall or pillar edge.
+        </p>
+        <p className="mt-0.5 text-[9px] text-gray-500">
+          Every QR opens {data.origin}/?qr=… — print at 100% scale, cut on the card borders.
+        </p>
+      </div>
+
       {/* printable grid — white background for print legibility */}
       <div className="print-area mt-6 grid grid-cols-3 gap-3 rounded-2xl bg-white p-4 sm:grid-cols-6" aria-label={`Seat QR codes for ${data.screen.name}`}>
         {data.seats.map((seat) => (
-          <figure key={seat.qrToken} className="rounded-lg border border-gray-200 bg-white p-2 text-center">
+          <figure key={seat.qrToken} className="qr-sticker rounded-lg border border-gray-200 bg-white p-2 text-center">
             <img src={seat.dataUrl} alt={`QR code for seat ${seat.code}, ${data.screen.name}`} className="mx-auto h-auto w-full" />
             <figcaption className="mt-1">
               <p className="text-[13px] font-black leading-tight text-gray-900">{seat.code}</p>

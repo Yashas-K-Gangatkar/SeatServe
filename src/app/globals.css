@@ -112,10 +112,15 @@ body {
 /* soft elevation used by key cards — warm shadow, never grey-dark */
 .card-pop { box-shadow: 0 1px 2px rgba(146, 104, 36, 0.05), 0 12px 32px -18px rgba(146, 104, 36, 0.22); }
 
+.print-only { display: none; } /* hidden on screen, revealed on paper by the print block */
+
 @media print {
   body { background: #ffffff !important; }
   .print-hide { display: none !important; }
   .print-area { display: block !important; }
+  .print-only { display: block !important; }
+  /* a sticker row must never split across two printed pages */
+  .qr-sticker { break-inside: avoid; page-break-inside: avoid; }
 }
 
 /* ───────────────── thermal receipt (post-payment bill) ───────────────── */
