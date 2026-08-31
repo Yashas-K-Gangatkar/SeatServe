@@ -356,3 +356,20 @@ Work Log:
 
 Stage Summary:
 - All 12 reviewer fixes + nice-to-haves live on ctshop-five.vercel.app; preview-URL behavior explained and documented (branch domain moves, deployment domain frozen); measurement/analytics (CTA CTR, scroll depth) remains the only unimplemented suggestion — needs a real analytics service decision
+
+---
+Task ID: url-proof-verification
+Agent: Super Z (main)
+Task: Prove with artifacts (not claims) which build ctshop-git-main-noti-fetch.vercel.app serves vs ctshop-7m5hu3mb6-noti-fetch.vercel.app; satisfy reviewer checklist (branch check, push check, manual rebuild, both-URL screenshots)
+
+Work Log:
+- Cache-busted fetch of git-main returned all NEW markers (What users say / Tap a step / Hungry already / Fresh demo data) — identical to prod five
+- Vercel API deployment record dpl_CrCS37sS6hg2ejVbN3dPhyR24Zr3 (sha 154d9c1) lists alias: ctshop-five.vercel.app + ctshop-noti-fetch.vercel.app + ctshop-git-main-noti-fetch.vercel.app
+- Manual rebuild triggered via POST /v13/deployments gitSource main -> dpl_4dFhKGDCGDhcAqhQAowvLcbkfdmY READY, alias list confirmed same three domains; fresh immutable URL ctshop-rnub7sim1-noti-fetch.vercel.app
+- FROZEN mapping proven: ctshop-7m5hu3mb6-noti-fetch.vercel.app is the permanent URL of dpl_9865qj36xoa1EUzjYVNZidSEujfi (sha cd752b2, pre-redesign) — it is not a branch and can never update
+- git ls-remote confirms single branch main; discovered sandbox auto-commit 0965dd7 (worklog only) pending locally -> pushed so GitHub main == local
+- agent-browser full-page screenshots (stepwise scroll so IntersectionObserver reveals fire): proof-1 git-main (carousel items: 8), proof-2 7m5hu3mb6 (NO carousel element, old jargon page), proof-3 prod five (carousel items: 8), proof-4 Pillow side-by-side composite
+- Proof files saved to /home/z/my-project/download/: proof-1-ctshop-git-main-NEW-full.png, proof-2-ctshop-7m5hu3mb6-OLD-frozen-full.png, proof-3-ctshop-five-PROD-full.png, proof-4-side-by-side-old-vs-new.png
+
+Stage Summary:
+- Reviewer confusion root-caused: they evaluated the FROZEN 7m5hu3mb6 deployment URL (old cd752b2 build), not the git-main branch domain which has served the new build since 154d9c1; both alias bindings now proven via Vercel API + screenshots; share only ctshop-five.vercel.app publicly
