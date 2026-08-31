@@ -391,3 +391,21 @@ Work Log:
 
 Stage Summary:
 - Demo can no longer dead-end: cutoff-passed shows roll forward and order-bound screens mint fresh showtimes (runtime-proven). /health + /api/health + daily cron give eyes on prod without asking anyone. One-page store onboarding kit ready to hand out. All 12 landing brief sections re-verified item-by-item and live on prod; both disputed URLs serve the identical new build.
+
+---
+Task ID: no-qr-in-customer-web
+Agent: Super Z (main)
+Task: Owner correction — no QR may ever be displayed inside the customer web. The QR is physical (sticker in front of the seat); scanning it opens the link with the pre-registered venue and its multiple stores.
+
+Work Log:
+- Audited every customer-facing surface for QR rendering: Landing.tsx (live QRCode.toDataURL "Try on your phone" card), PaperReceipt.tsx (scannable "SCAN FOR LIVE TRACKING" QR), /scan page (camera scanner only, no QR shown — OK), FlowDemo FakeQr (non-scannable decorative illustration of the physical seat sticker being scanned — kept, it depicts the owner's exact model)
+- Removed: Landing QRCode import + qrData state + generation effect + entire "try on your phone" section; PaperReceipt QRCode import + qr state + effect + QR block (receipt keeps big tracking number + decorative barcode)
+- Kept operator-side QR generation (api/admin/qr route + #/qr QrAdmin) — that prints the PHYSICAL seat stickers, exactly the owner's model
+- Verified seat flow matches owner spec: /#/seat/HGJM6SR2WH -> "AURORA MALL · DEMO" pre-registered venue -> Aurora Cineplex — Wing A -> Screen 3 · Seat A-1 -> "4 stores · one cart" (Cinema Snacks, Mithai & More, Pizza Corner, Wrap House)
+- Full demo order walk (add Masala Chai -> cart -> UPI pay SS-MKPH64): receipt shows 0 QR images, SCAN FOR LIVE TRACKING gone, tracking number + barcode intact; zero console errors
+- Shipped: commit 86735ff pushed (7c348b0..86735ff), Vercel auto-build dpl_9zeN1iR9awoA5EZwARWGdszfT59H READY, aliases ctshop-five + ctshop-noti-fetch + ctshop-git-main all on 86735ff
+- Prod proof: browser eval on ctshop-five = qrSections 0, qrImgs 0, hero intact; /api/health ok (464 seats, 5 stores); ctshop-five and git-main byte-identical (94,175)
+- Proof screenshots: download/proof-noqr-landing-mobile.png, download/proof-noqr-receipt-mobile.png
+
+Stage Summary:
+- Customer web is now QR-free end to end: landing, scan, menu, checkout, payment, receipt, tracking. The only real QR in the system is the physical seat sticker (printed via operator QrAdmin), which is exactly the owner's flow: scan sticker -> venue pre-registered -> multiple stores, one cart.
