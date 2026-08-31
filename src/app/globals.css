@@ -168,6 +168,34 @@ body {
     #292524 15px 16px, transparent 16px 21px);
 }
 
+/* paper curl — the bottom of the sheet bows toward the viewer and the
+   corners lift with soft shadows (shared by payment + tracking receipts) */
+.receipt-curl-shade {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 48px;
+  pointer-events: none;
+  background: linear-gradient(180deg, transparent 0%, rgba(120, 84, 30, 0.05) 55%, rgba(120, 84, 30, 0.12) 100%);
+}
+.receipt-curl {
+  position: absolute;
+  bottom: 7px;
+  width: 30%;
+  height: 14px;
+  pointer-events: none;
+  filter: blur(2px);
+}
+.receipt-curl-l {
+  left: 2px;
+  background: radial-gradient(ellipse at left bottom, rgba(87, 60, 24, 0.32), transparent 68%);
+}
+.receipt-curl-r {
+  right: 2px;
+  background: radial-gradient(ellipse at right bottom, rgba(87, 60, 24, 0.32), transparent 68%);
+}
+
 @media (prefers-reduced-motion: reduce) {
   .receipt-anim, .slot-led { animation: none; }
 }
