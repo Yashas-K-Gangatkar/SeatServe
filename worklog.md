@@ -298,3 +298,18 @@ Work Log:
 
 Stage Summary:
 - Git->Vercel pipeline unblocked permanently: commits now authored as GitHub-verified repo-owner identity; cd752b2 live on ctshop-five.vercel.app with seeded cloud DB; secrets centralized in gitignored .env.secrets; pending owner decisions = monetization model, whatsappg unblock (on request), token rotation/deletion after go-live
+
+---
+Task ID: whatsappg-unblock + legal-checklist
+Agent: Super Z (main)
+Task: Fix blocked whatsappg deployment; cheap-realtime advice; token-rotation runbook; India legal/registration check (owner: "dont want to go to jail")
+
+Work Log:
+- Cloned Yashas-K-Gangatkar/whatsappg (Vercel project my-project): tip commits authored by invalid identity Z User <z@container>; Vercel blocked-deploy detail returned no sha (older CLI-triggered entries) but author fix is the same medicine
+- Amended tip 1a1ac3e -> 29d47a2 with repo-owner noreply identity, force-with-lease pushed; Vercel rebuilt dpl_yQAtRd -> READY; two BLOCKED entries remain as history only
+- Wrote docs/LEGAL-COMPLIANCE-INDIA.md: platform legal characterisation (marketplace/ECO, NOT PA/restaurant), registration priority table (Pvt Ltd/OPC -> PAN/TAN -> GSTIN -> store FSSAI display -> S&E -> trademark), GST deep-dive (18% on commission; 9(5) 5% ECO restaurant-service question flagged as THE CA item; 52 TCS/GSTR-8; 194H TDS by stores), money-flow jail-avoidance via Razorpay Route (never pool funds), CP(E-Commerce) Rules 2020 must-haves (store GSTIN+FSSAI display, grievance officer 48h/1mo, policies, no dark patterns), DPDP 2023 (children in cinemas, security safeguards up to 250cr penalty exposure, breach reporting), venue exclusivity + alcohol exclusion, store onboarding folder, ranked trouble list, ordered launch checklist; marked NOT LEGAL ADVICE
+- Committed 635ebe9 (docs + gitignore /tmp/) with valid author, pushed, Vercel deployment READY, prod / 200 re-verified
+- Removed tmp/whatsappg clone; /tmp/ now gitignored so scratch clones can never be auto-committed
+
+Stage Summary:
+- Both repos (SeatServe + whatsappg) now permanently unblocked with GitHub-verified commit identity; owner has an actionable India compliance brief in-repo; pending owner inputs = realtime provider key (recommended Ably free tier) OR stay on 4s polling for pilot, rotated tokens (order: create new -> paste -> verify/store -> revoke old), entity details for the 4 legal pages, monetization decision, custom domain name
