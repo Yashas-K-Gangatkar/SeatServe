@@ -661,3 +661,20 @@ Work Log:
 Stage Summary:
 - Feature live-pending-Vercel: store Accept kills the customer refund option (exactly as owner specified)
 - Blocking on USER: add 4 env vars in Vercel dashboard (RAZORPAY_KEY_ID, RAZORPAY_KEY_SECRET, PAYMENT_PROVIDER=razorpay, RAZORPAY_WEBHOOK_SECRET) + create webhook in Razorpay dashboard → then ₹1 live test
+
+---
+Task ID: 14
+Agent: Super Z (main agent)
+Task: Receive owner's RAZORPAY_WEBHOOK_SECRET, trigger redeploy so Vercel env vars take effect
+
+Work Log:
+- Owner pasted webhook secret (y@sh@sk123456789) and reports it set in BOTH Vercel env (RAZORPAY_WEBHOOK_SECRET) and Razorpay dashboard webhook config — matches exactly what src/lib/payments/provider.ts reads (hex HMAC-SHA256 via X-Razorpay-Signature)
+- Confirmed code-side wiring is complete: adapter only activates when RAZORPAY_WEBHOOK_SECRET exists (provider.ts:315); route POST /api/payments/webhook is live in prod
+- Discovered accept-to-lock feature was already fully shipped in 1c4860c (Task 13): cancel route, Tracking cancel window UI, Kitchen accept UI, policy copy — nothing left to build there
+- Pushed 1cfbc15 (pending worklog + db) to origin/main → triggers Vercel redeploy so owner's env vars are picked up (env vars require a rebuild; adding them alone does nothing)
+- Vercel CLI not authenticated — cannot inspect owner's env vars remotely; owner must confirm the remaining 3 (RAZORPAY_KEY_ID, RAZORPAY_KEY_SECRET, PAYMENT_PROVIDER=razorpay) are in Vercel
+- Safety note: if keys/PAYMENT_PROVIDER are missing, activeGateway() falls back to SANDBOX_MOCK (no crash, mock checkout) — never a half-live state
+
+Stage Summary:
+- Webhook secret step DONE (owner-side + code-side verified)
+- Redeploy triggered 1cfbc15; next: owner confirms remaining env vars → curl-verify webhook 401-on-bad-signature → ₹1 live order + cancel-window refund test
