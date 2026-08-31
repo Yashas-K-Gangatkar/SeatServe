@@ -38,7 +38,7 @@ export default function FaqPage() {
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             type="search"
-            placeholder="Search answers — refund, stores, payment…"
+            placeholder="Search answers — stores, payment, delivery…"
             aria-label="Search the FAQ"
             className="h-12 w-full rounded-xl border border-[#E7E2D8] bg-white pl-11 pr-4 text-[15px] shadow-[0_4px_12px_rgba(0,0,0,0.05)] placeholder:text-[#8B8B8B] focus:border-[#D4AF37] focus:outline-none"
           />

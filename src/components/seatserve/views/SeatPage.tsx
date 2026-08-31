@@ -3,15 +3,93 @@
 // SeatServe — customer seat page (#/seat/<qrToken>)
 // Mobile-first, dark-cinema friendly: big touch targets, high contrast, sticky cart bar.
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { Minus, Plus, Check, ShoppingBag, Timer, Store as StoreIcon, ChevronLeft, MapPin, Ban, ChevronDown } from 'lucide-react'
+import { Copy, Minus, Plus, Check, ShoppingBag, Timer, Store as StoreIcon, ChevronLeft, MapPin, Ban, ChevronDown, PackageSearch, X } from 'lucide-react'
 import { toast } from 'sonner'
 import { get, ApiError } from '@/lib/client/api'
+import { usePolling } from '@/lib/client/realtime'
 import { useCart } from '@/lib/client/cart'
-import type { ContextResponse, OrderCreateResponse } from '@/lib/client/types'
-import { rupees, VegMark, Spinner, LoadError, EmptyState } from '../ui-bits'
+import { rememberOrder, ordersForSeat, forgetOrder, type RememberedOrder } from '@/lib/client/orderMemory'
+import type { ContextResponse, OrderCreateResponse, TrackingResponse } from '@/lib/client/types'
+import { rupees, VegMark, Spinner, LoadError, EmptyState, StatusPill } from '../ui-bits'
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet'
 import { Input } from '@/components/ui/input'
 import { CheckoutSheet } from './CheckoutSheet'
+
+/**
+ * One remembered order at this seat — the "forgot to copy the tracking number"
+ * safety net. Live status via the public order endpoint; tap to open tracking.
+ */
+function SeatOrderCard({ order, go, onChanged }: { order: RememberedOrder; go: (p: string) => void; onChanged: () => void }) {
+  const [data, setData] = useState<TrackingResponse | null>(null)
+  const [gone, setGone] = useState(false)
+
+  const load = useCallback(async () => {
+    try {
+      setData(await get<TrackingResponse>(`/api/orders/${encodeURIComponent(order.code)}`))
+    } catch {
+      // order purged/expired — stop showing the card
+      setGone(true)
+    }
+  }, [order.code])
+
+  useEffect(() => {
+    // microtask: keeps the effect body free of synchronous setState
+    Promise.resolve().then(() => void load())
+  }, [load])
+  // live while the order is still moving (not COMPLETED / not CANCELLED)
+  usePolling(load, 8000, !!data && data.status !== 'COMPLETED' && data.status !== 'CANCELLED')
+
+  if (gone) return null
+  const active = data && data.status !== 'COMPLETED' && data.status !== 'CANCELLED'
+
+  return (
+    <div className={`card-pop flex items-center gap-3 rounded-2xl border p-3.5 ${active ? 'border-amber-300 bg-amber-50' : 'border-border bg-card'}`} role="status">
+      <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full ${active ? 'bg-amber-100 text-amber-700' : 'bg-stone-100 text-stone-500'}`}>
+        <PackageSearch className="h-5 w-5" aria-hidden />
+      </div>
+      <div className="min-w-0 flex-1">
+        <p className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-sm font-black text-stone-900">
+          {active ? 'Your order here' : data?.status === 'COMPLETED' ? 'Delivered here' : 'Order here'}
+          {data && <StatusPill status={data.status} />}
+        </p>
+        <p className="mt-0.5 truncate text-[11px] text-stone-600">
+          <button
+            onClick={async () => {
+              try {
+                await navigator.clipboard.writeText(order.code)
+                toast.success('Tracking number copied')
+              } catch {
+                toast.error('Copy failed — long-press the code instead')
+              }
+            }}
+            className="inline-flex items-center gap-1 rounded-md bg-white px-1.5 py-0.5 font-bold tracking-wide text-amber-800 ring-1 ring-amber-200 hover:bg-amber-100"
+            aria-label={`Copy tracking number ${order.code}`}
+          >
+            {order.code} <Copy className="h-3 w-3" aria-hidden />
+          </button>
+          {data && <> · {rupees(data.totals.totalPaise)}</>}
+        </p>
+      </div>
+      <button
+        onClick={() => go(`#/track/${order.code}`)}
+        className="shrink-0 rounded-full bg-gradient-to-b from-amber-500 to-orange-500 px-4 py-2.5 text-xs font-extrabold text-white shadow-md shadow-orange-500/30 hover:from-amber-600 hover:to-orange-600"
+      >
+        Track
+      </button>
+      <button
+        onClick={() => {
+          forgetOrder(order.code)
+          toast.info('Removed from this device')
+          onChanged()
+        }}
+        className="shrink-0 rounded-full p-1.5 text-stone-400 hover:bg-stone-100 hover:text-stone-600"
+        aria-label={`Forget order ${order.code} on this device`}
+      >
+        <X className="h-3.5 w-3.5" aria-hidden />
+      </button>
+    </div>
+  )
+}
 
 export default function SeatPage({ qrToken, go }: { qrToken: string; go: (p: string) => void }) {
   const [ctx, setCtx] = useState<ContextResponse | null>(null)
@@ -21,6 +99,9 @@ export default function SeatPage({ qrToken, go }: { qrToken: string; go: (p: str
   const [openStores, setOpenStores] = useState<Record<string, boolean>>({})
   // brief M2: add-to-cart button flashes green with a check for ~0.9s
   const [flashId, setFlashId] = useState<string | null>(null)
+  // device-local orders placed at THIS seat — the re-scan safety net
+  const [seatOrders, setSeatOrders] = useState<RememberedOrder[]>([])
+  const refreshSeatOrders = useCallback(() => setSeatOrders(ordersForSeat(qrToken)), [qrToken])
 
   const cart = useCart()
   const load = useCallback(async () => {
@@ -50,7 +131,8 @@ export default function SeatPage({ qrToken, go }: { qrToken: string; go: (p: str
   useEffect(() => {
     setLoading(true)
     void load()
-  }, [load])
+    refreshSeatOrders()
+  }, [load, refreshSeatOrders])
 
   const { lines } = cart
   const cartInfo = useMemo(() => {
@@ -144,6 +226,15 @@ export default function SeatPage({ qrToken, go }: { qrToken: string; go: (p: str
           </div>
         </details>
       </header>
+
+      {/* forgot to copy the tracking number? orders this device placed at this seat */}
+      {seatOrders.length > 0 && (
+        <section className="mt-4 space-y-2" aria-label="Your orders at this seat">
+          {seatOrders.slice(0, 2).map((o) => (
+            <SeatOrderCard key={o.code} order={o} go={go} onChanged={refreshSeatOrders} />
+          ))}
+        </section>
+      )}
 
       {/* menu */}
       <section className="mt-6" aria-label="Food menu">
@@ -264,7 +355,18 @@ export default function SeatPage({ qrToken, go }: { qrToken: string; go: (p: str
         open={checkoutOpen}
         onOpenChange={setCheckoutOpen}
         ctx={ctx}
-        onPlaced={(order) => go(`#/track/${order.code}`)}
+        onPlaced={(order) => {
+          // remember on THIS device → re-scanning the seat QR offers one-tap tracking
+          rememberOrder({
+            code: order.code,
+            seatToken: qrToken,
+            seatCode: ctx.seat.code,
+            screenName: ctx.screen.name,
+            cinemaName: ctx.cinema.name,
+          })
+          refreshSeatOrders()
+          go(`#/track/${order.code}`)
+        }}
       />
     </div>
   )

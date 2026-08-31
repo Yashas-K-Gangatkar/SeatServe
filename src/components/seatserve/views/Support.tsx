@@ -1,6 +1,6 @@
 'use client'
 
-// SeatServe — customer support / refund request (#/support/<code>)
+// SeatServe — customer support desk (#/support/<code>)
 import { useCallback, useEffect, useState } from 'react'
 import { ChevronLeft, CircleHelp, Send } from 'lucide-react'
 import { toast } from 'sonner'
@@ -79,7 +79,7 @@ export default function Support({ code, go }: { code: string; go: (p: string) =>
       <header>
         <p className="text-[10px] font-extrabold tracking-[0.18em] text-orange-600">SUPPORT DESK</p>
         <h1 className="mt-1 flex items-center gap-2 text-2xl font-black tracking-tight">
-          <CircleHelp className="h-6 w-6 text-orange-500" aria-hidden /> Help & refunds
+          <CircleHelp className="h-6 w-6 text-orange-500" aria-hidden /> Help & support
         </h1>
         <p className="mt-1 text-sm text-muted-foreground">
           Order {order.code} · {order.location.screen} · Seat {order.location.seat} · {rupees(order.totals.totalPaise)}
@@ -90,8 +90,7 @@ export default function Support({ code, go }: { code: string; go: (p: string) =>
         <section className="mt-6 rounded-2xl border border-amber-300 bg-amber-50 p-4" role="status">
           <p className="text-sm font-bold text-amber-900">Request already open</p>
           <p className="mt-1 text-xs text-amber-700">
-            {openRefund.reason.replaceAll('_', ' ').toLowerCase()} · {rupees(openRefund.amountPaise)} · status: {openRefund.status}. The finance desk
-            processes refunds to the original payment method (real payout rails land in Phase 3).
+            {openRefund.reason.replaceAll('_', ' ').toLowerCase()} · {rupees(openRefund.amountPaise)} · status: {openRefund.status}. The theatre team is reviewing it and will reach out to you.
           </p>
           <button onClick={() => go(`#/track/${order.code}`)} className="mt-3 rounded-full border border-amber-400 bg-white px-4 py-2 text-xs font-bold text-amber-800 hover:bg-amber-100">
             Back to tracking
@@ -129,7 +128,7 @@ export default function Support({ code, go }: { code: string; go: (p: string) =>
             disabled={submitting}
             className="mt-4 flex w-full items-center justify-center gap-2 rounded-full bg-gradient-to-b from-amber-500 to-orange-500 py-3 text-sm font-extrabold text-white shadow-md shadow-orange-500/30 hover:from-amber-600 hover:to-orange-600 disabled:opacity-50"
           >
-            <Send className="h-4 w-4" aria-hidden /> {submitting ? 'Sending…' : 'Request help / refund'}
+            <Send className="h-4 w-4" aria-hidden /> {submitting ? 'Sending…' : 'Send to support desk'}
           </button>
           <p className="mt-2 text-center text-[11px] text-muted-foreground">
             Requests land on the mall admin board instantly and are audited.

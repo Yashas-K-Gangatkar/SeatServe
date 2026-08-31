@@ -18,7 +18,7 @@ export default function PrivacyPage() {
       <h2>What we collect</h2>
       <ul>
         <li><strong>Seat and venue data</strong> — which seat QR you scanned, screen and showtime, so stores know where to deliver.</li>
-        <li><strong>Order data</strong> — items, quantities, store tickets, cancellations and refunds.</li>
+        <li><strong>Order data</strong> — items, quantities, store tickets, cancellations and support requests.</li>
         <li><strong>Session data</strong> — a signed, httpOnly cookie that keeps staff consoles logged in; customers need no account.</li>
         <li><strong>Operational logs</strong> — timestamps of kitchen, runner and admin actions in an audit log, to keep everyone honest.</li>
       </ul>
@@ -32,13 +32,13 @@ export default function PrivacyPage() {
 
       <h2>Why we process it</h2>
       <p>
-        Only to deliver your order, let you track it, process refunds, and keep the service secure. Each store sees just
+        Only to deliver your order, let you track it, resolve support issues, and keep the service secure. Each store sees just
         the part of your order it is fulfilling — never the other stores&rsquo; items or anyone else&rsquo;s orders.
       </p>
 
       <h2>How long we keep it</h2>
       <p>
-        Order and refund records are retained for accounting and dispute resolution as required by Indian law; audit
+        Order and support records are retained for accounting and dispute resolution as required by Indian law; audit
         logs are retained for security review. Anything beyond that is deleted or anonymised.
       </p>
 

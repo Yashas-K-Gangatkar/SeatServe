@@ -31,8 +31,9 @@ export default function TermsPage() {
 
       <h2>Cancellation & refunds</h2>
       <p>
-        See the <a href="/legal/refund">refunds &amp; cancellation policy</a> — in short, you can cancel while kitchens
-        are still preparing, and cancelled items are refunded automatically.
+        Food orders are <strong>final once placed</strong> — the same standard as every cinema counter. See the{' '}
+        <a href="/legal/refund">cancellation &amp; refund policy</a> for the only two technical cases where a
+        payment is reversed (failed transaction auto-reversal, or an outlet that cannot fulfil before preparation).
       </p>
 
       <h2>Acceptable use</h2>

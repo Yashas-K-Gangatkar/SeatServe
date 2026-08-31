@@ -323,6 +323,27 @@ export function PaymentSheet({
           {phase === 'paid' ? (
             <div className="relative py-1" role="status">
               <ConfettiBurst />
+              {/* the tracking number FIRST — always visible, no scrolling needed */}
+              <div className="mb-3 flex items-center justify-between gap-2 rounded-2xl border border-amber-300 bg-amber-50 px-4 py-3">
+                <div className="min-w-0">
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-amber-700">Your tracking number</p>
+                  <p className="truncate text-xl font-black tracking-[0.1em] text-stone-900 select-all">{order.code}</p>
+                </div>
+                <button
+                  onClick={async () => {
+                    try {
+                      await navigator.clipboard.writeText(order.code)
+                      toast.success('Tracking number copied')
+                    } catch {
+                      toast.error('Copy failed — long-press the code to copy it')
+                    }
+                  }}
+                  className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-amber-400 bg-white px-4 py-2.5 text-xs font-extrabold text-amber-800 hover:bg-amber-100"
+                  aria-label={`Copy tracking number ${order.code}`}
+                >
+                  <Copy className="h-3.5 w-3.5" aria-hidden /> Copy
+                </button>
+              </div>
               {/* the printed bill — thermal paper sliding out of the slot */}
               {receipt ? (
                 <PaperReceipt data={receipt} orderCode={order.code} paidLine={`PAID — ${method}${paidDetail ? ` ${paidDetail}` : ''}`} />
@@ -333,21 +354,6 @@ export function PaymentSheet({
                   <p className="mt-1 select-all text-3xl font-black tracking-[0.14em] text-stone-900">{order.code}</p>
                 </div>
               )}
-              <div className="mt-4 flex items-center justify-center gap-2 print-hide">
-                <button
-                  onClick={async () => {
-                    try {
-                      await navigator.clipboard.writeText(order.code)
-                      toast.success('Tracking number copied')
-                    } catch {
-                      toast.error('Copy failed — long-press the code to copy it')
-                    }
-                  }}
-                  className="inline-flex items-center gap-1.5 rounded-full border border-stone-300 bg-white px-4 py-2 text-xs font-extrabold text-stone-700 hover:bg-stone-50"
-                >
-                  <Copy className="h-3.5 w-3.5" aria-hidden /> Copy tracking number
-                </button>
-              </div>
               <button
                 onClick={() => onClose(true)}
                 className="mt-3 w-full rounded-full bg-gradient-to-b from-amber-500 to-orange-500 py-3.5 text-sm font-extrabold text-white shadow-md shadow-orange-500/30 hover:from-amber-600 hover:to-orange-600 print-hide"
@@ -355,7 +361,7 @@ export function PaymentSheet({
                 Track my order
               </button>
               <p className="mt-2 text-center text-[11px] leading-relaxed text-stone-500 print-hide">
-                Anyone who has the tracking number can follow this order — like a parcel.
+                Forgot to copy it? No problem — re-scan the seat QR and this device will remember your order.
               </p>
             </div>
           ) : phase === 'processing' ? (

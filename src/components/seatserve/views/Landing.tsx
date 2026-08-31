@@ -691,7 +691,7 @@ export default function SeatLanding({ go }: { go: (path: string) => void }) {
             <ul className="mt-3 space-y-2 text-sm">
               <li><a href="/legal/privacy" className="inline-flex min-h-[44px] items-center hover:text-[#D4AF37] hover:underline">Privacy policy</a></li>
               <li><a href="/legal/terms" className="inline-flex min-h-[44px] items-center hover:text-[#D4AF37] hover:underline">Terms of use</a></li>
-              <li><a href="/legal/refund" className="inline-flex min-h-[44px] items-center hover:text-[#D4AF37] hover:underline">Refunds &amp; cancellation</a></li>
+              <li><a href="/legal/refund" className="inline-flex min-h-[44px] items-center hover:text-[#D4AF37] hover:underline">Cancellation &amp; refund policy</a></li>
             </ul>
           </nav>
           <nav aria-label="Access">

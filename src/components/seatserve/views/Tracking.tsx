@@ -2,12 +2,14 @@
 
 // SeatServe — live order tracking (#/track/<code>)
 // Realtime via socket.io + 4s polling fallback. Per-store status timelines,
-// runner leg, payment state (incl. retry), refund/help entry.
+// runner leg, payment state (incl. retry), support entry. Cinema-standard:
+// orders are final once placed — no refunds (see /legal/refund).
 import { useCallback, useEffect, useState } from 'react'
-import { Check, ChefHat, Bike, PackageCheck, CircleHelp, ChevronLeft, MapPin, CreditCard, XCircle, Copy } from 'lucide-react'
+import { Check, ChefHat, Bike, PackageCheck, CircleHelp, ChevronLeft, MapPin, CreditCard, Copy, History } from 'lucide-react'
 import { toast } from 'sonner'
 import { get, post, ApiError } from '@/lib/client/api'
 import { useRealtime, usePolling } from '@/lib/client/realtime'
+import { recentOrders, type RememberedOrder } from '@/lib/client/orderMemory'
 import type { TrackingResponse } from '@/lib/client/types'
 import { rupees, timeHM, StatusPill, RUN_STATUS_LABEL, Spinner, LoadError, EmptyState } from '../ui-bits'
 import { PaymentSheet } from './CheckoutSheet'
@@ -35,6 +37,19 @@ export default function Tracking({ code, go }: { code: string; go: (p: string) =
 
 function TrackEntry({ go }: { go: (p: string) => void }) {
   const [entry, setEntry] = useState('')
+  const [recents, setRecents] = useState<RememberedOrder[]>([])
+
+  useEffect(() => {
+    let alive = true
+    // microtask: localStorage read after mount (avoids sync setState in effect)
+    Promise.resolve().then(() => {
+      if (alive) setRecents(recentOrders(3))
+    })
+    return () => {
+      alive = false
+    }
+  }, [])
+
   return (
     <div className="mx-auto w-full max-w-md px-4 pb-16 pt-10">
       <button onClick={() => go('#/')} className="mb-3 inline-flex items-center gap-1 text-xs font-semibold text-muted-foreground hover:text-foreground">
@@ -71,6 +86,29 @@ function TrackEntry({ go }: { go: (p: string) => void }) {
         <p className="mt-3 text-[11px] leading-relaxed text-stone-500">
           The tracking number is shown right after payment — you can copy it there. Anyone who has it can follow the order, like a parcel tracking number; no account needed.
         </p>
+
+        {recents.length > 0 && (
+          <div className="mt-4 border-t border-dashed border-stone-200 pt-4">
+            <p className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-stone-500">
+              <History className="h-3.5 w-3.5" aria-hidden /> Recent on this device
+            </p>
+            <div className="mt-2 space-y-1.5">
+              {recents.map((o) => (
+                <button
+                  key={o.code}
+                  onClick={() => go(`#/track/${o.code}`)}
+                  className="flex w-full items-center justify-between gap-2 rounded-xl border border-stone-200 bg-stone-50 px-3 py-2.5 text-left text-xs font-bold text-stone-700 hover:border-amber-300 hover:bg-amber-50"
+                >
+                  <span className="tracking-wide">{o.code}</span>
+                  <span className="truncate text-stone-400">{o.screenName} · {o.seatCode}</span>
+                </button>
+              ))}
+            </div>
+            <p className="mt-2 text-[10px] leading-relaxed text-stone-400">
+              Orders this device placed in the last 24 hours — no need to retype the number.
+            </p>
+          </div>
+        )}
       </div>
     </div>
   )
@@ -196,8 +234,6 @@ function TrackingInner({ code, go }: { code: string; go: (p: string) => void }) 
         {order.stores.map((store) => {
           const idx = stepIndex(store.status)
           const cancelled = store.status === 'CANCELLED'
-          // Phase 3 partial cancel: possible while the kitchen hasn't started
-          const canCancelLeg = !cancelled && order.payment && !awaitingPayment && (store.status === 'NEW' || store.status === 'ACCEPTED') && !store.deliveryRun
           return (
             <article key={store.ticketId} className="rounded-2xl border border-border bg-card p-4">
               <div className="flex items-center justify-between gap-2">
@@ -255,8 +291,8 @@ function TrackingInner({ code, go }: { code: string; go: (p: string) => void }) 
                   }`}
                 >
                   {store.cancelledByRole === 'CUSTOMER'
-                    ? 'You cancelled this store — that part of the bill is being refunded via the finance desk. Your other stores are unaffected.'
-                    : 'Cancelled by the store — this leg will not be prepared. A refund for this part is handled by the finance desk.'}
+                    ? 'You cancelled this store — your other stores are unaffected.'
+                    : 'Cancelled by the store — this item will not be prepared. Our support desk will assist you.'}
                 </p>
               )}
 
@@ -267,7 +303,6 @@ function TrackingInner({ code, go }: { code: string; go: (p: string) => void }) 
                 </p>
               )}
 
-              {canCancelLeg && <CancelLegButton orderCode={order.code} ticketId={store.ticketId} storeName={store.storeName} onChanged={load} />}
             </article>
           )
         })}
@@ -290,13 +325,13 @@ function TrackingInner({ code, go }: { code: string; go: (p: string) => void }) 
 
             <div className="my-3 border-t border-dashed border-stone-300" />
 
-            {/* per-store lines — cancelled legs stay printed, marked refunded */}
+            {/* per-store lines — cancelled legs stay printed, marked cancelled */}
             {order.stores.map((s) => (
               <div key={s.ticketId} className={`mb-2 ${s.status === 'CANCELLED' ? 'opacity-60' : ''}`}>
                 <p className="text-[11px] font-black tracking-wide text-stone-700">
                   {s.emoji ? `${s.emoji} ` : ''}
                   {s.storeName.toUpperCase()}
-                  {s.status === 'CANCELLED' && <span className="ml-1 font-bold text-red-600">✕ REFUNDED</span>}
+                  {s.status === 'CANCELLED' && <span className="ml-1 font-bold text-red-600">✕ CANCELLED</span>}
                 </p>
                 <ul className="mt-0.5 space-y-0.5">
                   {s.items.map((i) => (
@@ -341,7 +376,7 @@ function TrackingInner({ code, go }: { code: string; go: (p: string) => void }) 
         onClick={() => go(`#/support/${order.code}`)}
         className="mt-4 flex w-full items-center justify-center gap-2 rounded-2xl border border-border bg-card py-3.5 text-sm font-bold text-foreground hover:bg-muted"
       >
-        <CircleHelp className="h-4 w-4 text-orange-500" aria-hidden /> Help, refunds & support
+        <CircleHelp className="h-4 w-4 text-orange-500" aria-hidden /> Help & support
       </button>
 
       {order.refunds.length > 0 && (
@@ -349,7 +384,6 @@ function TrackingInner({ code, go }: { code: string; go: (p: string) => void }) 
           Open support request: <b className="text-foreground">{order.refunds[0].reason}</b> · {order.refunds[0].status}
         </p>
       )}
-
       {retryOpen && (
         <PaymentSheet
           order={{ code: order.code, totalPaise: order.totals.totalPaise }}
@@ -378,59 +412,3 @@ function TrackingInner({ code, go }: { code: string; go: (p: string) => void }) 
   )
 }
 
-// Phase 3 partial cancel — customer-initiated, two-tap confirm (money action).
-function CancelLegButton({ orderCode, ticketId, storeName, onChanged }: { orderCode: string; ticketId: string; storeName: string; onChanged: () => void }) {
-  const [confirming, setConfirming] = useState(false)
-  const [busy, setBusy] = useState(false)
-
-  const cancel = async () => {
-    setBusy(true)
-    try {
-      const res = await post<{ refundTotalPaise: number; remainingStores: string[] }>(`/api/orders/${orderCode}/cancel-leg`, { ticketId })
-      toast.success(
-        res.refundTotalPaise > 0
-          ? `${storeName} cancelled — ${rupees(res.refundTotalPaise)} refund on its way`
-          : `${storeName} cancelled`,
-      )
-      onChanged()
-    } catch (err) {
-      toast.error(err instanceof ApiError ? err.message : 'Could not cancel')
-    } finally {
-      setBusy(false)
-      setConfirming(false)
-    }
-  }
-
-  if (!confirming) {
-    return (
-      <button
-        onClick={() => setConfirming(true)}
-        className="mt-3 flex w-full items-center justify-center gap-1.5 rounded-xl border border-stone-300 bg-white py-2 text-[11px] font-bold text-stone-500 hover:bg-stone-50"
-      >
-        <XCircle className="h-3.5 w-3.5" aria-hidden /> Cancel {storeName} (auto refund)
-      </button>
-    )
-  }
-  return (
-    <div className="mt-3 rounded-xl border border-red-200 bg-red-50 p-3" role="alertdialog" aria-label={`Confirm cancelling ${storeName}`}>
-      <p className="text-xs font-bold text-red-800">
-        Cancel {storeName}? You'll be refunded that store's food + its delivery fee share. Your other stores are unaffected.
-      </p>
-      <div className="mt-2 flex gap-2">
-        <button
-          onClick={cancel}
-          disabled={busy}
-          className="flex-1 rounded-full bg-red-600 py-2 text-[11px] font-extrabold text-white hover:bg-red-700 disabled:opacity-50"
-        >
-          {busy ? 'Cancelling…' : 'Yes, cancel it'}
-        </button>
-        <button
-          onClick={() => setConfirming(false)}
-          className="flex-1 rounded-full border border-stone-300 bg-white py-2 text-[11px] font-bold text-stone-600 hover:bg-stone-50"
-        >
-          Keep it
-        </button>
-      </div>
-    </div>
-  )
-}
