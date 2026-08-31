@@ -24,6 +24,7 @@ import {
 } from 'react'
 import type { ReactNode } from 'react'
 import { sound } from './SoundManager'
+import { hapticFor } from './haptics'
 import type { SoundName } from '@/lib/motion/config'
 
 const STORAGE_KEY = 'notifetch.sound'
@@ -100,12 +101,16 @@ export function SoundProvider({ children }: { children: ReactNode }) {
     } else {
       sound.duck()
     }
+    // the switch is a physical control — confirm it by touch in both states
+    hapticFor('toggle')
   }, [])
 
   const play = useCallback(
     (name: SoundName, volumeScale = 1) => {
       if (!enabled || !unlocked.current) return
       sound.play(name, volumeScale)
+      // phones feel what they hear — same switch drives both channels
+      hapticFor(name)
     },
     [enabled],
   )
