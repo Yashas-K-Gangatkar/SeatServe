@@ -8,7 +8,7 @@ Reviewer: CTO + Developer roles · Scope: full codebase at Phase 3/4 completion 
 |---|---|---|
 | Money (split ledger) | Double payout | `Split.settlementId` backlinks one ledger row to at most one Settlement batch — double payout is structurally impossible |
 | Money | Fake capture (no real money) | Every captured payment requires a signature-valid `payment.captured` event (HMAC-SHA256, timing-safe compare, per-provider secrets); reconciliation R5 flags violations |
-| Money | Refund inflation | Refund amounts clamped to `totalPaise − refundedPaise`; gateway refunds submitted BEFORE ledger rows are written |
+| Money | Refund inflation | Eliminated at the root: there are NO online refunds (cinema policy). Only settlement-internal VOIDED rows exist |
 | Money | Kitchen advancing unpaid orders | Every staff transition requires `paymentStatus === 'PAID'` (cancellation excepted, on purpose) |
 | Customer | State tampering from the client | ALL bill amounts computed server-side; client only renders. Cart is re-priced from the DB at placement |
 | Tenant | Cross-mall/cinema/store leaks | Session-derived scope on every staff API (`requireStaff` + `canAccessStore`); cross-mall ordering returns 409; second mall seeded to keep this testable |
@@ -26,7 +26,7 @@ Reviewer: CTO + Developer roles · Scope: full codebase at Phase 3/4 completion 
 2. Idempotent payment + webhook dedupe (eventId unique). ✅
 3. Late `payment.failed` after capture can no longer corrupt PAID orders. ✅
 4. Kitchen/runner optimistic state guards (`updateMany` where status = previous) kill most race double-transitions. ✅
-5. Refund ledger exactness: largest-remainder proportional reversal, Σ negative = refund, commission reversal ≤ commission charged. ✅
+5. Leg-void ledger exactness: reversal rows sum exactly to leg + platform share; commission reversal ≤ commission charged. ✅
 6. Security headers: CSP, X-Frame-Options DENY, nosniff, Referrer-Policy, Permissions-Policy. ✅
 7. KYC stores only masked compliance values (GSTIN, PAN 2+last, bank last-4). Raw values never persisted. ✅
 

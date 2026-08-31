@@ -43,7 +43,7 @@ from `GET /api/demo/entry` (sandbox-only helper for scripts/CI).
 5. Open **Kitchen consoles** (left nav on landing page): tickets arrive in realtime with a
    chime; advance `Accept → Preparing → Ready for pickup`.
 6. Open the **Runner console**: pick up, deliver. Watch tracking update live.
-7. **Admin board**: KPIs (net of refunds), live orders, refund inbox with
+7. **Admin board**: KPIs, live orders, settlement summary with
    **Approve / Process / Reject** actions, settlement ledger, audit trail.
 8. **QR generator**: printable seat-QR sheets; every code opens that exact seat on a phone.
 9. **Second mall** (isolation proof): `Nexora Mall · Pune` — its seat shows ONLY Dosa Junction,
@@ -64,7 +64,7 @@ Reset the demo from the **staff portal** (mall admin sign-in → “Reset demo d
 
 | Role | Email | Scope |
 |---|---|---|
-| Mall Admin (Aurora) | `asha@seatserve.demo` | All 4 Aurora stores, all screens, refunds, reset & QR |
+| Mall Admin (Aurora) | `asha@seatserve.demo` | All Aurora stores, all screens, open NEW stores, settlement, reset & QR |
 | Mall Admin (Nexora) | `meera@nexora.demo` | Second mall — must see ZERO Aurora data (isolation proof) |
 | Cinema Manager | `vikram@aurora.demo` | Wing A cinema only (orders, QR for its screens) |
 | Store Manager | `manager@cinema-snacks.demo` (+ 1 per store) | Own store only |
@@ -109,9 +109,7 @@ Audit log records LOGIN / LOGIN_FAILED and every staff action with the session-d
 | GET | `/api/health` | liveness + DB check |
 | GET | `/api/context?qr=` | QR resolution → seat, showtime, cutoff, stores, settings |
 | POST | `/api/orders` | multi-store order; server-side cutoff/availability/money math |
-| GET | `/api/orders/[code]` | tracking payload (statuses, runner, payment, refunds) |
-| POST | `/api/orders/[code]/support` | refund/help request (paid orders only, capped at refundable balance, deduped) |
-| POST | `/api/admin/refunds/[id]/action` | finance actioning: APPROVE / REJECT / PROCESS — writes negative ledger rows, updates `refundedPaise` |
+| GET | `/api/orders/[code]` | tracking payload (statuses, runner, payment) |
 | POST | `/api/realtime/token` | staff-only HMAC room tokens for the token-gated socket rooms |
 | GET | `/api/demo/entry` | sandbox-only: current demo seat tokens (they are random capabilities) |
 | POST | `/api/payments/mock-pay` | **sandbox** gateway; idempotency-key enforced |
@@ -120,7 +118,7 @@ Audit log records LOGIN / LOGIN_FAILED and every staff action with the session-d
 | GET | `/api/kitchen/tickets?storeId=` | staff-only; cook pinned to own store, 403 cross-store |
 | POST | `/api/kitchen/tickets/[id]/status` | state machine `NEW→…→DELIVERED`, scoped actor |
 | GET | `/api/runner` · POST `/api/runner/assign` · POST `/api/runner/tickets/[id]/status` | runner leg; runners pinned to own runs |
-| GET | `/api/admin/overview` | KPIs/live orders/refunds/settlement — scoped mall / cinema / store |
+| GET | `/api/admin/overview` | KPIs/live orders/settlement — scoped mall / cinema / store |
 | GET | `/api/admin/qr?screenId=` | seat QR data-URLs — scoped to own cinema/mall |
 | PATCH | `/api/stores/[id]` · `/api/products/[id]` | open/close, 86 items — own store only |
 | POST | `/api/simulator/reset` | wipe + reseed demo (mall admin only) |
@@ -154,7 +152,7 @@ provider and method.
 `Mall → Cinema → Screen → Seat (unique qrToken)`, `Showtime (cutoff)`, `DeliveryZone`,
 `Store (KYC, commission) → Product (paise, GST, prep ETA, veg/allergens)`,
 `Cart → CartItem`, `Order → OrderItem (price snapshots) → StoreTicket (per-store status)`,
-`Runner → DeliveryRun`, `Payment → PaymentEvent`, `Refund`, `Split`, `Settlement`,
+`Runner → DeliveryRun`, `Payment → PaymentEvent`, `Split`, `Settlement`,
 `User (6 roles)`, `AuditLog`, `AppSetting`.
 
 SQLite has no enum types, so status fields are `String` columns constrained by zod +
@@ -168,7 +166,7 @@ TypeScript unions in `src/lib/types.ts` (they become real enums on PostgreSQL).
   domain + auth layers.
 - **API golden path** (`bash scripts/api-golden-path.sh`): **48 end-to-end assertions** over
   the live server — QR resolution, ordering, idempotent payment, state machine guards, runner
-  leg, refund dedupe, cutoff lock, forged-webhook rejection, **plus the full auth matrix:
+  leg, cutoff lock, forged-webhook rejection, **plus the full auth matrix:
   login/logout, wrong-password 401, anonymous 401s on every staff API, cook-cross-store 403,
   runner self-run pinning, cinema-manager scoping, reset/QR/store-toggle RBAC**.
 - **E2E browser tests (Playwright)**: Phase 3 backlog (golden path currently verified via
@@ -188,9 +186,8 @@ TypeScript unions in `src/lib/types.ts` (they become real enums on PostgreSQL).
 - **Phase 3 ✅** — Razorpay Route / Cashfree Easy Split sandbox: multi-provider signed
   webhooks (verifier-claims-event; hex HMAC for Razorpay, timestamp-bound base64 HMAC for
   Cashfree), env-activated real rails (`/api/payments/session` creates real sandbox orders
-  with Route transfers / Easy Split vendor splits; refund PROCESS submits to the gateway
-  before writing ledger rows), customer partial cancel with exact auto-refund, full/partial
-  refunds, ledger-driven settlement batches (PENDING → PROCESSED + UTR), R1–R5 reconciliation,
+  with Route transfers / Easy Split vendor splits), ledger-driven settlement batches
+  (PENDING → PROCESSED + UTR), R1–R5 reconciliation,
   admin settlement & reconciliation panel, anti-scam seat trace.
 - **Phase 4 ✅ (demo-grade)** — money model simplified per owner decision (NO delivery fee,
   NO platform-held GST, platform fee FIXED at 5% of the customer total), PostgreSQL

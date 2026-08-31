@@ -111,7 +111,6 @@ export interface TrackingResponse {
   customer: { name: string | null; phone: string | null }
   stores: TrackingStore[]
   payment: { method: string; status: string; amountPaise: number; methodDetail: string | null; providerRef: string } | null
-  refunds: { id: string; reason: string; status: string; amountPaise: number; createdAt: string }[]
   serverTime: string
 }
 
@@ -195,7 +194,6 @@ export interface AdminOverview {
     avgPrepMin: number | null
     avgDeliveryMin: number | null
     cancellations: number
-    refundsOpen: number
   }
   liveOrders: {
     code: string
@@ -207,7 +205,6 @@ export interface AdminOverview {
     status: string
     tickets: { storeName: string; emoji: string | null; status: string; ticketId: string }[]
   }[]
-  refunds: { id: string; code: string; reason: string; detail: string | null; status: string; amountPaise: number; createdAt: string }[]
   settlement: { beneficiary: string; pendingPaise: number }[]
   stores: {
     id: string

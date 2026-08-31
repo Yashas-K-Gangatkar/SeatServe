@@ -32,7 +32,6 @@ host. No code changes are needed beyond DATABASE_URL.
 4. Per-store split destinations: set `RAZORPAY_ACCOUNT_<SLUG>` (linked account) / `CASHFREE_VENDOR_<SLUG>` (vendor id) after completing the provider's merchant onboarding for each store.
 5. What activates automatically:
    - `POST /api/payments/session` → creates a REAL gateway order with per-store Route transfers / Easy Split vendor splits (instructions derived from the order's split ledger).
-   - `POST /api/admin/refunds/[id]/action` (PROCESS) → submits the refund to the gateway FIRST, then writes ledger rows.
    - `POST /api/payments/webhook` → the provider's signature scheme claims its events (hex HMAC for Razorpay, timestamp-bound base64 HMAC for Cashfree).
 
 With no keys set, everything runs the SANDBOX_MOCK gateway (mock-pay + local signed webhook) — the demo default.

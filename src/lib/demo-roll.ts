@@ -23,21 +23,31 @@ export async function rollStaleShowtimes(screenId?: string): Promise<void> {
   const now = new Date()
   const scope = screenId ? { screenId } : {}
 
-  // 1 · reopenable shows that have already started → roll ahead.
-  // Audit fix #42: shows referenced by EXISTING ORDERS are NOT rolled —
-  // rewriting startsAt under a placed order corrupted its history (tracking
-  // pages started promising a different movie/time than the one ordered).
-  // Orderless shows roll as before; order-holders keep their real show and
-  // the showtime picker (#20) directs new orders to the next open show.
+  // 1 · reopenable shows that have already started → SUPERSEDE them.
+  // Audit fix #42 (v1) skipped shows referenced by existing orders because
+  // rewriting startsAt corrupted their history — but that let a handful of
+  // test orders permanently freeze every demo screen ("Ordering closed"
+  // forever). v2: the stale showtime is RETIRED (isActive=false) and a fresh
+  // future showtime takes over on the same screen. Old orders keep pointing
+  // at the retired show — history intact, nothing rewritten — while new
+  // orders land on the fresh show.
   const stale = await db.showtime.findMany({
-    where: { demoAutoRoll: true, isActive: true, startsAt: { lt: now }, orders: { none: {} }, ...scope },
-    select: { id: true },
+    where: { demoAutoRoll: true, isActive: true, startsAt: { lt: now }, ...scope },
+    select: { id: true, screenId: true, movieTitle: true, language: true, orderCutoffMinutes: true },
   })
-  if (stale.length > 0) {
-    await db.showtime.updateMany({
-      where: { id: { in: stale.map((s) => s.id) } },
-      data: { startsAt: new Date(now.getTime() + ROLL_AHEAD_MIN * 60_000) },
+  for (const st of stale) {
+    await db.showtime.create({
+      data: {
+        screenId: st.screenId,
+        movieTitle: st.movieTitle,
+        language: st.language,
+        startsAt: new Date(now.getTime() + ROLL_AHEAD_MIN * 60_000),
+        orderCutoffMinutes: st.orderCutoffMinutes,
+        isActive: true,
+        demoAutoRoll: true,
+      },
     })
+    await db.showtime.update({ where: { id: st.id }, data: { isActive: false } })
   }
 
   // 2 · the blocked demo show → re-arm once it has fully fallen out of the window

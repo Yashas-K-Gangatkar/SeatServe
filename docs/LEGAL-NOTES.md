@@ -26,8 +26,8 @@ SeatServe is structured like a marketplace/aggregator: the platform facilitates 
 
 ## 4. Consumer-side obligations
 
-- Cancellation: customer may cancel a store leg until the kitchen starts preparing (NEW/ACCEPTED). After that, support/refund flow.
-- Refunds: exact-paise proportional refunds; full refund closes the order as REFUNDED. Refund decisions are mall-admin actions, audited.
+- Cancellation: no customer self-service cancellation of paid orders. The kitchen may stop an unprepared leg (NEW/ACCEPTED/PREPARING); exceptions are resolved in person at the counter.
+- Refunds: NONE online — cinema policy. The split ledger only carries VOIDED rows for store legs cancelled before fulfilment (settlement fairness). Counter staff resolve customer exceptions in person.
 - Displayed prices include store GST; the platform fee is shown as a separate line BEFORE payment ("Platform fee (5% of total)").
 
 ## 5. Data protection notes
@@ -43,4 +43,4 @@ SeatServe is structured like a marketplace/aggregator: the platform facilitates 
 - [ ] TCS under GST (e-commerce operator) applicability review
 - [ ] FSSAI display requirement on consumer-facing menu (store-level)
 - [ ] Payment-aggregator terms review (Razorpay Route / Cashfree Easy Split marketplace terms)
-- [ ] Consumer-protection (e-commerce) disclosures: grievance officer, refund timelines
+- [ ] Consumer-protection (e-commerce) disclosures: grievance officer, counter-resolution policy display

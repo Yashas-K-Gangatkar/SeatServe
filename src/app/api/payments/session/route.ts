@@ -30,7 +30,7 @@ export async function POST(request: Request) {
     include: { splits: true },
   })
   if (!order) return fail('Order not found', 404)
-  if (order.paymentStatus === 'PAID' || order.paymentStatus === 'PARTIALLY_REFUNDED') {
+  if (order.paymentStatus === 'PAID') {
     return fail('This order is already paid', 409)
   }
   if (order.status === 'CANCELLED') return fail('This order was cancelled', 409)

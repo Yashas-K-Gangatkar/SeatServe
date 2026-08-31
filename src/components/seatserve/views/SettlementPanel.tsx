@@ -1,7 +1,7 @@
 'use client'
 
 // SeatServe Phase 3 — settlement & reconciliation panel (admin board section).
-// Ledger-driven money view: per-store gross / commission / tax / refund
+// Ledger-driven money view: per-store gross / commission / void adjustments
 // adjustments / net payable, settlement batches (PENDING → PROCESSED with UTR),
 // and the R1–R5 reconciliation health banner.
 
@@ -18,7 +18,7 @@ interface StoreSummary {
   grossNetPaise: number
   commissionPaise: number
   taxPaise: number
-  refundAdjustPaise: number
+  voidAdjustPaise: number
   netPayablePaise: number
   pendingRows: number
   settledRows: number
@@ -30,7 +30,7 @@ interface Batch {
   amountPaise: number
   status: string
   utr: string | null
-  detail: { grossPaise: number; commissionPaise: number; taxPaise: number; refundAdjustPaise: number; netPayablePaise: number } | null
+  detail: { grossPaise: number; commissionPaise: number; taxPaise: number; voidAdjustPaise: number; netPayablePaise: number } | null
   createdAt: string
   processedAt: string | null
 }
@@ -164,8 +164,8 @@ export default function SettlementPanel({ canAct }: { canAct: boolean }) {
                   <dd className="font-bold tabular">{rupees(s.commissionPaise)}</dd>
                 </div>
                 <div className="rounded-lg bg-background px-2 py-1.5">
-                  <dt className="text-muted-foreground">Refunds/voids</dt>
-                  <dd className="font-bold tabular">{rupees(s.refundAdjustPaise)}</dd>
+                  <dt className="text-muted-foreground">Voids (cancelled legs)</dt>
+                  <dd className="font-bold tabular">{rupees(s.voidAdjustPaise)}</dd>
                 </div>
               </dl>
               <p className="mt-2 text-[10px] text-muted-foreground">
@@ -197,7 +197,7 @@ export default function SettlementPanel({ canAct }: { canAct: boolean }) {
                   {b.utr && <p className="text-[10px] tabular text-muted-foreground">UTR {b.utr}</p>}
                   {b.detail && (
                     <p className="text-[10px] text-muted-foreground">
-                      net {rupees(b.detail.netPayablePaise)} after refunds {rupees(b.detail.refundAdjustPaise)} · commission {rupees(b.detail.commissionPaise)}
+                      net {rupees(b.detail.netPayablePaise)} after voids {rupees(b.detail.voidAdjustPaise)} · commission {rupees(b.detail.commissionPaise)}
                     </p>
                   )}
                 </div>
@@ -221,7 +221,7 @@ export default function SettlementPanel({ canAct }: { canAct: boolean }) {
 
       <p className="flex items-center gap-1.5 text-[10px] leading-relaxed text-muted-foreground">
         <CheckCircle2 className="h-3 w-3 shrink-0 text-emerald-600" aria-hidden />
-        Every amount is derived from the split ledger — adjustments (refunds, voided legs) are negative rows, so pending + settled + refunded always reconciles to captured payments.
+        Every amount is derived from the split ledger — adjustments (voided legs) are negative rows, so pending + settled − voids always reconciles to captured payments. No online refunds: the counter resolves exceptions in person.
       </p>
     </section>
   )

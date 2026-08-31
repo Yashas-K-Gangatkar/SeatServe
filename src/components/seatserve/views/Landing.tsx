@@ -176,7 +176,7 @@ export default function SeatLanding({ go }: { go: (path: string) => void }) {
           {[
             { p: 'Phase 1', t: 'Clickable demo', d: 'Fake payment + simulated order flow, realtime staff dashboards, QR codes', state: 'done' },
             { p: 'Phase 2', t: 'Platform core', d: 'Auth + RBAC (6 roles), scoped staff portal, session security, tests — YOU ARE HERE', state: 'current' },
-            { p: 'Phase 3', t: 'Real sandbox rails', d: 'Razorpay Route / Cashfree Easy Split, signed webhooks, refunds, settlements', state: 'later' },
+            { p: 'Phase 3', t: 'Real sandbox rails', d: 'Razorpay Route / Cashfree Easy Split, signed webhooks, settlements', state: 'later' },
             { p: 'Phase 4', t: 'Production', d: 'PostgreSQL migration, merchant KYC onboarding, security & legal review, deployment', state: 'later' },
           ].map((ph) => (
             <div

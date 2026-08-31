@@ -1,8 +1,8 @@
 #!/bin/bash
 # SeatServe — end-to-end API golden path test (bash/curl) — Phase 3 edition.
 # Covers: commerce flow + auth + tenant isolation + audit-round fixes
-# (#12–19 isolation, #1–11 money, #20–22 cutoff, refund actioning)
-# + Phase 3: provider webhooks (Razorpay/Cashfree schemes), partial cancel,
+# (#12–19 isolation, #1–11 money, #20–22 cutoff, kitchen leg cancel)
+# + Phase 3: provider webhooks (Razorpay/Cashfree schemes), settlement runs,
 # settlement batches, reconciliation.
 set -e
 BASE="http://localhost:3000"
@@ -35,13 +35,21 @@ check "ordering open for Screen 3 show" "$([ "$OPEN" = "True" ] && echo 1 || ech
 BADQR=$(code "$BASE/api/context?qr=NOPE")
 check "unknown QR → 404" "$([ "$BADQR" = "404" ] && echo 1 || echo 0)"
 
-POPCORN=$(echo "$C" | jget "['data']['stores'][0]['products'][0]['id']")
-PIZZA=$(echo "$C" | jget "['data']['stores'][1]['products'][0]['id']")
-MITHAI=$(echo "$C" | jget "['data']['stores'][3]['products'][0]['id']")
-SLUG0=$(echo "$C" | jget "['data']['stores'][0]['slug']")
-SLUG1=$(echo "$C" | jget "['data']['stores'][1]['slug']")
-STORE1=$(echo "$C" | jget "['data']['stores'][0]['id']")
-STORE2=$(echo "$C" | jget "['data']['stores'][1]['id']")
+# stores are located by NAME — admin-created stores (same-mall expansion) may
+# appear anywhere in the name-sorted list
+pick_store() { echo "$C" | python3 -c "
+import sys,json
+d=json.load(sys.stdin)['data']['stores']
+st=[s for s in d if s['name']==sys.argv[1]]
+print(json.dumps(st[0]) if st else '')" "$1"; }
+SNACKS_JSON=$(pick_store "Cinema Snacks"); PIZZA_JSON=$(pick_store "Pizza Corner"); MITHAI_JSON=$(pick_store "Mithai & More")
+POPCORN=$(echo "$SNACKS_JSON" | jget "['products'][0]['id']")
+PIZZA=$(echo "$PIZZA_JSON" | jget "['products'][0]['id']")
+MITHAI=$(echo "$MITHAI_JSON" | jget "['products'][0]['id']")
+SLUG0=$(echo "$SNACKS_JSON" | jget "['slug']")
+SLUG1=$(echo "$PIZZA_JSON" | jget "['slug']")
+STORE1=$(echo "$SNACKS_JSON" | jget "['id']")
+STORE2=$(echo "$PIZZA_JSON" | jget "['id']")
 
 echo "── Audit #12/#13: cross-mall isolation ──"
 CN=$(curl -s "$BASE/api/context?qr=$NEXORA_QR")
@@ -183,24 +191,11 @@ check "delivered (ticket 2)" "$([ "$(echo "$RD2" | jget "['data']['status']")" =
 T2=$(curl -s "$BASE/api/orders/$CODE")
 check "order COMPLETED after ALL tickets delivered" "$([ "$(echo "$T2" | jget "['data']['status']")" = "COMPLETED" ] && echo 1 || echo 0)"
 
-echo "── Audit #2/#43: refund actioning (approve → process) ──"
-SUP=$(curl -s -X POST "$BASE/api/orders/$CODE/support" -H 'Content-Type: application/json' -d '{"reason":"NEVER_DELIVERED","detail":"cli test"}')
-check "refund request created" "$([ "$(echo "$SUP" | jget "['data']['status']")" = "REQUESTED" ] && echo 1 || echo 0)"
-SUP2=$(curl -s -X POST "$BASE/api/orders/$CODE/support" -H 'Content-Type: application/json' -d '{"reason":"OTHER"}')
-check "duplicate open request → 409" "$([ "$(echo "$SUP2" | jget "['ok']")" = "False" ] && echo 1 || echo 0)"
-REFUND_ID=$(echo "$SUP" | jget "['data']['refundId']")
-ACT_CM=$(code -b "$JARS/cm" -X POST "$BASE/api/admin/refunds/$REFUND_ID/action" -H 'Content-Type: application/json' -d '{"action":"APPROVE"}')
-check "cinema manager cannot action refunds (403)" "$([ "$ACT_CM" = "403" ] && echo 1 || echo 0)"
-APPROVE=$(curl -s -b "$JARS/admin" -X POST "$BASE/api/admin/refunds/$REFUND_ID/action" -H 'Content-Type: application/json' -d '{"action":"APPROVE"}')
-check "mall admin APPROVES refund" "$([ "$(echo "$APPROVE" | jget "['data']['status']")" = "APPROVED" ] && echo 1 || echo 0)"
-PROCESS=$(curl -s -b "$JARS/admin" -X POST "$BASE/api/admin/refunds/$REFUND_ID/action" -H 'Content-Type: application/json' -d '{"action":"PROCESS"}')
-check "mall admin PROCESSES refund" "$([ "$(echo "$PROCESS" | jget "['data']['status']")" = "PROCESSED" ] && echo 1 || echo 0)"
-check "order paymentStatus → REFUNDED" "$([ "$(echo "$PROCESS" | jget "['data']['order']['paymentStatus']")" = "REFUNDED" ] && echo 1 || echo 0)"
-check "order.refundedPaise == totalPaise" "$([ "$(echo "$PROCESS" | jget "['data']['order']['refundedPaise']")" = "$TOTAL" ] && echo 1 || echo 0)"
-REPROCESS=$(code -b "$JARS/admin" -X POST "$BASE/api/admin/refunds/$REFUND_ID/action" -H 'Content-Type: application/json' -d '{"action":"PROCESS"}')
-check "double process → 409" "$([ "$REPROCESS" = "409" ] && echo 1 || echo 0)"
-OVER_SUP=$(code -X POST "$BASE/api/orders/$CODE/support" -H 'Content-Type: application/json' -d '{"reason":"OTHER"}')
-check "fully-refunded order cannot re-request (409)" "$([ "$OVER_SUP" = "409" ] && echo 1 || echo 0)"
+echo "── Policy: no online refunds ──"
+SUP404=$(code -X POST "$BASE/api/orders/$CODE/support" -H 'Content-Type: application/json' -d '{"reason":"OTHER"}')
+check "support/refund request endpoint removed (404)" "$([ "$SUP404" = "404" ] && echo 1 || echo 0)"
+RA404=$(code -b "$JARS/admin" -X POST "$BASE/api/admin/refunds/whatever/action" -H 'Content-Type: application/json' -d '{"action":"APPROVE"}')
+check "admin refund action endpoint removed (404)" "$([ "$RA404" = "404" ] && echo 1 || echo 0)"
 
 echo "── Audit #5/#6: cancel leg → void splits + auto refund ──"
 O3=$(curl -s -X POST "$BASE/api/orders" -H 'Content-Type: application/json' \
@@ -218,32 +213,14 @@ CANCEL=$(curl -s -b "$JARS/k0" -X POST "$BASE/api/kitchen/tickets/$TKC/status" -
 check "kitchen cancels own leg" "$([ "$(echo "$CANCEL" | jget "['data']['status']")" = "CANCELLED" ] && echo 1 || echo 0)"
 ORDER3=$(curl -s "$BASE/api/orders/$CODE3")
 check "order → PARTIALLY_CANCELLED" "$([ "$(echo "$ORDER3" | jget "['data']['status']")" = "PARTIALLY_CANCELLED" ] && echo 1 || echo 0)"
-T3=$(curl -s -b "$JARS/admin" "$BASE/api/admin/overview")
-REF3=$(echo "$T3" | python3 -c "
-import sys,json
-d=json.load(sys.stdin)['data']
-mine=[r for r in d['refunds'] if r['code']=='$CODE3']
-print(json.dumps(mine[0]) if mine else '{}')")
-check "auto refund row created for cancelled leg" "$(python3 -c "import json,sys;r=json.loads('''$REF3''');print(1 if r.get('reason')=='PARTIAL_STORE_CANCEL' and r.get('status')=='APPROVED' else 0)")"
-LEG_AMT=$(echo "$REF3" | python3 -c "import sys,json;print(json.load(sys.stdin).get('amountPaise',0))")
-SUB3=$(echo "$ORDER3" | jget "['data']['totals']['subtotalPaise']")
-PF3=$(echo "$ORDER3" | jget "['data']['totals']['platformFeePaise']")
-# derive the cancelled leg from the ACTUAL order (product indexes shift with seed)
-LEG_SUB=$(echo "$ORDER3" | python3 -c "
-import sys,json
-d=json.load(sys.stdin)['data']
-leg=[s for s in d['stores'] if s['status']=='CANCELLED']
-print(leg[0]['subtotalPaise'] if leg else 0)")
-LEG_EXPECT=$(python3 -c "print($LEG_SUB + round($PF3 * $LEG_SUB / $SUB3))")
-check "refund amount = leg + platform share ($LEG_AMT vs $LEG_EXPECT)" "$([ "$LEG_AMT" = "$LEG_EXPECT" ] && echo 1 || echo 0)"
-PROC3=$(curl -s -b "$JARS/admin" -X POST "$BASE/api/admin/refunds/$(echo "$REF3" | jget "['id']")/action" -H 'Content-Type: application/json' -d '{"action":"PROCESS"}')
-check "leg refund processed → PARTIALLY_REFUNDED" "$([ "$(echo "$PROC3" | jget "['data']['order']['paymentStatus']")" = "PARTIALLY_REFUNDED" ] && echo 1 || echo 0)"
+# ledger keeps VOIDED rows for the cancelled leg (settlement-internal only)
+SPL3=$(curl -s -b "$JARS/admin" "$BASE/api/admin/reconciliation")
+check "ledger reconciles after void" "$([ "$(echo "$SPL3" | jget "['data']['report']['healthy']")" = "True" ] || [ "$(echo "$SPL3" | jget "['data']['healthy']")" = "True" ] && echo 1 || echo 0)"
 
-echo "── Audit #7: KPIs are net of refunds ──"
+echo "── KPIs count captured payments (no refund netting) ──"
 OV=$(curl -s -b "$JARS/admin" "$BASE/api/admin/overview")
 SALES=$(echo "$OV" | jget "['data']['kpis']['salesPaise']")
-REFUNDED=$(echo "$OV" | jget "['data']['kpis']['refundedPaise']")
-check "kpis.refundedPaise reported ($REFUNDED > 0)" "$([ "$REFUNDED" != "None" ] && [ "$REFUNDED" -gt 0 ] && echo 1 || echo 0)"
+check "kpis.salesPaise reported ($SALES > 0)" "$([ "$SALES" != "None" ] && [ "$SALES" -gt 0 ] && echo 1 || echo 0)"
 
 echo "── Admin board (scoped by session) ──"
 ANO=$(code "$BASE/api/admin/overview")
@@ -357,63 +334,31 @@ CF_BAD=$(code -X POST "$BASE/api/payments/webhook" -H 'Content-Type: application
   -H "x-webhook-timestamp: $CF_BAD_TS" -H "x-webhook-signature: $CF_SIG" -d "$CF_BODY")
 check "cashfree replay with tampered timestamp → 401" "$([ "$CF_BAD" = "401" ] && echo 1 || echo 0)"
 
-echo "── Phase 3: partial cancel (customer self-service) ──"
+echo "── Policy: no customer self-cancel; kitchen gates hold ──"
 P3=$(curl -s -X POST "$BASE/api/orders" -H 'Content-Type: application/json' \
   -d "{\"qrToken\":\"$AURORA_QR\",\"items\":[{\"productId\":\"$POPCORN\",\"qty\":1},{\"productId\":\"$PIZZA\",\"qty\":1}]}")
 P3_CODE=$(echo "$P3" | jget "['data']['code']")
-P3_TOTAL=$(echo "$P3" | jget "['data']['breakdown']['totalPaise']")
-P3_PLATFORM=$(echo "$P3" | jget "['data']['breakdown']['platformFeePaise']")
-P3_SUBTOTAL=$(echo "$P3" | jget "['data']['breakdown']['subtotalPaise']")
 curl -s -X POST "$BASE/api/payments/mock-pay" -H 'Content-Type: application/json' \
   -d "{\"orderCode\":\"$P3_CODE\",\"method\":\"UPI\",\"outcome\":\"success\",\"idempotencyKey\":\"p3-pay-$RUNKEY\"}" > /dev/null
 P3_TRACK=$(curl -s "$BASE/api/orders/$P3_CODE")
 P3_T0=$(echo "$P3_TRACK" | jget "['data']['stores'][0]['ticketId']")
 P3_T1=$(echo "$P3_TRACK" | jget "['data']['stores'][1]['ticketId']")
-P3_STORE0_SUB=$(echo "$P3" | jget "['data']['breakdown']['perStore'][0]['subtotalPaise']")
-P3_EXPECT_REFUND=$(python3 -c "print($P3_STORE0_SUB + round($P3_PLATFORM * $P3_STORE0_SUB / $P3_SUBTOTAL))")
-check "expected leg refund math (leg + platform share, no delivery fee)" "$([ -n "$P3_EXPECT_REFUND" ] && [ "$P3_EXPECT_REFUND" != "None" ] && echo 1 || echo 0)"
-
-# cancel on an UNPAID order must refuse
-P3_UNPAID=$(p3_make_paidable "$AURORA_QR" "$POPCORN")
-P3_UPT=$(curl -s "$BASE/api/orders/$P3_UNPAID" | jget "['data']['stores'][0]['ticketId']")
-P3_UP=$(code -X POST "$BASE/api/orders/$P3_UNPAID/cancel-leg" -H 'Content-Type: application/json' -d "{\"ticketId\":\"$P3_UPT\"}")
-check "cancel leg on unpaid order → 409" "$([ "$P3_UP" = "409" ] && echo 1 || echo 0)"
-# unknown ticket
-P3_UT=$(code -X POST "$BASE/api/orders/$P3_CODE/cancel-leg" -H 'Content-Type: application/json' -d '{"ticketId":"nope"}')
-check "cancel unknown ticket → 404" "$([ "$P3_UT" = "404" ] && echo 1 || echo 0)"
-
-P3_CANCEL=$(curl -s -X POST "$BASE/api/orders/$P3_CODE/cancel-leg" -H 'Content-Type: application/json' -d "{\"ticketId\":\"$P3_T0\"}")
-P3_REFUND=$(echo "$P3_CANCEL" | jget "['data']['refundTotalPaise']")
-P3_NEWSTATUS=$(echo "$P3_CANCEL" | jget "['data']['orderStatus']")
-check "leg cancelled → order PARTIALLY_CANCELLED" "$([ "$P3_NEWSTATUS" = "PARTIALLY_CANCELLED" ] && echo 1 || echo 0)"
-check "auto refund amount EXACT (subtotal+fee+platform share)" "$([ "$P3_REFUND" = "$P3_EXPECT_REFUND" ] && echo 1 || echo 0)"
-P3_DOUBLE=$(code -X POST "$BASE/api/orders/$P3_CODE/cancel-leg" -H 'Content-Type: application/json' -d "{\"ticketId\":\"$P3_T0\"}")
-check "double cancel same leg → 409" "$([ "$P3_DOUBLE" = "409" ] && echo 1 || echo 0)"
-
-# remaining leg continues: accept → prepare → then cancel must refuse
-# (T1 is the Pizza Corner leg → use its own cook k1; k0 would get 403)
-curl -s -b "$JARS/k1" -X POST "$BASE/api/kitchen/tickets/$P3_T1/status" -H 'Content-Type: application/json' -d '{"to":"ACCEPTED"}' > /dev/null
-curl -s -b "$JARS/k1" -X POST "$BASE/api/kitchen/tickets/$P3_T1/status" -H 'Content-Type: application/json' -d '{"to":"PREPARING"}' > /dev/null
-P3_LATE=$(code -X POST "$BASE/api/orders/$P3_CODE/cancel-leg" -H 'Content-Type: application/json' -d "{\"ticketId\":\"$P3_T1\"}")
-check "cancel after PREPARING → 409" "$([ "$P3_LATE" = "409" ] && echo 1 || echo 0)"
-
-# process the auto-opened refund → refundedPaise exact
-P3_REFUND_ID=$(curl -s -b "$JARS/admin" "$BASE/api/admin/overview" | python3 -c "
-import sys,json
-d=json.load(sys.stdin)['data']['refunds']
-m=[r for r in d if r['code']=='$P3_CODE' and r['status']=='APPROVED']
-print(m[0]['id'] if m else '')")
-check "auto-opened refund found in admin inbox" "$([ -n "$P3_REFUND_ID" ] && echo 1 || echo 0)"
-curl -s -b "$JARS/admin" -X POST "$BASE/api/admin/refunds/$P3_REFUND_ID/action" -H 'Content-Type: application/json' -d '{"action":"PROCESS"}' > /dev/null
-P3_ORDER_AFTER=$(curl -s "$BASE/api/orders/$P3_CODE" | jget "['data']['paymentStatus']")
-check "processed leg refund → PARTIALLY_REFUNDED" "$([ "$P3_ORDER_AFTER" = "PARTIALLY_REFUNDED" ] && echo 1 || echo 0)"
+P3_UP=$(code -X POST "$BASE/api/orders/$P3_CODE/cancel-leg" -H 'Content-Type: application/json' -d "{\"ticketId\":\"$P3_T0\"}")
+check "customer cancel endpoint removed (404)" "$([ "$P3_UP" = "404" ] && echo 1 || echo 0)"
+# kitchen can cancel its own UNPREPARED leg; not after prep started
+P3_PRE=$(curl -s -b "$JARS/k1" -X POST "$BASE/api/kitchen/tickets/$P3_T1/status" -H 'Content-Type: application/json' -d '{"to":"ACCEPTED"}' > /dev/null; curl -s -b "$JARS/k1" -X POST "$BASE/api/kitchen/tickets/$P3_T1/status" -H 'Content-Type: application/json' -d '{"to":"PREPARING"}')
+check "kitchen preps its leg" "$([ "$(echo "$P3_PRE" | jget "['data']['status']")" = "PREPARING" ] && echo 1 || echo 0)"
+P3_LATE=$(curl -s -b "$JARS/k1" -X POST "$BASE/api/kitchen/tickets/$P3_T1/status" -H 'Content-Type: application/json' -d '{"to":"CANCELLED"}')
+check "kitchen may still stop a PREPARING leg (counter resolution)" "$([ "$(echo "$P3_LATE" | jget "['data']['status']")" = "CANCELLED" ] && echo 1 || echo 0)"
+P3_K0=$(code -b "$JARS/k0" -X POST "$BASE/api/kitchen/tickets/$P3_T1/status" -H 'Content-Type: application/json' -d '{"to":"ACCEPTED"}')
+check "kitchen cannot touch another store's ticket (403)" "$([ "$P3_K0" = "403" ] && echo 1 || echo 0)"
 
 echo "── Phase 3: settlement batches & reconciliation ──"
 S_GET=$(curl -s -b "$JARS/admin" "$BASE/api/admin/settlement")
 S_SCOPE=$(echo "$S_GET" | jget "['data']['scope']")
 check "settlement summary scoped Mall-wide" "$([ "$S_SCOPE" = "Mall-wide" ] && echo 1 || echo 0)"
 S_STORES=$(echo "$S_GET" | python3 -c "import sys,json;print(len(json.load(sys.stdin)['data']['stores']))")
-check "settlement summary lists 4 Aurora stores" "$([ "$S_STORES" = "4" ] && echo 1 || echo 0)"
+check "settlement summary lists all Aurora stores (incl. newly opened)" "$([ "$S_STORES" -ge "4" ] && echo 1 || echo 0)"
 S_ANON=$(code "$BASE/api/admin/settlement")
 check "settlement without login → 401" "$([ "$S_ANON" = "401" ] && echo 1 || echo 0)"
 S_KITCHEN=$(code -b "$JARS/k0" "$BASE/api/admin/settlement")

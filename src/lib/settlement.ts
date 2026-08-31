@@ -7,7 +7,7 @@
 //   grossNet    = Σ positive STORE rows              (what the store earned, net)
 //   commission  = Σ commissionPaise on those rows    (platform keeps)
 //   tax         = Σ taxPaise on those rows           (government, via platform)
-//   adjustments = Σ negative STORE rows (REFUNDED/VOIDED)  (never owed / returned)
+//   adjustments = Σ negative STORE rows (VOIDED legs — no online refunds by policy)
 //   netPayable  = grossNet + adjustments             (what the bank transfer is)
 //
 // Lifecycle:  POST runSettlementBatch() → Settlement rows (PENDING) snapshot the
@@ -27,7 +27,7 @@ export interface StoreSettlementSummary {
   grossNetPaise: number
   commissionPaise: number
   taxPaise: number
-  refundAdjustPaise: number
+  voidAdjustPaise: number
   netPayablePaise: number
   pendingRows: number
   settledRows: number
@@ -46,7 +46,7 @@ export async function storeSettlementSummary(storeId: string): Promise<StoreSett
   let grossNetPaise = 0
   let commissionPaise = 0
   let taxPaise = 0
-  let refundAdjustPaise = 0
+  let voidAdjustPaise = 0
   let pendingRows = 0
   let settledRows = 0
 
@@ -58,7 +58,7 @@ export async function storeSettlementSummary(storeId: string): Promise<StoreSett
       if (r.settlementStatus === 'PENDING') pendingRows += 1
       if (r.settlementStatus === 'SETTLED') settledRows += 1
     } else {
-      refundAdjustPaise += r.amountPaise // negative
+      voidAdjustPaise += r.amountPaise // negative
     }
   }
 
@@ -69,8 +69,8 @@ export async function storeSettlementSummary(storeId: string): Promise<StoreSett
     grossNetPaise,
     commissionPaise,
     taxPaise,
-    refundAdjustPaise,
-    netPayablePaise: grossNetPaise + refundAdjustPaise,
+    voidAdjustPaise,
+    netPayablePaise: grossNetPaise + voidAdjustPaise,
     pendingRows,
     settledRows,
   }
@@ -87,7 +87,7 @@ export interface SettlementBatchResult {
       grossPaise: number
       commissionPaise: number
       taxPaise: number
-      refundAdjustPaise: number
+      voidAdjustPaise: number
       netPayablePaise: number
     }
   }[]
@@ -132,7 +132,7 @@ export async function runSettlementBatch(mallId: string, storeIds?: string[]): P
     const grossPaise = payable.reduce((s, r) => s + r.amountPaise, 0)
     const commissionPaise = payable.reduce((s, r) => s + r.commissionPaise, 0)
     const taxPaise = payable.reduce((s, r) => s + r.taxPaise, 0)
-    const refundAdjustPaise = negatives.reduce((s, r) => s + r.amountPaise, 0)
+    const voidAdjustPaise = negatives.reduce((s, r) => s + r.amountPaise, 0)
 
     const settlement = await db.settlement.create({
       data: {
@@ -145,8 +145,8 @@ export async function runSettlementBatch(mallId: string, storeIds?: string[]): P
           grossPaise,
           commissionPaise,
           taxPaise,
-          refundAdjustPaise,
-          netPayablePaise: grossPaise + refundAdjustPaise,
+          voidAdjustPaise,
+          netPayablePaise: grossPaise + voidAdjustPaise,
           splitIds: payable.map((r) => r.id),
         }),
       },
@@ -164,7 +164,7 @@ export async function runSettlementBatch(mallId: string, storeIds?: string[]): P
       storeName: store.name,
       amountPaise: grossPaise,
       splitCount: payable.length,
-      detail: { grossPaise, commissionPaise, taxPaise, refundAdjustPaise, netPayablePaise: grossPaise + refundAdjustPaise },
+      detail: { grossPaise, commissionPaise, taxPaise, voidAdjustPaise, netPayablePaise: grossPaise + voidAdjustPaise },
     })
   }
 

@@ -1,14 +1,15 @@
 // POST /api/kitchen/tickets/[id]/status — advance the ticket state machine.
 // NEW → ACCEPTED → PREPARING → READY_FOR_PICKUP (runner leg takes over after this).
-// CANCELLED is allowed from NEW/ACCEPTED/PREPARING (food not yet out) and now
-// correctly voids that store's settlement leg + auto-opens a refund.
+// CANCELLED is allowed from NEW/ACCEPTED/PREPARING (food not yet out) and voids
+// that store's settlement leg (ledger-internal; there are NO online refunds —
+// the cinema resolves customer exceptions at the counter).
 //
 // Audit fixes in this route:
 //   #1  — an UNPAID order could be advanced to status PAID via this API. Now
 //         every non-cancel transition requires paymentStatus === 'PAID', and
 //         the kitchen can no longer perform RUNNER-leg transitions.
 //   #5  — cancelled tickets kept their FULL settlement splits. Now the leg is
-//         voided in the ledger and (if paid) an APPROVED refund auto-opens.
+//         voided in the ledger so the store is never paid for food never made.
 //   #25 — check-then-write races: transitions now use an optimistic guard
 //         (write only if status is still the one we validated).
 import { z } from 'zod'
@@ -20,7 +21,7 @@ import { requireStaff } from '@/lib/auth-server'
 import { canAccessStore } from '@/lib/auth'
 import { audit } from '@/lib/audit'
 import { emitToRooms } from '@/lib/realtime'
-import { voidStoreLeg } from '@/lib/refunds'
+import { voidStoreLeg } from '@/lib/leg-voids'
 
 const bodySchema = z.object({
   to: z.string().refine(isTicketStatus, 'Unknown ticket status'),

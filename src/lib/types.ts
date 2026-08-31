@@ -6,11 +6,13 @@ export const ORDER_STATUSES = [
   'COMPLETED',
   'CANCELLED',
   'PARTIALLY_CANCELLED',
-  'REFUNDED',
 ] as const
 export type OrderStatus = (typeof ORDER_STATUSES)[number]
 
-export const ORDER_PAYMENT_STATUSES = ['PENDING', 'PAID', 'FAILED', 'REFUNDED', 'PARTIALLY_REFUNDED'] as const
+// No refund statuses — cinema policy: money is never returned online; the
+// counter resolves exceptions in person. (Legacy rows may still carry the
+// old values; the UI renders unknown values as raw text.)
+export const ORDER_PAYMENT_STATUSES = ['PENDING', 'PAID', 'FAILED'] as const
 export type OrderPaymentStatus = (typeof ORDER_PAYMENT_STATUSES)[number]
 
 export const TICKET_STATUSES = [
@@ -45,9 +47,6 @@ export const ROLES = [
 ] as const
 export type Role = (typeof ROLES)[number]
 
-export const REFUND_REASONS = ['WRONG_ITEM', 'NEVER_DELIVERED', 'PARTIAL_STORE_CANCEL', 'OTHER'] as const
-export type RefundReason = (typeof REFUND_REASONS)[number]
-
 /** Delivery/runner leg of a store ticket: READY → PICKED_UP → DELIVERED */
 export const RUNNER_STATUSES = ['ASSIGNED', 'PICKED_UP', 'DELIVERED'] as const
 export type RunnerStatus = (typeof RUNNER_STATUSES)[number]
@@ -58,8 +57,4 @@ export function isTicketStatus(v: unknown): v is TicketStatus {
 
 export function isPaymentMethod(v: unknown): v is PaymentMethod {
   return typeof v === 'string' && (PAYMENT_METHODS as readonly string[]).includes(v)
-}
-
-export function isRefundReason(v: unknown): v is RefundReason {
-  return typeof v === 'string' && (REFUND_REASONS as readonly string[]).includes(v)
 }

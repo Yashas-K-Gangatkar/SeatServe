@@ -1,7 +1,7 @@
-// SeatServe — tests for the audit-fix round (showtime picker, refund math, room tokens)
+// SeatServe — tests for the audit-fix round (showtime picker, leg-void math, room tokens)
 import { describe, expect, test } from 'bun:test'
 import { pickCurrentShow } from '../src/lib/showtime'
-import { computeLegReversal, computeProportionalReversal } from '../src/lib/refunds'
+import { computeLegReversal } from '../src/lib/leg-voids'
 import { signRoomToken, verifyRoomToken, isStaffRoom } from '../src/lib/realtime-auth'
 import { cutoffInfo } from '../src/lib/cutoff'
 
@@ -51,7 +51,7 @@ describe('audit fix #22 — cutoff display rounding', () => {
 })
 
 describe('audit fix #5 — leg reversal math', () => {
-  test('refund = legSubtotal + platformShare (no delivery fee, no tax) and rows sum to it', () => {
+  test('void = legSubtotal + platformShare (no delivery fee, no tax) and rows sum to it', () => {
     const reversal = computeLegReversal({
       orderSubtotalPaise: 40000,
       orderPlatformFeePaise: 1200,
@@ -60,8 +60,8 @@ describe('audit fix #5 — leg reversal math', () => {
       storeId: 'store1',
     })
     const sum = reversal.rows.reduce((s, r) => s + r.amountPaise, 0)
-    expect(sum).toBe(-reversal.refundTotalPaise)
-    expect(reversal.refundTotalPaise).toBe(25000 + Math.round((1200 * 25000) / 40000))
+    expect(sum).toBe(-reversal.voidTotalPaise)
+    expect(reversal.voidTotalPaise).toBe(25000 + Math.round((1200 * 25000) / 40000))
     const storeRow = reversal.rows.find((r) => r.beneficiary === 'STORE')!
     const commission = Math.round((25000 * 14) / 100)
     expect(storeRow.amountPaise).toBe(-(25000 - commission))
@@ -76,28 +76,6 @@ describe('audit fix #5 — leg reversal math', () => {
       storeId: 's',
     })
     for (const row of reversal.rows) expect(row.amountPaise).toBeLessThanOrEqual(0)
-  })
-})
-
-describe('audit fix #2 — proportional refund reversal', () => {
-  const ledger = [
-    { id: '1', storeId: 's1', beneficiary: 'STORE' as const, amountPaise: 12000 },
-    { id: '2', storeId: 's2', beneficiary: 'STORE' as const, amountPaise: 8000 },
-    { id: '4', storeId: null, beneficiary: 'PLATFORM_COMMISSION' as const, amountPaise: 2440 },
-  ] // Σ = 22440
-
-  test('adjustments are negative and sum exactly to the refund amount', () => {
-    const amount = 10000
-    const rows = computeProportionalReversal(ledger, amount)
-    expect(rows.every((r) => r.amountPaise <= 0)).toBe(true)
-    expect(rows.reduce((s, r) => s + r.amountPaise, 0)).toBe(-amount)
-  })
-
-  test('clamps to the ledger total and stays exact at awkward paise', () => {
-    const rows = computeProportionalReversal(ledger, 99999)
-    expect(rows.reduce((s, r) => s + r.amountPaise, 0)).toBe(-22440)
-    const odd = computeProportionalReversal(ledger, 7)
-    expect(odd.reduce((s, r) => s + r.amountPaise, 0)).toBe(-7)
   })
 })
 

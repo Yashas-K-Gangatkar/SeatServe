@@ -43,7 +43,7 @@ export async function GET(request: Request) {
   const mallName = realtimeMallId ? (await db.mall.findUnique({ where: { id: realtimeMallId }, select: { name: true } }))?.name ?? null : null
 
   const [orders, liveOrders, stores, recentAudit] = await Promise.all([
-    db.order.findMany({ where: { placedAt: { gte: since }, ...orderScope }, include: { tickets: true, payments: true, refunds: true } }),
+    db.order.findMany({ where: { placedAt: { gte: since }, ...orderScope }, include: { tickets: true, payments: true } }),
     db.order.findMany({
       where: { paymentStatus: 'PAID', status: { in: ['PAID', 'PARTIALLY_CANCELLED'] }, ...orderScope },
       include: {
@@ -68,8 +68,8 @@ export async function GET(request: Request) {
 
   const orderIds = orders.map((o) => o.id)
 
-  // scope-follower queries (tickets/refunds/runs/splits ride on scoped orders)
-  const [tickets, allTickets, runs, refunds, splits, storeSplitSums] = await Promise.all([
+  // scope-follower queries (tickets/runs/splits ride on scoped orders)
+  const [tickets, allTickets, runs, splits, storeSplitSums] = await Promise.all([
     db.storeTicket.findMany({
       where: { createdAt: { gte: since }, acceptedAt: { not: null }, readyAt: { not: null }, orderId: { in: orderIds } },
       select: { acceptedAt: true, readyAt: true, storeId: true, status: true, subtotalPaise: true },
@@ -84,22 +84,16 @@ export async function GET(request: Request) {
       where: { assignedAt: { gte: since }, pickedUpAt: { not: null }, deliveredAt: { not: null }, ticket: { orderId: { in: orderIds } } },
       select: { pickedUpAt: true, deliveredAt: true },
     }),
-    db.refund.findMany({
-      where: { createdAt: { gte: since }, orderId: { in: orderIds } },
-      include: { order: { select: { code: true, totalPaise: true } } },
-      orderBy: { createdAt: 'desc' },
-    }),
     db.split.groupBy({ by: ['beneficiary'], _sum: { amountPaise: true }, where: { order: { id: { in: orderIds } }, settlementStatus: 'PENDING' } }),
     // Audit fix #7: net per-store sales come from the ledger itself —
-    // STORE rows minus their negative refund/void adjustments.
+    // STORE rows minus their negative void adjustments.
     db.split.groupBy({ by: ['storeId'], _sum: { amountPaise: true }, where: { orderId: { in: orderIds }, beneficiary: 'STORE' } }),
   ])
 
-  // Audit fix #7: refunded money is NOT sales. KPIs are net of refunds
-  // (Order.refundedPaise is the ledger-verified processed amount).
-  const paidOrders = orders.filter((o) => o.paymentStatus === 'PAID' || o.paymentStatus === 'REFUNDED' || o.paymentStatus === 'PARTIALLY_REFUNDED')
-  const salesPaise = paidOrders.reduce((s, o) => s + o.totalPaise - o.refundedPaise, 0)
-  const refundedPaiseTotal = paidOrders.reduce((s, o) => s + o.refundedPaise, 0)
+  // Money never moves back online (cinema policy), so every captured payment
+  // counts as sales; exceptions are resolved at the counter, off the books.
+  const paidOrders = orders.filter((o) => o.paymentStatus === 'PAID')
+  const salesPaise = paidOrders.reduce((s, o) => s + o.totalPaise, 0)
   const aovPaise = paidOrders.length > 0 ? Math.round(salesPaise / paidOrders.length) : 0
 
   const prepSamples = tickets.map((t) => (new Date(t.readyAt!).getTime() - new Date(t.acceptedAt!).getTime()) / 60_000)
@@ -137,13 +131,11 @@ export async function GET(request: Request) {
     window: { since, label: 'last 24 hours' },
     kpis: {
       salesPaise,
-      refundedPaise: refundedPaiseTotal,
       ordersCount: paidOrders.length,
       aovPaise,
       avgPrepMin,
       avgDeliveryMin,
       cancellations: orders.filter((o) => o.status === 'CANCELLED' || o.status === 'PARTIALLY_CANCELLED').length,
-      refundsOpen: refunds.filter((r) => r.status === 'REQUESTED' || r.status === 'APPROVED').length,
     },
     liveOrders: liveOrders.map((o) => ({
       code: o.code,
@@ -158,7 +150,6 @@ export async function GET(request: Request) {
         .filter((t) => user.role !== 'STORE_MANAGER' || t.storeId === user.storeId)
         .map((t) => ({ storeName: t.store.name, emoji: t.store.emoji, status: t.status, ticketId: t.id })),
     })),
-    refunds: refunds.map((r) => ({ id: r.id, code: r.order.code, reason: r.reason, detail: r.detail, status: r.status, amountPaise: r.amountPaise, createdAt: r.createdAt })),
     settlement: splits.map((s) => ({ beneficiary: s.beneficiary, pendingPaise: s._sum.amountPaise ?? 0 })),
     stores: perStore,
     audit: recentAudit.map((a) => ({

@@ -12,7 +12,7 @@ import {
   vendorIdFor,
 } from '@/lib/payments/provider'
 import { computeBill, computeSplits, type StoreLineGroup } from '@/lib/pricing'
-import { computeLegReversal, computeProportionalReversal } from '@/lib/refunds'
+import { computeLegReversal } from '@/lib/leg-voids'
 
 const SECRET = 'test_secret'
 
@@ -139,45 +139,22 @@ describe('ledger-driven settlement math', () => {
     const storeRow = reversal.rows.find((r) => r.beneficiary === 'STORE')!
     expect(storeRow.amountPaise).toBe(-(24000 - 2400))
     expect(storeRow.commissionPaise).toBe(-2400)
-    // Σ negative rows === refund total
+    // Σ negative rows === void total (settlement-internal, no customer refund)
     const sum = reversal.rows.reduce((s, r) => s + r.amountPaise, 0)
-    expect(sum).toBe(-reversal.refundTotalPaise)
+    expect(sum).toBe(-reversal.voidTotalPaise)
   })
 
-  test('proportional reversal: Σ negative commissions never exceeds positive; per-store net consistent', () => {
+  test('no online refunds by policy: only leg-void reversals exist', () => {
+    // the reversal is settlement bookkeeping — the customer is never refunded
+    // online, so the reversal must be strictly ledger-negative
     const bill = computeBill(groups)
-    const rows = computeSplits(bill)
-    const refund = Math.floor(bill.totalPaise * 0.37) // awkward fraction on purpose
-    const neg = computeProportionalReversal(rows, refund)
-
-    const sumNeg = neg.reduce((s, r) => s + r.amountPaise, 0)
-    expect(sumNeg).toBe(-refund)
-
-    const posCommission = rows.filter((r) => r.beneficiary === 'STORE').reduce((s, r) => s + r.commissionPaise, 0)
-    const negCommission = neg.filter((r) => r.beneficiary === 'STORE').reduce((s, r) => s + Math.abs(r.commissionPaise), 0)
-    expect(negCommission).toBeLessThanOrEqual(posCommission)
-    // and proportional-ish: 37% of commission ± rounding
-    expect(negCommission).toBeGreaterThanOrEqual(Math.floor(posCommission * 0.3))
-    expect(negCommission).toBeLessThanOrEqual(Math.ceil(posCommission * 0.45))
-
-    // settlement consistency: net payable after refund = gross − refund, per store
-    for (const storeId of ['storeA', 'storeB']) {
-      const gross = rows.filter((r) => r.storeId === storeId && r.beneficiary === 'STORE').reduce((s, r) => s + r.amountPaise, 0)
-      const adj = neg.filter((r) => r.storeId === storeId).reduce((s, r) => s + r.amountPaise, 0)
-      expect(gross + adj).toBeLessThanOrEqual(gross)
-      expect(gross + adj).toBeGreaterThanOrEqual(0)
-    }
-  })
-
-  test('full refund reverses the entire ledger exactly', () => {
-    const bill = computeBill(groups)
-    const rows = computeSplits(bill)
-    const neg = computeProportionalReversal(rows, bill.totalPaise)
-    const sumNeg = neg.reduce((s, r) => s + r.amountPaise, 0)
-    expect(sumNeg).toBe(-bill.totalPaise)
-    // commission reversal never exceeds commission charged
-    const posCommission = rows.filter((r) => r.beneficiary === 'STORE').reduce((s, r) => s + r.commissionPaise, 0)
-    const negCommission = neg.filter((r) => r.beneficiary === 'STORE').reduce((s, r) => s + Math.abs(r.commissionPaise), 0)
-    expect(negCommission).toBeLessThanOrEqual(posCommission)
+    const reversal = computeLegReversal({
+      orderSubtotalPaise: bill.subtotalPaise,
+      orderPlatformFeePaise: bill.platformFeePaise,
+      legSubtotalPaise: 24000,
+      storeCommissionPct: 10,
+      storeId: 'storeB',
+    })
+    for (const r of reversal.rows) expect(r.amountPaise).toBeLessThan(0)
   })
 })

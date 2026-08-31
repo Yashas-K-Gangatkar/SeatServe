@@ -12,6 +12,7 @@ import { rupees, VegMark, Spinner, LoadError, EmptyState } from '../ui-bits'
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet'
 import { Input } from '@/components/ui/input'
 import { CheckoutSheet } from './CheckoutSheet'
+import { MyOrders } from './MyOrders'
 
 export default function SeatPage({ qrToken, go }: { qrToken: string; go: (p: string) => void }) {
   const [ctx, setCtx] = useState<ContextResponse | null>(null)
@@ -19,6 +20,8 @@ export default function SeatPage({ qrToken, go }: { qrToken: string; go: (p: str
   const [loading, setLoading] = useState(true)
   const [checkoutOpen, setCheckoutOpen] = useState(false)
   const [openStores, setOpenStores] = useState<Record<string, boolean>>({})
+  // bumped whenever a checkout closes — re-fetches the "Your orders" strip
+  const [ordersTick, setOrdersTick] = useState(0)
 
   const cart = useCart()
   const load = useCallback(async () => {
@@ -143,6 +146,9 @@ export default function SeatPage({ qrToken, go }: { qrToken: string; go: (p: str
         </details>
       </header>
 
+      {/* orders this device already placed from this seat — live status cards */}
+      <MyOrders seatToken={qrToken} go={go} refreshToken={ordersTick} />
+
       {/* menu */}
       <section className="mt-6" aria-label="Food menu">
         <h2 className="mb-3 flex items-center gap-2 text-sm font-bold uppercase tracking-wider text-muted-foreground">
@@ -254,7 +260,11 @@ export default function SeatPage({ qrToken, go }: { qrToken: string; go: (p: str
 
       <CheckoutSheet
         open={checkoutOpen}
-        onOpenChange={setCheckoutOpen}
+        onOpenChange={(v) => {
+          setCheckoutOpen(v)
+          // sheet closed (paid, pay-later, or dismissed) → refresh the strip
+          if (!v) setOrdersTick((t) => t + 1)
+        }}
         ctx={ctx}
         onPlaced={(order) => go(`#/track/${order.code}`)}
       />

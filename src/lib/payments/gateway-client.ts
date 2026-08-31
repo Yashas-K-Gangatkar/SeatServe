@@ -4,7 +4,7 @@
 // runs the SANDBOX_MOCK gateway (mock-pay + signed local webhooks). The moment
 // RAZORPAY_KEY_ID/RAZORPAY_KEY_SECRET or CASHFREE_APP_ID/CASHFREE_SECRET_KEY
 // are set (test/sandbox keys first!), these clients hit the REAL sandbox APIs —
-// order creation, split instructions, and refund submission — using the exact
+// order creation and split instructions (no refund rails — cinema policy: no online refunds) — using the exact
 // request shapes the providers document.
 //
 // SECURITY: secret keys NEVER reach the client. The checkout session endpoint
@@ -103,14 +103,6 @@ export async function createRazorpayOrder(input: SplitInstructionInput & { recei
   return { gatewayOrderId: order.id, amountPaise: order.amount, keyId: process.env.RAZORPAY_KEY_ID!, transfers }
 }
 
-/** Razorpay refund (full or partial) against a captured payment. */
-export async function submitRazorpayRefund(paymentId: string, amountPaise: number, notes?: Record<string, string>): Promise<{ refundId: string }> {
-  const creds = razorpayCreds()
-  const res = await gatewayJson(creds, `/payments/${paymentId}/refund`, 'POST', { amount: amountPaise, ...(notes ? { notes } : {}) })
-  if (!res.ok) throw new Error(`Razorpay refund failed: ${res.error}`)
-  return { refundId: (res.data as { id: string }).id }
-}
-
 // ───────────────── Cashfree Easy Split — orders + splits ─────────────────
 
 export interface CashfreeOrderResult {
@@ -138,20 +130,6 @@ export async function createCashfreeOrder(input: SplitInstructionInput & { order
   if (!res.ok) throw new Error(`Cashfree order creation failed: ${res.error}`)
   const order = res.data as { order_id: string; payment_session_id: string }
   return { gatewayOrderId: order.order_id, paymentSessionId: order.payment_session_id, splits, platformAmount: platform_amount }
-}
-
-/** Cashfree refund (full or partial) against a captured payment. */
-export async function submitCashfreeRefund(gatewayOrderId: string, cfPaymentId: string, amountPaise: number, refundId: string): Promise<{ refundId: string }> {
-  const creds = cashfreeCreds()
-  const res = await gatewayJson(creds, '/pg/refunds', 'POST', {
-    order_id: gatewayOrderId,
-    cf_payment_id: cfPaymentId,
-    refund_amount: amountPaise / 100,
-    refund_id: refundId,
-    refund_note: 'SeatServe refund',
-  })
-  if (!res.ok) throw new Error(`Cashfree refund failed: ${res.error}`)
-  return { refundId: (res.data as { cf_refund_id: string }).cf_refund_id }
 }
 
 /**

@@ -22,7 +22,6 @@ export async function GET(_request: Request, { params }: { params: Promise<{ cod
         },
       },
       payments: { orderBy: { createdAt: 'desc' } },
-      refunds: { orderBy: { createdAt: 'desc' } },
     },
   })
   if (!order) return fail('Order not found. Check the order ID.', 404)
@@ -95,7 +94,6 @@ export async function GET(_request: Request, { params }: { params: Promise<{ cod
           providerRef: order.payments[0].providerRef,
         }
       : null,
-    refunds: order.refunds.map((r) => ({ id: r.id, reason: r.reason, status: r.status, amountPaise: r.amountPaise, createdAt: r.createdAt })),
     serverTime: now.toISOString(),
   })
 }

@@ -10,6 +10,7 @@ import { toast } from 'sonner'
 import { post, ApiError } from '@/lib/client/api'
 import { platformFeePaise } from '@/lib/pricing'
 import { useCart } from '@/lib/client/cart'
+import { rememberOrder } from '@/lib/client/orderMemory'
 import { rupees } from '../ui-bits'
 import type { ContextResponse, OrderCreateResponse } from '@/lib/client/types'
 import PaperReceipt, { type ReceiptData } from './PaperReceipt'
@@ -96,6 +97,9 @@ export function CheckoutSheet({
       })
       // keep the checkout mounted; the payment sheet opens on top.
       // Navigation happens when the payment sheet closes (paid or "pay later").
+      // Also remember it on this device for this seat — a re-scan of the seat
+      // QR will then show the order without needing the copied code.
+      rememberOrder(order.code, ctx.seat.qrToken)
       setPlacedOrder(order)
     } catch (err) {
       toast.error(err instanceof ApiError ? err.message : 'Could not place order')
@@ -296,17 +300,13 @@ export function PaymentSheet({
         <div className="px-5 pb-6 pt-4">
           {phase === 'paid' ? (
             <div className="py-1" role="status">
-              {/* the printed bill — thermal paper sliding out of the slot */}
-              {receipt ? (
-                <PaperReceipt data={receipt} orderCode={order.code} paidLine={`PAID — ${method}${paidDetail ? ` ${paidDetail}` : ''}`} />
-              ) : (
-                <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-center">
-                  <p className="text-sm font-bold text-emerald-800">Payment received — your order is in the kitchens</p>
-                  <p className="mt-3 text-[11px] font-bold uppercase tracking-wider text-emerald-700/80">Your tracking number</p>
-                  <p className="mt-1 select-all text-3xl font-black tracking-[0.14em] text-stone-900">{order.code}</p>
-                </div>
-              )}
-              <div className="mt-4 flex items-center justify-center gap-2 print-hide">
+              {/* confirmation + code + copy come FIRST — they must never be
+                  pushed below the fold by the (tall) receipt. Bug: on bigger
+                  orders the copy button used to sit under the paper, off-screen. */}
+              <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-center">
+                <p className="text-sm font-bold text-emerald-800">Payment received — your order is in the kitchens</p>
+                <p className="mt-2 text-[11px] font-bold uppercase tracking-wider text-emerald-700/80">Your tracking number</p>
+                <p className="mt-1 select-all text-3xl font-black tracking-[0.14em] text-stone-900">{order.code}</p>
                 <button
                   onClick={async () => {
                     try {
@@ -316,14 +316,20 @@ export function PaymentSheet({
                       toast.error('Copy failed — long-press the code to copy it')
                     }
                   }}
-                  className="inline-flex items-center gap-1.5 rounded-full border border-stone-300 bg-white px-4 py-2 text-xs font-extrabold text-stone-700 hover:bg-stone-50"
+                  className="mt-3 inline-flex items-center gap-1.5 rounded-full border border-stone-300 bg-white px-4 py-2 text-xs font-extrabold text-stone-700 hover:bg-stone-50 print-hide"
                 >
                   <Copy className="h-3.5 w-3.5" aria-hidden /> Copy tracking number
                 </button>
               </div>
+              {/* the printed bill — thermal paper sliding out of the slot */}
+              {receipt && (
+                <div className="mt-4">
+                  <PaperReceipt data={receipt} orderCode={order.code} paidLine={`PAID — ${method}${paidDetail ? ` ${paidDetail}` : ''}`} />
+                </div>
+              )}
               <button
                 onClick={() => onClose(true)}
-                className="mt-3 w-full rounded-full bg-gradient-to-b from-amber-500 to-orange-500 py-3.5 text-sm font-extrabold text-white shadow-md shadow-orange-500/30 hover:from-amber-600 hover:to-orange-600 print-hide"
+                className="mt-4 w-full rounded-full bg-gradient-to-b from-amber-500 to-orange-500 py-3.5 text-sm font-extrabold text-white shadow-md shadow-orange-500/30 hover:from-amber-600 hover:to-orange-600 print-hide"
               >
                 Track my order
               </button>

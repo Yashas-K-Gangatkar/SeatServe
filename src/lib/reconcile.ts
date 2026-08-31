@@ -2,10 +2,14 @@
 //
 // For every order in scope, five invariants must hold:
 //   R1  Σ positive split rows === order.totalPaise            (creation invariant)
-//   R2  order.refundedPaise   === Σ REFUNDED rows (|amount|)  (refund bookkeeping)
-//   R3  paymentStatus REFUNDED ⇔ refundedPaise === totalPaise (full-refund closure)
+//   R2  every adjustment row is negative (VOIDED bookkeeping only)
+//   R3  Σ |adjustment rows| ≤ order.totalPaise                (void bound)
 //   R4  every PAID order has exactly one SUCCESS payment and it is for totalPaise
 //   R5  every SUCCESS payment carries a signature-valid payment.captured event
+//
+// There are no online refunds (cinema policy): negative rows are settlement-
+// internal VOIDED rows for store legs cancelled before fulfilment. Legacy
+// REFUNDED rows from before the policy change are treated as adjustments too.
 //
 // A violation never blocks reads — it is REPORTED for finance follow-up.
 // The golden-path test intentionally corrupts a ledger row and expects the
@@ -15,7 +19,7 @@ import { db } from '@/lib/db'
 
 export interface ReconciliationIssue {
   orderCode: string
-  check: 'R1_LEDGER_TOTAL' | 'R2_REFUND_TOTAL' | 'R3_FULL_REFUND_CLOSURE' | 'R4_PAYMENT_TOTAL' | 'R5_EVENT_AUDIT'
+  check: 'R1_LEDGER_TOTAL' | 'R2_ADJUST_NEGATIVE' | 'R3_VOID_BOUND' | 'R4_PAYMENT_TOTAL' | 'R5_EVENT_AUDIT'
   expected: string
   actual: string
 }
@@ -32,7 +36,7 @@ export interface ReconciliationReport {
 export async function reconcileOrders(mallId: string | null): Promise<ReconciliationReport> {
   const orders = await db.order.findMany({
     where: mallId ? { mallId } : {},
-    select: { id: true, code: true, totalPaise: true, refundedPaise: true, paymentStatus: true },
+    select: { id: true, code: true, totalPaise: true, paymentStatus: true },
     orderBy: { placedAt: 'desc' },
     take: 500, // report bound — sandbox-sized
   })
@@ -40,16 +44,16 @@ export async function reconcileOrders(mallId: string | null): Promise<Reconcilia
   const issues: ReconciliationIssue[] = []
   const passes: Record<string, number> = {
     R1_LEDGER_TOTAL: 0,
-    R2_REFUND_TOTAL: 0,
-    R3_FULL_REFUND_CLOSURE: 0,
+    R2_ADJUST_NEGATIVE: 0,
+    R3_VOID_BOUND: 0,
     R4_PAYMENT_TOTAL: 0,
     R5_EVENT_AUDIT: 0,
   }
 
   for (const order of orders) {
-    const [positiveSum, refundedRows, successPayments, capturedEvents] = await Promise.all([
+    const [positiveSum, adjustmentRows, successPayments, capturedEvents] = await Promise.all([
       db.split.aggregate({ where: { orderId: order.id, amountPaise: { gt: 0 } }, _sum: { amountPaise: true } }),
-      db.split.aggregate({ where: { orderId: order.id, settlementStatus: 'REFUNDED' }, _sum: { amountPaise: true } }),
+      db.split.findMany({ where: { orderId: order.id, amountPaise: { lt: 0 } }, select: { amountPaise: true, settlementStatus: true } }),
       db.payment.findMany({ where: { orderId: order.id, status: 'SUCCESS' }, select: { id: true, amountPaise: true, providerRef: true } }),
       db.paymentEvent.findMany({ where: { payment: { orderId: order.id } }, select: { eventType: true, signatureValid: true } }),
     ])
@@ -66,32 +70,33 @@ export async function reconcileOrders(mallId: string | null): Promise<Reconcilia
       })
     }
 
-    // R2 — refund bookkeeping
-    const refundedLedger = Math.abs(refundedRows._sum.amountPaise ?? 0)
-    if (refundedLedger === order.refundedPaise) {
-      passes.R2_REFUND_TOTAL += 1
+    // R2 — adjustment rows must be negative ledger rows (VOIDED; legacy REFUNDED tolerated)
+    const badAdjust = adjustmentRows.filter((r) => r.amountPaise >= 0 || !['VOIDED', 'REFUNDED'].includes(r.settlementStatus))
+    if (badAdjust.length === 0) {
+      passes.R2_ADJUST_NEGATIVE += 1
     } else {
       issues.push({
         orderCode: order.code,
-        check: 'R2_REFUND_TOTAL',
-        expected: String(order.refundedPaise),
-        actual: String(refundedLedger),
+        check: 'R2_ADJUST_NEGATIVE',
+        expected: 'all adjustment rows negative VOIDED/REFUNDED',
+        actual: `${badAdjust.length} bad adjustment row(s)`,
       })
     }
 
-    // R3 — full-refund closure
-    if (order.paymentStatus === 'REFUNDED' ? order.refundedPaise === order.totalPaise : true) {
-      passes.R3_FULL_REFUND_CLOSURE += 1
+    // R3 — void bound: reversals can never exceed what the customer paid
+    const adjustTotal = Math.abs(adjustmentRows.reduce((s, r) => s + r.amountPaise, 0))
+    if (adjustTotal <= order.totalPaise) {
+      passes.R3_VOID_BOUND += 1
     } else {
       issues.push({
         orderCode: order.code,
-        check: 'R3_FULL_REFUND_CLOSURE',
-        expected: `refundedPaise=${order.totalPaise} when paymentStatus=REFUNDED`,
-        actual: `refundedPaise=${order.refundedPaise}`,
+        check: 'R3_VOID_BOUND',
+        expected: `adjustments ≤ ${order.totalPaise}`,
+        actual: String(adjustTotal),
       })
     }
 
-    // R4 — payment totals
+    // R4 — payment totals (legacy refund statuses still mean money was captured)
     const paid = order.paymentStatus === 'PAID' || order.paymentStatus === 'PARTIALLY_REFUNDED' || order.paymentStatus === 'REFUNDED'
     if (!paid) {
       passes.R4_PAYMENT_TOTAL += 1

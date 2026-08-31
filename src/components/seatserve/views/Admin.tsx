@@ -1,7 +1,7 @@
 'use client'
 
 // SeatServe — mall admin board (#/admin)
-// KPIs, live orders, refund requests, settlement summary, store & inventory controls, audit log.
+// KPIs, live orders, settlement summary, store & inventory controls, audit log.
 import { useCallback, useEffect, useState } from 'react'
 import { ChevronLeft, IndianRupee, Receipt, Timer, Truck, CircleSlash, Wallet, ScrollText, ChevronDown, ChevronUp, ScanSearch } from 'lucide-react'
 import { toast } from 'sonner'
@@ -27,6 +27,7 @@ export default function Admin({ go }: { go: (p: string) => void }) {
 
 function AdminBoard({ go, scopeRole }: { go: (p: string) => void; scopeRole: 'MALL_ADMIN' | 'CINEMA_MANAGER' }) {
   const [data, setData] = useState<AdminOverview | null>(null)
+  const [showNewStore, setShowNewStore] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [expandedStore, setExpandedStore] = useState<string | null>(null)
@@ -83,19 +84,6 @@ function AdminBoard({ go, scopeRole }: { go: (p: string) => void; scopeRole: 'MA
       toast.success(`${name} ${isAvailable ? 'back in stock' : 'marked sold out'}`)
     } catch (err) {
       toast.error(err instanceof ApiError ? err.message : 'Failed')
-    } finally {
-      void load()
-    }
-  }
-
-  // Audit fix #2 UI: the refund inbox used to be read-only ("lands in Phase 3")
-  // while money dead-ended in REQUESTED. The finance desk can now act.
-  const refundAction = async (refundId: string, action: 'APPROVE' | 'REJECT' | 'PROCESS', code: string) => {
-    try {
-      await post(`/api/admin/refunds/${refundId}/action`, { action })
-      toast.success(`Refund ${action.toLowerCase()}d for ${code}`)
-    } catch (err) {
-      toast.error(err instanceof ApiError ? err.message : 'Refund action failed')
     } finally {
       void load()
     }
@@ -164,50 +152,6 @@ function AdminBoard({ go, scopeRole }: { go: (p: string) => void; scopeRole: 'MA
         ))}
       </section>
 
-      {/* refunds alert */}
-      {data.kpis.refundsOpen > 0 && (
-        <section className="mt-4 rounded-2xl border border-amber-300 bg-amber-50 p-4" role="status">
-          <p className="text-sm font-bold text-amber-900">{data.kpis.refundsOpen} open refund/support request{data.kpis.refundsOpen === 1 ? '' : 's'}</p>
-          <ul className="mt-2 space-y-2">
-            {data.refunds
-              .filter((r) => r.status === 'REQUESTED' || r.status === 'APPROVED')
-              .map((r) => (
-                <li key={r.id} className="text-xs text-amber-800">
-                  <div className="flex flex-wrap items-center justify-between gap-2">
-                    <span>
-                      <b>{r.code}</b> · {r.reason.replaceAll('_', ' ').toLowerCase()} · {rupees(r.amountPaise)} · {r.status}
-                    </span>
-                    {scopeRole === 'MALL_ADMIN' && (
-                      <span className="flex gap-1.5">
-                        {r.status === 'REQUESTED' && (
-                          <button
-                            onClick={() => refundAction(r.id, 'APPROVE', r.code)}
-                            className="rounded-full border border-emerald-300 bg-emerald-50 px-2.5 py-1 text-[10px] font-bold text-emerald-700 hover:bg-emerald-100"
-                          >
-                            Approve
-                          </button>
-                        )}
-                        <button
-                          onClick={() => refundAction(r.id, 'PROCESS', r.code)}
-                          className="rounded-full bg-gradient-to-b from-amber-500 to-orange-500 px-2.5 py-1 text-[10px] font-bold text-white shadow-sm hover:from-amber-600 hover:to-orange-600"
-                        >
-                          Process refund
-                        </button>
-                        <button
-                          onClick={() => refundAction(r.id, 'REJECT', r.code)}
-                          className="rounded-full border border-red-300 bg-white px-2.5 py-1 text-[10px] font-bold text-red-600 hover:bg-red-50"
-                        >
-                          Reject
-                        </button>
-                      </span>
-                    )}
-                  </div>
-                </li>
-              ))}
-          </ul>
-        </section>
-      )}
-
       {/* live orders */}
       <section className="mt-6" aria-label="Live orders">
         <h2 className="mb-2 text-xs font-extrabold uppercase tracking-wider text-muted-foreground">Live orders ({data.liveOrders.length})</h2>
@@ -241,7 +185,26 @@ function AdminBoard({ go, scopeRole }: { go: (p: string) => void; scopeRole: 'MA
 
       {/* stores */}
       <section className="mt-6" aria-label="Stores and inventory">
-        <h2 className="mb-2 text-xs font-extrabold uppercase tracking-wider text-muted-foreground">Stores & inventory</h2>
+        <div className="mb-2 flex items-center justify-between gap-2">
+          <h2 className="text-xs font-extrabold uppercase tracking-wider text-muted-foreground">Stores & inventory</h2>
+          {scopeRole === 'MALL_ADMIN' && (
+            <button
+              onClick={() => setShowNewStore((v) => !v)}
+              className="rounded-full bg-gradient-to-b from-amber-500 to-orange-500 px-3.5 py-1.5 text-[11px] font-extrabold text-white shadow-sm hover:from-amber-600 hover:to-orange-600"
+              aria-expanded={showNewStore}
+            >
+              {showNewStore ? 'Close form' : '+ Open a new store'}
+            </button>
+          )}
+        </div>
+        {scopeRole === 'MALL_ADMIN' && showNewStore && (
+          <NewStoreForm
+            onCreated={() => {
+              setShowNewStore(false)
+              void load()
+            }}
+          />
+        )}
         <ul className="space-y-2">
           {data.stores.map((s) => (
             <li key={s.id} className="rounded-2xl border border-border bg-card p-4">
@@ -450,6 +413,161 @@ function SeatTrace() {
           )}
         </div>
       )}
+    </section>
+  )
+}
+
+// Same-mall expansion: open a NEW storefront + its opening menu in one form.
+// The store starts KYC=PENDING (payout-gated) and shows up in the customer
+// app immediately — out-of-stock toggles work per item from day one.
+interface NewProductRow {
+  name: string
+  price: string
+  prepMin: string
+  isVeg: boolean
+}
+
+function NewStoreForm({ onCreated }: { onCreated: () => void }) {
+  const [name, setName] = useState('')
+  const [emoji, setEmoji] = useState('')
+  const [tagline, setTagline] = useState('')
+  const [rows, setRows] = useState<NewProductRow[]>([
+    { name: '', price: '', prepMin: '8', isVeg: true },
+  ])
+  const [busy, setBusy] = useState(false)
+
+  const setRow = (i: number, patch: Partial<NewProductRow>) =>
+    setRows((rs) => rs.map((r, k) => (k === i ? { ...r, ...patch } : r)))
+
+  const submit = async () => {
+    if (busy) return
+    const products = rows
+      .filter((r) => r.name.trim() && Number(r.price) > 0)
+      .map((r) => ({
+        name: r.name.trim(),
+        pricePaise: Math.round(Number(r.price) * 100),
+        prepEstimateMin: Math.max(1, Math.round(Number(r.prepMin) || 8)),
+        isVeg: r.isVeg,
+      }))
+    if (!name.trim()) {
+      toast.error('Give the store a name')
+      return
+    }
+    if (products.length === 0) {
+      toast.error('Add at least one menu item with a price')
+      return
+    }
+    setBusy(true)
+    try {
+      const res = await post<{ message: string }>('/api/stores', {
+        name: name.trim(),
+        emoji: emoji.trim() || undefined,
+        tagline: tagline.trim() || undefined,
+        products,
+      })
+      toast.success(res.message)
+      onCreated()
+    } catch (err) {
+      toast.error(err instanceof ApiError ? err.message : 'Could not create the store')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <section className="mb-3 rounded-2xl border border-amber-300 bg-amber-50/60 p-4" aria-label="Open a new store">
+      <p className="text-xs font-extrabold uppercase tracking-wider text-amber-800">New shop in this mall</p>
+      <div className="mt-2 grid grid-cols-[64px_1fr] gap-2 sm:grid-cols-[64px_1fr_1fr]">
+        <input
+          value={emoji}
+          onChange={(e) => setEmoji(e.target.value)}
+          placeholder="🏬"
+          maxLength={4}
+          aria-label="Store emoji"
+          className="rounded-xl border border-border bg-white px-3 py-2.5 text-center text-lg focus:outline-none focus:ring-1 focus:ring-amber-500"
+        />
+        <input
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          placeholder="Store name (e.g. Chai Point)"
+          maxLength={40}
+          aria-label="Store name"
+          className="rounded-xl border border-border bg-white px-3 py-2.5 text-sm focus:outline-none focus:ring-1 focus:ring-amber-500"
+        />
+        <input
+          value={tagline}
+          onChange={(e) => setTagline(e.target.value)}
+          placeholder="Tagline (optional)"
+          maxLength={80}
+          aria-label="Store tagline"
+          className="col-span-2 rounded-xl border border-border bg-white px-3 py-2.5 text-sm sm:col-span-1 focus:outline-none focus:ring-1 focus:ring-amber-500"
+        />
+      </div>
+
+      <p className="mt-3 text-[11px] font-bold uppercase tracking-wider text-amber-800">Opening menu</p>
+      <div className="mt-1.5 space-y-1.5">
+        {rows.map((r, i) => (
+          <div key={i} className="grid grid-cols-[1fr_92px_64px_44px_28px] items-center gap-1.5">
+            <input
+              value={r.name}
+              onChange={(e) => setRow(i, { name: e.target.value })}
+              placeholder="Item name"
+              maxLength={60}
+              aria-label={`Item ${i + 1} name`}
+              className="rounded-lg border border-border bg-white px-2.5 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-amber-500"
+            />
+            <input
+              value={r.price}
+              onChange={(e) => setRow(i, { price: e.target.value.replace(/[^0-9.]/g, '') })}
+              placeholder="₹ price"
+              inputMode="decimal"
+              aria-label={`Item ${i + 1} price in rupees`}
+              className="rounded-lg border border-border bg-white px-2.5 py-2 text-xs tabular focus:outline-none focus:ring-1 focus:ring-amber-500"
+            />
+            <input
+              value={r.prepMin}
+              onChange={(e) => setRow(i, { prepMin: e.target.value.replace(/[^0-9]/g, '') })}
+              placeholder="min"
+              inputMode="numeric"
+              aria-label={`Item ${i + 1} prep minutes`}
+              className="rounded-lg border border-border bg-white px-2 py-2 text-xs tabular focus:outline-none focus:ring-1 focus:ring-amber-500"
+            />
+            <button
+              onClick={() => setRow(i, { isVeg: !r.isVeg })}
+              title={r.isVeg ? 'Veg' : 'Non-veg'}
+              aria-label={`Item ${i + 1} veg or non-veg`}
+              className="flex h-7 w-7 items-center justify-center rounded-md border-2 border-emerald-600 bg-white"
+            >
+              {r.isVeg ? <span className="h-3 w-3 rounded-full border-2 border-emerald-600 bg-emerald-500" aria-hidden /> : <span className="h-0 w-0 border-x-[6px] border-b-[10px] border-x-transparent border-b-red-600" aria-hidden />}
+            </button>
+            <button
+              onClick={() => setRows((rs) => (rs.length > 1 ? rs.filter((_, k) => k !== i) : rs))}
+              disabled={rows.length === 1}
+              aria-label={`Remove item ${i + 1}`}
+              className="text-xs font-bold text-red-400 hover:text-red-600 disabled:opacity-30"
+            >
+              ✕
+            </button>
+          </div>
+        ))}
+      </div>
+      <button
+        onClick={() => setRows((rs) => [...rs, { name: '', price: '', prepMin: '8', isVeg: true }])}
+        className="mt-1.5 rounded-full border border-amber-400 bg-white px-3 py-1 text-[11px] font-bold text-amber-700 hover:bg-amber-100"
+      >
+        + Add item
+      </button>
+
+      <button
+        onClick={submit}
+        disabled={busy}
+        className="mt-3 flex w-full items-center justify-center gap-2 rounded-full bg-gradient-to-b from-amber-500 to-orange-500 py-3 text-sm font-extrabold text-white shadow-md shadow-orange-500/30 hover:from-amber-600 hover:to-orange-600 disabled:opacity-50"
+      >
+        {busy ? 'Opening…' : 'Open store with this menu'}
+      </button>
+      <p className="mt-1.5 text-center text-[11px] text-muted-foreground">
+        Items start Available — mark any of them Sold out anytime from the list below. Payouts need KYC verification.
+      </p>
     </section>
   )
 }

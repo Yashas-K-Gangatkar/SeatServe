@@ -9,7 +9,7 @@
 // Production: set PAYMENT_PROVIDER=RAZORPAY|CASHFREE + the provider's
 // credentials/webhook secrets — adapters below implement the REAL signature
 // schemes; only HTTP calls to the gateway itself (checkout session creation,
-// refund submission) remain Phase 4 deployment work.
+// real-gateway order creation) remain Phase 4 deployment work. Online refunds do not exist by policy.
 
 import { verifySignature, webhookSecret } from '@/lib/webhook-sig'
 

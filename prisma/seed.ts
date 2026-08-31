@@ -22,7 +22,6 @@ export async function seedDemoData(db: DB): Promise<void> {
   await db.auditLog.deleteMany()
   await db.paymentEvent.deleteMany()
   await db.payment.deleteMany()
-  await db.refund.deleteMany()
   await db.split.deleteMany()
   await db.settlement.deleteMany()
   await db.deliveryRun.deleteMany()

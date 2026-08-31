@@ -170,12 +170,11 @@ model Order {
   seat             Seat          @relation(fields: [seatId], references: [id])
   showtimeId       String?
   showtime         Showtime?     @relation(fields: [showtimeId], references: [id])
-  status           String        @default("PENDING_PAYMENT") // PENDING_PAYMENT | PAID | COMPLETED | CANCELLED | PARTIALLY_CANCELLED | REFUNDED
-  paymentStatus    String        @default("PENDING") // PENDING | PAID | FAILED | REFUNDED | PARTIALLY_REFUNDED
+  status           String        @default("PENDING_PAYMENT") // PENDING_PAYMENT | PAID | COMPLETED | CANCELLED | PARTIALLY_CANCELLED
+  paymentStatus    String        @default("PENDING") // PENDING | PAID | FAILED — no refund statuses: cinema policy is counter-side resolution
   subtotalPaise    Int // sum of line totals (GST-inclusive; stores remit their own GST)
   platformFeePaise Int // 5% of the total the customer pays
   totalPaise       Int
-  refundedPaise    Int        @default(0) // sum of PROCESSED refunds — KPIs subtract this
   customerName     String?
   customerPhone    String?
   placedAt         DateTime      @default(now())
@@ -183,7 +182,6 @@ model Order {
   items            OrderItem[]
   tickets          StoreTicket[]
   payments         Payment[]
-  refunds          Refund[]
   splits           Split[]
   events           AuditLog[]
 }
@@ -286,19 +284,6 @@ model PaymentEvent {
   processedAt    DateTime?
 }
 
-model Refund {
-  id              String    @id @default(cuid())
-  orderId         String
-  order           Order     @relation(fields: [orderId], references: [id])
-  amountPaise     Int
-  reason          String // WRONG_ITEM | NEVER_DELIVERED | PARTIAL_STORE_CANCEL | OTHER
-  detail          String?
-  status          String    @default("REQUESTED") // REQUESTED | APPROVED | PROCESSED | REJECTED
-  requestedByRole String    @default("CUSTOMER")
-  createdAt       DateTime  @default(now())
-  processedAt     DateTime?
-}
-
 model Split {
   id               String   @id @default(cuid())
   orderId          String
@@ -312,8 +297,9 @@ model Split {
   // TAX rows carry taxPaise = amount; adjustment (negative) rows carry negatives.
   commissionPaise  Int      @default(0)
   taxPaise         Int      @default(0)
-  // PENDING | SETTLED — normal ledger. REFUNDED — reversed by a refund, money
-  // returned to the customer. VOIDED — leg cancelled before fulfilment, never owed.
+  // PENDING | SETTLED — normal ledger. VOIDED — leg cancelled before
+  // fulfilment, never owed (settlement-internal; there are no online refunds:
+  // the cinema's policy is counter-side resolution only).
   settlementStatus String   @default("PENDING")
   settlementId     String?
   createdAt        DateTime @default(now())
@@ -328,7 +314,7 @@ model Settlement {
   periodEnd    DateTime
   status       String   @default("PENDING") // PENDING | PROCESSED | FAILED
   utr          String? // fake bank reference in Phase 3
-  // JSON snapshot: { grossPaise, commissionPaise, taxPaise, refundAdjustPaise, splitIds[] }
+  // JSON snapshot: { grossPaise, commissionPaise, taxPaise, voidAdjustPaise, splitIds[] }
   detail       String?
   processedAt  DateTime?
   createdAt    DateTime @default(now())
