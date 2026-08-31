@@ -19,15 +19,15 @@ const FAQS = [
   },
   {
     q: 'What if my order gets here late or an item is cancelled?',
-    a: 'You watch every store live while you wait. If a store cancels an item (sold out, or something goes wrong), that item is refunded automatically — your receipt shows "REFUNDED" against it and the money returns to your original payment method. No forms, no chasing.',
+    a: 'You watch every store live while you wait. If an outlet cannot prepare an item at all — sold out before cooking starts, for example — that item’s amount is reversed automatically: your receipt marks it and the money returns to your original payment method within 5–7 working days. No forms, no chasing.',
   },
   {
     q: 'Is this actually free to try?',
-    a: 'Yes — this is a live demo. Checkout simulates the payment, so nothing is ever charged. Real payments arrive at launch with Razorpay.',
+    a: 'There is no fee to use the service — you pay only for your order, once, at checkout (UPI, card or netbanking). No booking charge, no subscription, and the payment screen always shows the exact amount before you confirm.',
   },
   {
     q: 'Which stores can I order from?',
-    a: 'Every food outlet inside the venue that has joined the platform — in the demo that is Cinema Snacks, Pizza Corner, Dosa Junction, Mithai & More and Wrap House, all in one cart.',
+    a: 'Every food outlet inside the venue that has joined the platform — at Aurora Mall that is Cinema Snacks, Pizza Corner, Dosa Junction, Mithai & More and Wrap House, all in one cart.',
   },
   {
     q: 'How do I pay?',
@@ -35,7 +35,7 @@ const FAQS = [
   },
   {
     q: 'Can I cancel or get a refund?',
-    a: 'Yes. Cancel before kitchens start cooking for a full refund. If a store cancels your item, that item is refunded automatically. Refunds return to the original payment method within 5–7 working days (instantly, in this demo).',
+    a: 'No — like every cinema food counter, orders are final once placed: kitchens begin preparing for your show window the moment you pay. Money moves back only in two technical cases — a payment captured without a working order (auto-reversed per RBI rules), or an outlet that cannot prepare your item at all. Details in the cancellation & refund policy.',
   },
   {
     q: 'Is my data safe?',
@@ -43,7 +43,7 @@ const FAQS = [
   },
   {
     q: "I'm staff — where do I sign in?",
-    a: 'Head to the staff page for the demo account list, then use the staff sign-in console. Kitchen, runner, store, cinema and mall roles each see only their own scope.',
+    a: 'At the staff sign-in page. Venue staff receive their own credentials from the venue manager — kitchen, runner, store, cinema and mall roles each see only their own scope.',
   },
 ] as const
 
@@ -137,10 +137,10 @@ export default function FaqPage() {
             <p className="mt-0.5 text-sm text-stone-400">
               Open in-app support with your order code, or email{' '}
               <a
-                href="mailto:grievance@seatserve.demo"
+                href="mailto:grievance@seatserve.in"
                 className="underline underline-offset-2 hover:text-white"
               >
-                grievance@seatserve.demo
+                grievance@seatserve.in
               </a>
               .
             </p>

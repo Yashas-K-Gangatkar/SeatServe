@@ -21,11 +21,11 @@ const FAQS = [
   },
   {
     q: 'What if my order gets here late or an item is cancelled?',
-    a: 'You watch every store live while you wait. If a store cancels an item (sold out, or something goes wrong), that item is refunded automatically — your receipt shows "REFUNDED" against it and the money returns to your original payment method. No forms, no chasing.',
+    a: 'You watch every store live while you wait. If an outlet cannot prepare an item at all — sold out before cooking starts, for example — that item’s amount is reversed automatically: your receipt marks it and the money returns to your original payment method within 5–7 working days. No forms, no chasing.',
   },
   {
     q: 'Is this actually free to try?',
-    a: 'Yes — this is a live demo. Checkout simulates the payment, so nothing is ever charged. Real payments arrive at launch with Razorpay.',
+    a: 'There is no fee to use the service — you pay only for your order, once, at checkout (UPI, card or netbanking). No booking charge, no subscription, and the payment screen always shows the exact amount before you confirm.',
   },
 ]
 
