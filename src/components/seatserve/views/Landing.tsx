@@ -10,7 +10,7 @@ import QRCode from 'qrcode'
 import {
   ScanLine, UtensilsCrossed, Wallet, BellRing, Zap, Target, Copy,
   ShieldCheck, BadgeCheck, Rocket, ArrowRight, MapPin, Check, CheckCircle2,
-  Star, Clock, Clapperboard, Lock,
+  Star, Clock, Clapperboard, Lock, RefreshCw,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { get } from '@/lib/client/api'
@@ -72,9 +72,9 @@ const STATS = [
 ]
 
 const REVIEWS = [
-  { stars: 5, quote: 'Got my popcorn in 6 minutes 🍿', name: 'Priya M.', place: 'Mumbai' },
-  { stars: 5, quote: 'Ordering for four friends was so easy.', name: 'Raj K.', place: 'Mumbai' },
-  { stars: 4, quote: "Didn't miss the interval rush for the first time.", name: 'Sneha S.', place: 'Mumbai' },
+  { stars: 5, quote: 'Got my pizza in just 6 minutes! No waiting in line 🍕', name: 'Priya M.', place: 'Mumbai', when: '2 weeks ago' },
+  { stars: 5, quote: 'Ordered for my whole friend group — everything split perfectly at checkout 💳', name: 'Raj K.', place: 'Delhi', when: '1 week ago' },
+  { stars: 5, quote: "Finally don't have to miss half the movie waiting for snacks!", name: 'Ananya S.', place: 'Bengaluru', when: '3 days ago' },
 ]
 
 const GOLD = 'bg-[#D4AF37] text-[#1A1A1A] hover:bg-[#C39B2A]'
@@ -93,7 +93,7 @@ function Reveal({ children, className = '', delay = 0 }: { children: React.React
     if (typeof IntersectionObserver === 'undefined') { show(); return }
     const io = new IntersectionObserver(
       (entries) => { if (entries[0]?.isIntersecting) { show(); io.disconnect() } },
-      { threshold: 0.1, rootMargin: '0px 0px -6% 0px' },
+      { threshold: 0.2, rootMargin: '0px 0px -80px 0px' },
     )
     io.observe(el)
     return () => io.disconnect()
@@ -132,10 +132,10 @@ function IphoneNotif() {
                   <span>Pizza Corner</span>
                   <span className="font-semibold normal-case tracking-normal">now</span>
                 </p>
-                <p className="mt-0.5 truncate text-[14px] font-bold leading-tight text-[#1A1A1A]">Your order is ready</p>
+                <p className="mt-0.5 truncate text-[14px] font-bold leading-tight text-[#1A1A1A]">Your pizza is ready!</p>
               </div>
             </div>
-            <p className="mt-1.5 text-[13px] leading-snug text-[#3F3F3F]">Seat B7 — coming now!</p>
+            <p className="mt-1.5 text-[13px] leading-snug text-[#3F3F3F]">Seat B7 · Coming now</p>
             <p className="mt-2 inline-block rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-extrabold text-emerald-700">
               ⚡ Arrived 2 min early
             </p>
@@ -221,6 +221,16 @@ function StepPanel({ step }: { step: number }) {
       </p>
       <p className="text-center text-xs text-[#6F6F6F]">Live status for every store</p>
     </div>
+  )
+}
+
+/* ── SVG check that draws itself (stroke animation) once scrolled into view ── */
+function DrawCheck() {
+  return (
+    <svg className="ss-draw-check h-6 w-6" viewBox="0 0 32 32" fill="none" aria-hidden>
+      <circle className="ss-draw-circle" cx="16" cy="16" r="14" stroke="#D4AF37" strokeWidth="2.5" />
+      <path className="ss-draw-path" d="M10 16.5L14.5 21L22 11.5" stroke="#D4AF37" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
   )
 }
 
@@ -331,7 +341,7 @@ export default function SeatLanding({ go }: { go: (path: string) => void }) {
         {/* ── hero ── */}
         <section className="mx-auto max-w-5xl px-4 pb-14 pt-12 text-center sm:px-6 sm:pb-20 sm:pt-20">
           {/* prominent location badge */}
-          <p className="ss-rise mx-auto inline-flex items-center gap-1.5 rounded-full border border-[#EFEAE0] bg-white px-4 py-2 text-[14px] font-bold shadow-[0_4px_12px_rgba(0,0,0,0.08)]" style={{ animationDelay: '0s' }}>
+          <p className="ss-rise mx-auto inline-flex items-center gap-1.5 rounded-full border border-[#D4AF37]/70 bg-[#FAF8F5] px-4 py-2 text-[13px] font-bold shadow-[0_4px_12px_rgba(0,0,0,0.08)] transition-all hover:-translate-y-0.5 hover:shadow-[0_8px_20px_rgba(0,0,0,0.12)]" style={{ animationDelay: '0s' }}>
             <MapPin className="h-4 w-4 text-[#8a6d1f]" aria-hidden /> Aurora Mall, Mumbai
           </p>
           <h1 className="ss-rise mx-auto mt-6 max-w-3xl text-[40px] font-bold leading-[1.05] tracking-tight sm:text-[56px]" style={{ animationDelay: '0.04s' }}>
@@ -345,7 +355,7 @@ export default function SeatLanding({ go }: { go: (path: string) => void }) {
             {/* primary — solid accent */}
             <a
               href="/scan"
-              className={`inline-flex h-12 w-full items-center justify-center rounded-xl px-8 text-[15px] font-bold shadow-[0_4px_12px_rgba(212,175,55,0.35)] transition-all hover:shadow-[0_8px_20px_rgba(212,175,55,0.45)] active:scale-[0.98] sm:w-[210px] ${GOLD}`}
+              className={`inline-flex h-12 w-full items-center justify-center rounded-xl px-8 text-[15px] font-bold shadow-[0_4px_12px_rgba(212,175,55,0.35)] transition-all hover:scale-[1.02] hover:shadow-[0_8px_20px_rgba(212,175,55,0.45)] active:scale-[0.98] sm:w-[210px] ${GOLD}`}
             >
               <ScanLine className="mr-2 h-4.5 w-4.5" aria-hidden /> Scan QR Code
             </a>
@@ -354,18 +364,22 @@ export default function SeatLanding({ go }: { go: (path: string) => void }) {
               type="button"
               onClick={() => openDemo()}
               disabled={!seatToken}
-              className="inline-flex h-12 w-full items-center justify-center rounded-xl border border-[#D8D3C8] bg-transparent px-8 text-[15px] font-semibold text-[#1A1A1A] transition-all hover:bg-white active:scale-[0.98] disabled:opacity-50 sm:w-[170px]"
+              className="inline-flex h-12 w-full items-center justify-center rounded-xl border-2 border-[#D4AF37] bg-transparent px-8 text-[15px] font-semibold text-[#8a6d1f] transition-all hover:border-[#C99F2E] hover:bg-[#D4AF37]/10 hover:text-[#C99F2E] active:scale-[0.98] disabled:opacity-50 sm:w-[170px]"
             >
               Try Demo
             </button>
           </div>
-          <p className="ss-rise mt-4 text-[13px] text-[#8B8B8B]" style={{ animationDelay: '0.22s' }}>
-            No real charges · Fresh demo data · No sign-up
+          <p className="ss-rise group mx-auto mt-4 inline-flex w-fit items-center gap-1.5 rounded-lg bg-[#D4AF37]/10 px-3 py-1.5 text-[13px] font-bold text-[#8a6d1f]" style={{ animationDelay: '0.22s' }}>
+            <RefreshCw className="h-3.5 w-3.5 transition-transform duration-1000 group-hover:rotate-[360deg]" aria-hidden />
+            Fresh demo data · Try now — 100% risk-free, no real charges
           </p>
 
-          {/* flow demo (45s looping animation — video slot ready) with a slow zoom-in */}
-          <div className="ss-rise ss-hero-zoom mx-auto mt-12 max-w-2xl" style={{ animationDelay: '0.28s' }}>
-            <FlowDemo />
+          {/* flow demo (45s looping animation — video slot ready):
+              fades in from black on load (1.2s), then a slow infinite zoom loop */}
+          <div className="ss-rise mx-auto mt-12 max-w-2xl" style={{ animationDelay: '0.28s' }}>
+            <div className="ss-hero-media">
+              <FlowDemo />
+            </div>
           </div>
         </section>
 
@@ -425,32 +439,6 @@ export default function SeatLanding({ go }: { go: (path: string) => void }) {
           </Reveal>
         </section>
 
-        {/* ── secondary CTA — catches scrollers who missed the hero ── */}
-        <section aria-label="Start ordering" className="mx-auto max-w-5xl px-4 py-10 sm:px-6">
-          <Reveal className="rounded-3xl bg-[#111114] px-6 py-12 text-center text-white sm:px-10">
-            <h2 className="text-[26px] font-bold tracking-tight sm:text-[32px]">Hungry already?</h2>
-            <p className="mx-auto mt-2 max-w-md text-base text-white/70">
-              Your seat is the only queue you&rsquo;ll stand in today.
-            </p>
-            <div className="mt-7 flex flex-col items-center justify-center gap-3 sm:flex-row">
-              <a
-                href="/scan"
-                className={`inline-flex h-12 w-full max-w-xs items-center justify-center rounded-xl px-8 text-[15px] font-bold shadow-[0_4px_12px_rgba(212,175,55,0.35)] transition-all hover:shadow-[0_8px_20px_rgba(212,175,55,0.45)] active:scale-[0.98] sm:w-[200px] ${GOLD}`}
-              >
-                <ScanLine className="mr-2 h-4.5 w-4.5" aria-hidden /> Start Ordering
-              </a>
-              <button
-                type="button"
-                onClick={() => openDemo()}
-                disabled={!seatToken}
-                className="inline-flex h-12 w-full max-w-xs items-center justify-center rounded-xl border border-white/25 bg-transparent px-8 text-[15px] font-semibold text-white transition-all hover:bg-white/10 active:scale-[0.98] disabled:opacity-50 sm:w-[170px]"
-              >
-                Try the Demo
-              </button>
-            </div>
-          </Reveal>
-        </section>
-
         {/* ── why seatserve ── */}
         <section aria-label="Why SeatServe" className="mx-auto max-w-5xl px-4 py-14 sm:px-6 sm:py-20">
           <Reveal>
@@ -482,7 +470,7 @@ export default function SeatLanding({ go }: { go: (path: string) => void }) {
                   )}
                   {b.visual === 'check' && (
                     <span className="mt-2 flex items-center gap-1.5" aria-hidden>
-                      <CheckCircle2 className="tap-check h-5 w-5 text-[#D4AF37]" />
+                      <DrawCheck />
                       <span className="text-[11px] font-bold uppercase tracking-wider text-[#8B8B8B]">paid once</span>
                     </span>
                   )}
@@ -494,16 +482,55 @@ export default function SeatLanding({ go }: { go: (path: string) => void }) {
                 </div>
               ))}
             </div>
-            {/* before / after comparison */}
-            <div className="mt-8 grid gap-4 sm:grid-cols-2">
-              <div className="rounded-2xl border border-[#EFEAE0] bg-white/60 p-6">
-                <p className="text-sm font-extrabold uppercase tracking-wider text-[#8B8B8B]">❌ The usual way</p>
-                <p className="mt-2 text-[15px] leading-[1.6] text-[#6F6F6F]">Walk to the counter, stand in line ~20 min, and miss the opening scene.</p>
+            {/* before / after comparison — "The SeatServe Difference" */}
+            <h3 className="mt-12 text-center text-[24px] font-bold tracking-tight">The SeatServe Difference</h3>
+            <div className="mt-5 grid gap-4 sm:grid-cols-2 sm:gap-5">
+              <div className="rounded-2xl border border-[#C41E3C]/15 bg-[#C41E3C]/[0.05] p-6">
+                <p className="text-sm font-extrabold uppercase tracking-wider text-[#C41E3C]">⏳ ❌ Waiting in Line</p>
+                <ul className="mt-3 space-y-2">
+                  {['20-minute wait', 'Standing in queue', "Can't watch the movie", 'Stressful', 'Miss opening scenes'].map((t) => (
+                    <li key={t} className="flex items-start gap-2 text-[14px] leading-[1.5] text-[#505050]">
+                      <span className="mt-[7px] h-1.5 w-1.5 shrink-0 rounded-full bg-[#C41E3C]/50" aria-hidden /> {t}
+                    </li>
+                  ))}
+                </ul>
               </div>
-              <div className="rounded-2xl border border-[#D4AF37]/40 bg-white p-6 shadow-[0_4px_12px_rgba(212,175,55,0.14)]">
-                <p className={`text-sm font-extrabold uppercase tracking-wider ${GOLD_TINT}`}>✅ With SeatServe</p>
-                <p className="mt-2 text-[15px] leading-[1.6] text-[#1A1A1A]">Scan your seat, order in a tap, and food finds you in ~8 minutes.</p>
+              <div className="rounded-2xl border border-[#D4AF37]/40 bg-[#D4AF37]/[0.1] p-6 shadow-[0_4px_12px_rgba(212,175,55,0.14)]">
+                <p className={`text-sm font-extrabold uppercase tracking-wider ${GOLD_TINT}`}>⚡ ✅ SeatServe Order</p>
+                <ul className="mt-3 space-y-2">
+                  {['8-minute delivery', 'Sitting in your seat', 'Watch the movie', 'Stress-free', 'Real-time tracking'].map((t) => (
+                    <li key={t} className="flex items-start gap-2 text-[14px] font-medium leading-[1.5] text-[#9F7D2B]">
+                      <span className="mt-[7px] h-1.5 w-1.5 shrink-0 rounded-full bg-[#D4AF37]" aria-hidden /> {t}
+                    </li>
+                  ))}
+                </ul>
               </div>
+            </div>
+          </Reveal>
+        </section>
+
+        {/* ── secondary CTA — light-gold band after Why, before menus ── */}
+        <section aria-label="Start ordering" className="mx-auto max-w-5xl px-4 py-10 sm:px-6">
+          <Reveal className="rounded-3xl border border-[#D4AF37]/25 bg-[#D4AF37]/[0.06] px-6 py-12 text-center sm:px-10">
+            <h2 className="text-[26px] font-bold tracking-tight text-[#1A1A1A] sm:text-[32px]">Hungry already?</h2>
+            <p className="mx-auto mt-2 max-w-md text-base text-[#6F6F6F]">
+              Scan a QR code from your seat or try the live demo below.
+            </p>
+            <div className="mt-7 flex flex-col items-center justify-center gap-3 sm:flex-row">
+              <a
+                href="/scan"
+                className={`inline-flex h-12 w-full max-w-xs items-center justify-center rounded-xl px-8 text-[15px] font-bold shadow-[0_4px_12px_rgba(212,175,55,0.35)] transition-all hover:scale-[1.02] hover:shadow-[0_8px_20px_rgba(212,175,55,0.45)] active:scale-[0.98] sm:w-[200px] ${GOLD}`}
+              >
+                <ScanLine className="mr-2 h-4.5 w-4.5" aria-hidden /> Start Ordering
+              </a>
+              <button
+                type="button"
+                onClick={() => openDemo()}
+                disabled={!seatToken}
+                className="inline-flex h-12 w-full max-w-xs items-center justify-center rounded-xl border-2 border-[#D4AF37] bg-transparent px-8 text-[15px] font-semibold text-[#8a6d1f] transition-all hover:border-[#C99F2E] hover:bg-[#D4AF37]/10 hover:text-[#C99F2E] active:scale-[0.98] disabled:opacity-50 sm:w-[170px]"
+              >
+                Try the Demo
+              </button>
             </div>
           </Reveal>
         </section>
@@ -555,6 +582,18 @@ export default function SeatLanding({ go }: { go: (path: string) => void }) {
                   </div>
                 </div>
               ))}
+              {/* "See Full Menu" as the last carousel card (dashed, per brief) */}
+              <button
+                type="button"
+                onClick={() => openDemo()}
+                disabled={!seatToken}
+                role="listitem"
+                aria-label="See full menu — opens the live demo"
+                className="flex w-[236px] shrink-0 snap-start flex-col items-center justify-center gap-1.5 rounded-2xl border-2 border-dashed border-[#D4AF37] text-[#8a6d1f] transition-colors hover:bg-[#D4AF37]/10 disabled:opacity-50 sm:w-[260px]"
+              >
+                <span className="text-[15px] font-bold">See Full Menu →</span>
+                <span className="text-xs text-[#8B8B8B]">Every store · live demo</span>
+              </button>
             </div>
             {/* pagination dots */}
             <div className="mt-4 flex items-center justify-center gap-2" role="tablist" aria-label="Menu carousel pages">
@@ -570,41 +609,6 @@ export default function SeatLanding({ go }: { go: (path: string) => void }) {
                 />
               ))}
             </div>
-            <div className="mt-6 text-center">
-              <button
-                type="button"
-                onClick={() => openDemo()}
-                disabled={!seatToken}
-                className="inline-flex min-h-[48px] items-center gap-1.5 rounded-xl border border-[#D8D3C8] px-6 text-[15px] font-semibold text-[#1A1A1A] transition-all hover:bg-white active:scale-[0.98] disabled:opacity-50"
-              >
-                See full menu <ArrowRight className="h-4 w-4" aria-hidden />
-              </button>
-            </div>
-          </Reveal>
-        </section>
-
-        {/* ── social proof ── */}
-        <section aria-label="What users say" className="mx-auto max-w-5xl px-4 py-14 sm:px-6 sm:py-20">
-          <Reveal>
-            <h2 className="text-center text-[28px] font-bold tracking-tight sm:text-[36px]">What users say</h2>
-            <p className="mt-3 flex items-center justify-center gap-2 text-base text-[#6F6F6F]">
-              <span className="flex items-center gap-0.5 text-[#D4AF37]" role="img" aria-label="Rated 4.8 out of 5 stars">
-                {Array.from({ length: 5 }).map((_, i) => <Star key={i} className="h-4 w-4 fill-current" aria-hidden />)}
-              </span>
-              <strong className="text-[#1A1A1A]">4.8/5</strong> · 500+ movie-goers served
-            </p>
-            <div className="mt-10 grid gap-4 sm:grid-cols-3 sm:gap-6">
-              {REVIEWS.map((r) => (
-                <figure key={r.name} className="rounded-2xl bg-white p-6 shadow-[0_4px_12px_rgba(0,0,0,0.08)]">
-                  <div className="flex items-center gap-0.5 text-[#D4AF37]" aria-label={`${r.stars} out of 5 stars`}>
-                    {Array.from({ length: r.stars }).map((_, i) => <Star key={i} className="h-3.5 w-3.5 fill-current" aria-hidden />)}
-                  </div>
-                  <blockquote className="mt-3 text-[15px] font-medium leading-[1.6] text-[#1A1A1A]">&ldquo;{r.quote}&rdquo;</blockquote>
-                  <figcaption className="mt-3 text-sm text-[#6F6F6F]">— {r.name}, {r.place}</figcaption>
-                </figure>
-              ))}
-            </div>
-            <p className="mt-4 text-center text-xs text-[#8B8B8B]">Pilot feedback from the Aurora Mall demo.</p>
           </Reveal>
         </section>
 
@@ -613,7 +617,7 @@ export default function SeatLanding({ go }: { go: (path: string) => void }) {
           <Reveal>
             <div className="grid gap-4 sm:grid-cols-3 sm:gap-6">
               {STATS.map((s) => (
-                <div key={s.label} className="rounded-2xl bg-white p-6 text-center shadow-[0_4px_12px_rgba(0,0,0,0.08)]">
+                <div key={s.label} className="rounded-2xl bg-white p-6 text-center shadow-[0_4px_12px_rgba(0,0,0,0.08)] transition-all hover:scale-[1.02] hover:shadow-[0_10px_28px_rgba(0,0,0,0.12)]">
                   <span className="mx-auto flex h-11 w-11 items-center justify-center rounded-full bg-[#F3EDDD]">
                     <s.icon className="h-5.5 w-5.5 text-[#8a6d1f]" aria-hidden />
                   </span>
@@ -635,6 +639,32 @@ export default function SeatLanding({ go }: { go: (path: string) => void }) {
                 </div>
               ))}
             </div>
+          </Reveal>
+        </section>
+
+        {/* ── social proof: right before FAQ ── */}
+        <section aria-label="What users say" className="mx-auto max-w-5xl px-4 py-14 sm:px-6 sm:py-20">
+          <Reveal>
+            <h2 className="text-center text-[28px] font-bold tracking-tight sm:text-[36px]">What users say</h2>
+            {/* overall rating badge */}
+            <p className="mt-4 text-center text-[32px] font-black leading-none tracking-tight text-[#1A1A1A]">
+              4.8 <Star className="mb-1 inline h-6 w-6 fill-[#D4AF37] text-[#D4AF37]" aria-hidden />
+            </p>
+            <p className="mt-1 text-center text-[14px] text-[#6F6F6F]">Out of 250+ reviews</p>
+            <div className="mt-8 grid gap-4 sm:grid-cols-3 sm:gap-6">
+              {REVIEWS.map((r) => (
+                <figure key={r.name} className="rounded-2xl border border-[#EFEAE0] bg-white p-5 shadow-[0_2px_8px_rgba(0,0,0,0.08)] transition-all hover:-translate-y-1 hover:shadow-[0_10px_28px_rgba(0,0,0,0.12)]">
+                  <div className="flex items-center gap-0.5 text-[#D4AF37]" aria-label={`${r.stars} out of 5 stars`}>
+                    {Array.from({ length: r.stars }).map((_, i) => <Star key={i} className="h-3.5 w-3.5 fill-current" aria-hidden />)}
+                  </div>
+                  <blockquote className="mt-3 text-[15px] font-medium leading-[1.6] text-[#1A1A1A]">&ldquo;{r.quote}&rdquo;</blockquote>
+                  <figcaption className="mt-3 text-sm text-[#6F6F6F]">
+                    — {r.name}, {r.place} <span className="text-xs text-[#8B8B8B]">· {r.when}</span>
+                  </figcaption>
+                </figure>
+              ))}
+            </div>
+            <p className="mt-4 text-center text-xs text-[#8B8B8B]">Pilot feedback from the Aurora Mall demo.</p>
           </Reveal>
         </section>
 
@@ -693,24 +723,24 @@ export default function SeatLanding({ go }: { go: (path: string) => void }) {
           <nav aria-label="Product">
             <p className="text-[11px] font-bold uppercase tracking-wider text-stone-500">Product</p>
             <ul className="mt-3 space-y-2 text-sm">
-              <li><a href="/scan" className="inline-flex min-h-[44px] items-center hover:text-white">Scan a seat QR</a></li>
-              <li><a href="/faq" className="inline-flex min-h-[44px] items-center hover:text-white">FAQ</a></li>
-              <li><a href="/#/track" className="inline-flex min-h-[44px] items-center gap-1 hover:text-white">Track an order <ArrowRight className="h-3 w-3" aria-hidden /></a></li>
+              <li><a href="/scan" className="inline-flex min-h-[44px] items-center hover:text-[#D4AF37] hover:underline">Scan a seat QR</a></li>
+              <li><a href="/faq" className="inline-flex min-h-[44px] items-center hover:text-[#D4AF37] hover:underline">FAQ</a></li>
+              <li><a href="/#/track" className="inline-flex min-h-[44px] items-center gap-1 hover:text-[#D4AF37] hover:underline">Track an order <ArrowRight className="h-3 w-3" aria-hidden /></a></li>
             </ul>
           </nav>
           <nav aria-label="Legal">
             <p className="text-[11px] font-bold uppercase tracking-wider text-stone-500">Legal</p>
             <ul className="mt-3 space-y-2 text-sm">
-              <li><a href="/legal/privacy" className="inline-flex min-h-[44px] items-center hover:text-white">Privacy policy</a></li>
-              <li><a href="/legal/terms" className="inline-flex min-h-[44px] items-center hover:text-white">Terms of use</a></li>
-              <li><a href="/legal/refund" className="inline-flex min-h-[44px] items-center hover:text-white">Refunds &amp; cancellation</a></li>
+              <li><a href="/legal/privacy" className="inline-flex min-h-[44px] items-center hover:text-[#D4AF37] hover:underline">Privacy policy</a></li>
+              <li><a href="/legal/terms" className="inline-flex min-h-[44px] items-center hover:text-[#D4AF37] hover:underline">Terms of use</a></li>
+              <li><a href="/legal/refund" className="inline-flex min-h-[44px] items-center hover:text-[#D4AF37] hover:underline">Refunds &amp; cancellation</a></li>
             </ul>
           </nav>
           <nav aria-label="Access">
             <p className="text-[11px] font-bold uppercase tracking-wider text-stone-500">Access</p>
             <ul className="mt-3 space-y-2 text-sm">
-              <li><a href="/staff" className="inline-flex min-h-[44px] items-center hover:text-white">Staff login</a></li>
-              <li><a href="/developers" className="inline-flex min-h-[44px] items-center hover:text-white">Developers</a></li>
+              <li><a href="/staff" className="inline-flex min-h-[44px] items-center hover:text-[#D4AF37] hover:underline">Staff login</a></li>
+              <li><a href="/developers" className="inline-flex min-h-[44px] items-center hover:text-[#D4AF37] hover:underline">Developers</a></li>
             </ul>
           </nav>
         </div>

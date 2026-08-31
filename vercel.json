@@ -2,5 +2,11 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "framework": "nextjs",
   "buildCommand": "node scripts/make-postgres-schema.mjs && bunx prisma generate --schema prisma/schema.postgres.prisma && next build",
-  "installCommand": "bun install"
+  "installCommand": "bun install",
+  "crons": [
+    {
+      "path": "/api/health?cron=1",
+      "schedule": "0 4 * * *"
+    }
+  ]
 }
