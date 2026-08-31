@@ -334,3 +334,25 @@ Work Log:
 
 Stage Summary:
 - Public surface fully redesigned per brief with zero jargon, real scanner page, legal/policy pages (refund perception fixed), preview links public; production ctshop-five.vercel.app serving the redesign; pending owner inputs unchanged (webhook secret/Razorpay go-live, token rotation, custom domain, Ably key if realtime upgrade wanted)
+
+---
+Task ID: landing-v2-review-fixes
+Agent: Super Z (main)
+Task: Implement every item of the second reviewer round (12 fixes + nice-to-haves) + explain why ctshop-git-main-*.vercel.app and ctshop-7m5hu3mb6-*.vercel.app "are not the same"
+
+Work Log:
+- URL mystery solved via Vercel API: ctshop-7m5hu3mb6-* is the frozen per-deployment domain of dpl_9865qj36 = commit cd752b2 (pre-redesign build); ctshop-git-main-* is the branch domain that always tracks newest main (now 154d9c1). Both publicly open (200) since SSO protection was disabled last session; canonical share URL stays ctshop-five.vercel.app
+- Generated 6 new food images (z-ai CLI, 1344x768): nachos, coffee, wrap, fries, dosa, jamun -> public/landing/
+- Landing.tsx v2: prominent Aurora Mall location pill in hero; subtitle 18->24px mobile; CTAs visually split (solid gold primary vs outline ghost secondary); ss-hero-zoom slow zoom on FlowDemo
+- How-it-works steps now tappable (aria-expanded, replay via playKey) with 4 looping CSS mini-demos: scanline phone+check, rising menu rows + merged-cart badge, UPI tap+paid check, runner scooter kitchen->B7 + bell shake
+- Notification rebuilt as iPhone-style mockup: 9:41 status bar, battery/wifi glyphs, app icon, bold "Your order is ready", "Seat B7 — coming now!", slides in from top with bounce on 5.5s infinite loop (ss-notif), reduced-motion static
+- Menu preview -> snap carousel: 8 live items (added margherita/chai keys after debugging /api/context — demo seat context has 4 stores, no Dosa Junction), store-emoji badge chips, gold rupee price, 44px Add buttons, active-dot pagination (scroll-synced + clickable), See-full-menu button
+- Trust -> 3 stat cards (500+ Orders Delivered / 8 min Average Delivery / 100% Secure & Verified) with icon circles + subtext; Why-cards got visual proof (growing clock bars, 5 store dots, hover-replay tap check); before/after comparison cards (20 min line vs ~8 min seat delivery)
+- Secondary CTA dark band "Hungry already?" (Start Ordering + Try the Demo) after How-it-works; "What users say" reviews (Priya/Raj/Sneha, 4.8/5 stars) before FAQ; footer reorganized Product/Legal/Access + © 2026 row
+- Scroll reveals: Reveal component (IntersectionObserver, threshold .1, class-toggle on DOM to satisfy react-hooks/set-state-in-effect), 300ms/16px, full prefers-reduced-motion off-switch for all new keyframes
+- FAQ landing item reworded: cancellations auto-refund, receipt shows REFUNDED (owner's "no refund" concern addressed)
+- Verified locally: lint clean, standalone rebuilt + restarted :3000, agent-browser mobile+desktop screenshots, step clicks, dot navigation (scrollLeft 756), notif class live, golden path Try Demo -> #/seat/HGJM6SR2WH menu, zero console errors
+- Deployed: commit 154d9c1 pushed via one-shot credentialed URL (vault var is GITHUB_TOKEN, not GITHUB_PAT), dpl_CrCS37sS6hg2ejVbN3dPhyR24Zr3 READY, prod verified with content markers + prod mobile screenshot clean
+
+Stage Summary:
+- All 12 reviewer fixes + nice-to-haves live on ctshop-five.vercel.app; preview-URL behavior explained and documented (branch domain moves, deployment domain frozen); measurement/analytics (CTA CTR, scroll depth) remains the only unimplemented suggestion — needs a real analytics service decision
