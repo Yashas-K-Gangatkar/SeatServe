@@ -111,6 +111,7 @@ export async function GET(request: Request) {
       emoji: s.emoji,
       isOpen: s.isOpen,
       kycStatus: s.kycStatus,
+      commissionPct: s.commissionPct,
       ordersLast24h: storeTickets.length,
       salesPaise: Math.max(0, netStorePaise),
       liveTickets: storeTickets.filter((t) => !['DELIVERED', 'CANCELLED'].includes(t.status)).length,

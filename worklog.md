@@ -718,3 +718,21 @@ Stage Summary:
 - Owner can now self-serve staff onboarding: Admin board -> Team -> Add staff (chef/manager/cinema manager) -> hand over email+password; reset password & disable on exit
 - Bank transfer log now records the REAL UTR for payout proof; role model unchanged (MALL_ADMIN sees all money; kitchen sees one kitchen)
 - Mall creation remains a dev onboarding step (offer to build UI when second mall signs)
+
+---
+Task ID: 17
+Agent: Super Z (main agent)
+Task: Commission 12% → 6% everywhere; diagnose owner's "can't pay"; set up real money-flow test accounts (Krishna=customer, Yashas=store)
+
+Work Log:
+- COMMISSION: PATCH /api/stores/[id] already supported commissionPct — used it on PRODUCTION via mall-admin session: all 4 stores (Cinema Snacks, Mithai & More, Pizza Corner, Wrap House) now 6%. Code: POST /api/stores default 12→6; seed all 5 stores →6; local SQLite updateMany →6 (6 rows incl. Nexora)
+- UI: overview API now returns commissionPct per store; Admin store cards show "You keep 94%" chip (CommissionChip, inline editable by MALL_ADMIN, PATCHes /api/stores/[id], audits STORE_UPDATED with previousPct); NewStoreForm gained "Your cut %" input (default 6)
+- PROD CHANGES MADE VIA API (owner-authorized): 4 stores commissionPct=6; created staff account "Yashas (Owner · Wrap House)" STORE_MANAGER yashas@wraphouse.demo / Wraphouse7x (verified login 200 on prod) — for the real-money-flow test where owner plays the store side
+- PAYMENTS DIAGNOSIS: prod probe re-run — mode=RAZORPAY, real order SS-KMWFJ2 ₹73.68 created, gatewayOrderId order_TWnh1XzNJYYd4k, key rzp_live_... => server-side payments fully healthy. ROOT CAUSE of "can't pay": notifetch.in returns 402 (domain still not added in Vercel) — owner has been trying his own domain; temp URL works (200). Fix = owner's 1 click: Vercel → Settings → Domains → Add notifetch.in
+- Money-flow explanation confirmed to owner: customer pays FULL amount to owner's Razorpay; owner keeps 6% commission; store's 94% is owed to store via weekly bank transfer + real UTR (Route linked accounts = future auto-split option)
+- Gates: tsc 0, eslint 0, 67/67 tests, build OK
+
+Stage Summary:
+- Commission is 6% platform-wide (prod + local + code defaults) and self-serve editable per store from the admin board
+- Owner's store-side test login live on prod; customer side needs no account (Krishna just opens a seat link)
+- Payments healthy server-side; domain add in Vercel is the single remaining owner click for notifetch.in (then update Razorpay webhook to https://notifetch.in/api/payments/webhook)

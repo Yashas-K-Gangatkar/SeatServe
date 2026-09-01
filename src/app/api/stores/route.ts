@@ -32,7 +32,7 @@ const bodySchema = z.object({
   emoji: z.string().trim().max(8).optional(),
   tagline: z.string().trim().max(80).optional(),
   prepBufferMin: z.number().int().min(0).max(60).default(10),
-  commissionPct: z.number().min(0).max(50).default(12),
+  commissionPct: z.number().min(0).max(50).default(6),
   products: z.array(productSchema).max(40).default([]),
 })
 

@@ -216,6 +216,7 @@ function AdminBoard({ go, scopeRole }: { go: (p: string) => void; scopeRole: 'MA
                     <span className={`ml-2 rounded-full px-2 py-0.5 text-[10px] font-bold ${s.kycStatus === 'VERIFIED' ? 'bg-emerald-100 text-emerald-700' : s.kycStatus === 'REJECTED' ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-800'}`}>
                       KYC {s.kycStatus}
                     </span>
+                    <CommissionChip storeId={s.id} pct={s.commissionPct} editable={scopeRole === 'MALL_ADMIN'} onSaved={() => void load()} />
                   </p>
                   <p className="text-[11px] text-muted-foreground">
                     24h: {s.ordersLast24h} tickets · {rupees(s.salesPaise)} · live {s.liveTickets}
@@ -437,6 +438,7 @@ function NewStoreForm({ onCreated }: { onCreated: () => void }) {
   const [name, setName] = useState('')
   const [emoji, setEmoji] = useState('')
   const [tagline, setTagline] = useState('')
+  const [commission, setCommission] = useState('6')
   const [rows, setRows] = useState<NewProductRow[]>([
     { name: '', price: '', prepMin: '8', isVeg: true },
   ])
@@ -469,6 +471,7 @@ function NewStoreForm({ onCreated }: { onCreated: () => void }) {
         name: name.trim(),
         emoji: emoji.trim() || undefined,
         tagline: tagline.trim() || undefined,
+        commissionPct: Number(commission) || 6,
         products,
       })
       toast.success(res.message)
@@ -483,7 +486,7 @@ function NewStoreForm({ onCreated }: { onCreated: () => void }) {
   return (
     <section className="mb-3 rounded-2xl border border-amber-300 bg-amber-50/60 p-4" aria-label="Open a new store">
       <p className="text-xs font-extrabold uppercase tracking-wider text-amber-800">New shop in this mall</p>
-      <div className="mt-2 grid grid-cols-[64px_1fr] gap-2 sm:grid-cols-[64px_1fr_1fr]">
+      <div className="mt-2 grid grid-cols-[64px_1fr] gap-2 sm:grid-cols-[64px_1fr_1fr_84px]">
         <input
           value={emoji}
           onChange={(e) => setEmoji(e.target.value)}
@@ -508,6 +511,17 @@ function NewStoreForm({ onCreated }: { onCreated: () => void }) {
           aria-label="Store tagline"
           className="col-span-2 rounded-xl border border-border bg-white px-3 py-2.5 text-sm sm:col-span-1 focus:outline-none focus:ring-1 focus:ring-amber-500"
         />
+        <input
+          value={commission}
+          onChange={(e) => setCommission(e.target.value.replace(/[^0-9.]/g, ''))}
+          placeholder="%"
+          inputMode="decimal"
+          maxLength={5}
+          aria-label="Your commission percent"
+          title="Your commission on every order at this store"
+          className="col-span-2 rounded-xl border border-border bg-white px-3 py-2.5 text-center text-sm tabular focus:outline-none focus:ring-1 focus:ring-amber-500 sm:col-span-1"
+        />
+        <p className="col-span-2 text-[10px] text-muted-foreground sm:col-span-1 sm:-ml-2">Your cut %</p>
       </div>
 
       <p className="mt-3 text-[11px] font-bold uppercase tracking-wider text-amber-800">Opening menu</p>
@@ -575,5 +589,75 @@ function NewStoreForm({ onCreated }: { onCreated: () => void }) {
         Items start Available — mark any of them Sold out anytime from the list below. Payouts need KYC verification.
       </p>
     </section>
+  )
+}
+
+// Commission chip on each store card — shows the platform's cut and lets the
+// mall admin change it inline (PATCH /api/stores/[id] enforces role + scope).
+function CommissionChip({ storeId, pct, editable, onSaved }: { storeId: string; pct: number; editable: boolean; onSaved: () => void }) {
+  const [editing, setEditing] = useState(false)
+  const [value, setValue] = useState(String(pct))
+  const [busy, setBusy] = useState(false)
+
+  useEffect(() => {
+    if (!editing) setValue(String(pct))
+  }, [pct, editing])
+
+  if (!editable) {
+    return (
+      <span className="ml-2 rounded-full bg-orange-100 px-2 py-0.5 text-[10px] font-bold text-orange-700">
+        You keep {Math.round((100 - pct) * 100) / 100}%
+      </span>
+    )
+  }
+
+  if (!editing) {
+    return (
+      <button
+        onClick={() => setEditing(true)}
+        title={`Commission ${pct}% — you keep ${Math.round((100 - pct) * 100) / 100}%. Click to change.`}
+        className="ml-2 rounded-full bg-orange-100 px-2 py-0.5 text-[10px] font-bold text-orange-700 hover:bg-orange-200"
+      >
+        You keep {Math.round((100 - pct) * 100) / 100}%
+      </button>
+    )
+  }
+
+  const save = async () => {
+    const n = Number(value)
+    if (!Number.isFinite(n) || n < 0 || n > 50) {
+      toast.error('Commission must be a number between 0 and 50')
+      return
+    }
+    setBusy(true)
+    try {
+      await patch(`/api/stores/${storeId}`, { commissionPct: n })
+      toast.success(`Commission set to ${n}% — stores keep ${Math.round((100 - n) * 100) / 100}%`)
+      setEditing(false)
+      onSaved()
+    } catch (err) {
+      toast.error(err instanceof ApiError ? err.message : 'Could not update commission')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <span className="ml-2 inline-flex items-center gap-1 align-middle">
+      <input
+        value={value}
+        onChange={(e) => setValue(e.target.value.replace(/[^0-9.]/g, ''))}
+        inputMode="decimal"
+        aria-label="Commission percent"
+        className="w-12 rounded-lg border border-border bg-white px-1.5 py-0.5 text-[11px] tabular"
+      />
+      <span className="text-[10px] font-bold text-muted-foreground">%</span>
+      <button onClick={save} disabled={busy} className="rounded-full bg-stone-900 px-2 py-0.5 text-[10px] font-bold text-white disabled:opacity-50">
+        Save
+      </button>
+      <button onClick={() => setEditing(false)} className="text-[10px] font-bold text-muted-foreground hover:text-foreground">
+        Cancel
+      </button>
+    </span>
   )
 }

@@ -212,6 +212,7 @@ export interface AdminOverview {
     emoji: string | null
     isOpen: boolean
     kycStatus: string
+    commissionPct: number
     ordersLast24h: number
     salesPaise: number
     liveTickets: number
