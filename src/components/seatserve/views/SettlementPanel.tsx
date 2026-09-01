@@ -54,6 +54,8 @@ export default function SettlementPanel({ canAct }: { canAct: boolean }) {
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [busy, setBusy] = useState(false)
+  const [utrFor, setUtrFor] = useState<{ id: string; storeName: string } | null>(null)
+  const [utrValue, setUtrValue] = useState('')
 
   const load = useCallback(async () => {
     try {
@@ -85,11 +87,13 @@ export default function SettlementPanel({ canAct }: { canAct: boolean }) {
     }
   }
 
-  const processBatch = async (id: string, storeName: string) => {
+  const processBatch = async (id: string, storeName: string, utr?: string) => {
     setBusy(true)
     try {
-      const res = await post<{ utr: string; amountPaise: number }>(`/api/admin/settlement/${id}/process`, {})
+      const res = await post<{ utr: string; amountPaise: number }>(`/api/admin/settlement/${id}/process`, utr ? { utr } : {})
       toast.success(`${storeName}: ${rupees(res.amountPaise)} transferred · UTR ${res.utr}`)
+      setUtrFor(null)
+      setUtrValue('')
     } catch (err) {
       toast.error(err instanceof ApiError ? err.message : 'Transfer failed')
     } finally {
@@ -203,12 +207,47 @@ export default function SettlementPanel({ canAct }: { canAct: boolean }) {
                 </div>
                 {canAct && b.status === 'PENDING' && (
                   <button
-                    onClick={() => processBatch(b.id, b.storeName)}
+                    onClick={() => {
+                      setUtrFor({ id: b.id, storeName: b.storeName })
+                      setUtrValue('')
+                    }}
                     disabled={busy}
                     className="rounded-full bg-stone-900 px-3 py-1.5 text-[10px] font-bold text-white hover:bg-stone-800 disabled:opacity-50"
                   >
                     Mark transferred
                   </button>
+                )}
+                {utrFor?.id === b.id && (
+                  <div className="w-full rounded-xl bg-background p-3 sm:w-full">
+                    <p className="text-[11px] font-bold">
+                      Pay {b.storeName} {rupees(b.amountPaise)} from your bank first, then record it:
+                    </p>
+                    <div className="mt-2 flex flex-wrap items-center gap-2">
+                      <input
+                        value={utrValue}
+                        onChange={(e) => setUtrValue(e.target.value)}
+                        placeholder="Paste the bank UTR / reference number (optional)"
+                        className="min-w-0 flex-1 rounded-xl border border-border bg-white px-3 py-2 text-xs"
+                        aria-label="Bank UTR reference number"
+                      />
+                      <button
+                        onClick={() => processBatch(b.id, b.storeName, utrValue)}
+                        disabled={busy}
+                        className="rounded-full bg-stone-900 px-3 py-2 text-[10px] font-bold text-white hover:bg-stone-800 disabled:opacity-50"
+                      >
+                        Confirm payment done
+                      </button>
+                      <button
+                        onClick={() => setUtrFor(null)}
+                        className="text-[11px] font-bold text-muted-foreground hover:text-foreground"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                    <p className="mt-1.5 text-[10px] text-muted-foreground">
+                      The UTR is the reference number your bank app shows after the transfer — it is your proof of payment.
+                    </p>
+                  </div>
                 )}
               </li>
             ))}

@@ -10,6 +10,7 @@ import { useRealtime, usePolling, useOnline } from '@/lib/client/realtime'
 import type { AdminOverview } from '@/lib/client/types'
 import StaffGate from '../StaffGate'
 import SettlementPanel from './SettlementPanel'
+import TeamPanel from './TeamPanel'
 import { rupees, timeHM, minAgo, StatusPill, LiveDot, Spinner, LoadError, EmptyState } from '../ui-bits'
 
 const BENEFICIARY_LABEL: Record<string, string> = {
@@ -291,6 +292,11 @@ function AdminBoard({ go, scopeRole }: { go: (p: string) => void; scopeRole: 'MA
 
       {/* Phase 3: settlement runs + reconciliation (money actions are mall-admin only) */}
       {scopeRole === 'MALL_ADMIN' && <SettlementPanel canAct />}
+
+      {/* staff logins: create chef/manager accounts, reset passwords, disable access */}
+      {scopeRole === 'MALL_ADMIN' && (
+        <TeamPanel stores={data.stores.map((s) => ({ id: s.id, name: s.name, emoji: s.emoji }))} />
+      )}
 
       {/* anti-scam: trace which orders came from a seat QR */}
       <SeatTrace />

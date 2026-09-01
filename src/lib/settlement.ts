@@ -180,14 +180,25 @@ export async function runSettlementBatch(mallId: string, storeIds?: string[]): P
   return { batches, skipped }
 }
 
-/** Simulates the bank transfer for one PENDING batch: UTR + rows → SETTLED. */
-export async function processSettlement(settlementId: string): Promise<{ ok: true; utr: string; amountPaise: number } | { ok: false; status: number; error: string }> {
+/** Marks one PENDING batch as paid: uses the REAL bank UTR when the admin
+ *  pastes it, otherwise stamps a generated reference. Rows → SETTLED. */
+export async function processSettlement(
+  settlementId: string,
+  realUtr?: string,
+): Promise<{ ok: true; utr: string; amountPaise: number } | { ok: false; status: number; error: string }> {
   const settlement = await db.settlement.findUnique({ where: { id: settlementId }, include: { store: true } })
   if (!settlement) return { ok: false, status: 404, error: 'Settlement batch not found' }
   if (settlement.status === 'PROCESSED') return { ok: false, status: 409, error: 'This batch was already processed' }
   if (settlement.status === 'FAILED') return { ok: false, status: 409, error: 'This batch failed — recreate it' }
 
-  const utr = `UTR${Date.now().toString(36).toUpperCase()}${Math.floor(Math.random() * 46656).toString(36).toUpperCase().padStart(3, '0')}`
+  const cleanedUtr = realUtr?.trim().toUpperCase()
+  if (cleanedUtr !== undefined && cleanedUtr !== '' && !/^[A-Z0-9]{6,40}$/.test(cleanedUtr)) {
+    return { ok: false, status: 422, error: 'UTR looks wrong — it should be the bank reference number (letters/digits only)' }
+  }
+  const utr =
+    cleanedUtr && cleanedUtr !== ''
+      ? cleanedUtr
+      : `UTR${Date.now().toString(36).toUpperCase()}${Math.floor(Math.random() * 46656).toString(36).toUpperCase().padStart(3, '0')}`
 
   const detail = settlement.detail ? (JSON.parse(settlement.detail) as { splitIds?: string[] }) : null
   const splitIds = detail?.splitIds ?? []

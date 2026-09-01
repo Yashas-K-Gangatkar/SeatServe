@@ -698,3 +698,23 @@ Stage Summary:
 - Sound: fixed everywhere, default on
 - Same-QR: confirmed working for new shops in same theater
 - Domain: owner does 1 click in Vercel; then I verify https://notifetch.in end-to-end
+
+---
+Task ID: 16
+Agent: Super Z (main agent)
+Task: Explain bank transfer log + staff access model to owner; build Team panel (self-serve staff logins) + real-UTR settlement recording
+
+Work Log:
+- ANSWERED owner's questions with code evidence: (1) BANK TRANSFER LOG = SettlementPanel batches (store net vs 12% commission, PENDING -> PROCESSED with UTR); UTR was auto-generated placeholder — flagged honestly; (2) add SHOP = existing "New shop in this mall" form (MALL_ADMIN) + auto-appears on all existing QRs; add MALL = database-level onboarding (no UI yet, done by dev on request); (3) chef access = already email+password, NO Google/Gmail anywhere (login route), account server-pinned to storeId (cross-store 403); (4) privacy concern validated — work login ID, not a real mailbox, nothing emailed
+- GAP FOUND: no self-serve staff account creation (was seed/script only) — built it
+- NEW GET/POST /api/admin/staff: MALL_ADMIN-only, mall-scoped list (role!=CUSTOMER + OR-mallId/storeIds/cinemaIds) + create (zod: name/email/phone ^+?\d{10,13}$/role in STORE_MANAGER|KITCHEN_STAFF|CINEMA_MANAGER/store-or-cinema scope REQUIRED + scope check target belongs to caller's mall; friendly 409 duplicate email/phone; scrypt hashPassword; STAFF_CREATED audit; staff:update realtime event added to RealtimeEvent union)
+- NEW PATCH /api/admin/staff/[id]: SET_PASSWORD (hash + session.deleteMany -> kicks all devices), DEACTIVATE (isActive=false + sessions revoked, self-deactivate blocked), ACTIVATE; scope guard by target's mall/store/cinema columns; STAFF_PASSWORD_RESET/DEACTIVATED/ACTIVATED audits
+- NEW TeamPanel.tsx in Admin board (MALL_ADMIN only): explainer card (privacy: work login, never Gmail), add-staff form (role dropdown with plain-English help, store/cinema pickers, auto-generated unambiguous 12-char password via crypto.getRandomValues, no 0/O/1/l/I), one-time credentials card with Copy button, per-staff Password-reset (generate/Save) + Disable/Enable actions
+- SETTLEMENT UTR UPGRADE: processSettlement(id, realUtr?) validates ^[A-Z0-9]{6,40}$ (422 otherwise) and stores the REAL bank reference; process route parses optional {utr}; SettlementPanel "Mark transferred" now opens inline confirm (pay from bank first, paste UTR optional, proof-of-payment hint)
+- SMOKE-TESTED locally (curl, mall-admin session): list=12 mall-scoped staff (Nexora excluded), create chef -> login OK -> cross-store kitchen 403 -> weak password 422 -> password reset revokes old session (401) -> deactivate blocks login -> duplicate email 409 -> bad UTR 422 -> CINEMA_MANAGER 403. 9/9 PASS. Test chef left disabled (local sandbox row)
+- Gates: tsc 0, eslint 0, 67/67 tests, production build OK
+
+Stage Summary:
+- Owner can now self-serve staff onboarding: Admin board -> Team -> Add staff (chef/manager/cinema manager) -> hand over email+password; reset password & disable on exit
+- Bank transfer log now records the REAL UTR for payout proof; role model unchanged (MALL_ADMIN sees all money; kitchen sees one kitchen)
+- Mall creation remains a dev onboarding step (offer to build UI when second mall signs)

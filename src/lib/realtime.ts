@@ -16,6 +16,7 @@ export type RealtimeEvent =
   | 'store:update'
   | 'product:update'
   | 'settlement:update'
+  | 'staff:update'
 
 export interface EmitInput {
   rooms: string[]
