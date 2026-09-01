@@ -752,3 +752,19 @@ Work Log:
 Stage Summary:
 - Payments were blocked platform-wide by our own CSP; fixed + loader hardened. Owner should retry the ₹1 momo test after deploy
 - notifetch.in migration is 1 owner click away; I handle verification + Razorpay URL updates guidance after
+
+---
+Task ID: 18
+Agent: Super Z (main)
+Task: Fix "invisible wall" — Razorpay modal visible but untappable; move notifetch.in live via owner's Vercel token
+
+Work Log:
+- Verified CSP fix (6749421) is LIVE on prod: curl of temp URL shows Razorpay-allowing CSP (checkout.js + api.razorpay.com frame + connect endpoints) — bug #1 closed for every customer
+- ROOT-CAUSED bug #2 ("invisible wall"): ui/sheet.tsx uses @radix-ui/react-dialog → react-remove-scroll injects `.block-interactivity-{id} { pointer-events: none }` ON document.body while our sheet is open. Razorpay's modal is appended directly to <body> → inherits pointer-events:none → fully visible, every tap dead. Confirmed in node_modules source (SideEffect.js: document.body.classList.add)
+- FIX in CheckoutSheet.tsx payWithRazorpay: unlock body (inline pointerEvents='auto' beats the non-!important stylesheet rule) right before rzp.open(); restore '' on handler (success), modal.ondismiss (closed), and unmount cleanup effect (moved above early return after rules-of-hooks error); try/catch around rzp.open() restores lock if open() throws
+- Gates: tsc 0, eslint 0, 67/67 bun tests, production build OK. Pushed ac8a09b → Vercel auto-deploy
+- Vercel token: searched entire workspace (glob/grep/worklog) — token was NEVER delivered; owner believes I have it. Domain add still blocked on owner pasting the token. DNS already correct (A 216.198.79.1, www CNAME vercel-dns-017)
+
+Stage Summary:
+- ac8a09b pushed: both payment-blocking bugs now fixed (CSP + invisible wall); customer should complete payments on the temp URL within ~2-3 min of this commit
+- Remaining owner action: paste Vercel token in chat → I add notifetch.in + www via API, verify SSL, then owner updates Razorpay dashboard (website URL + webhook https://notifetch.in/api/payments/webhook, same secret)
