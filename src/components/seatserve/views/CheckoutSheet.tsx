@@ -299,6 +299,14 @@ export function PaymentSheet({
     void preloadRazorpayScript()
   }, [])
 
+  // safety net: if the sheet unmounts mid-gateway (navigation, timeout), never
+  // leave our inline override dangling on <body>
+  useEffect(() => {
+    return () => {
+      document.body.style.pointerEvents = ''
+    }
+  }, [])
+
   // when the receipt prints, make sure the slot + paper top are in view
   useEffect(() => {
     if (phase === 'paid') sheetScrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' })
@@ -351,6 +359,14 @@ export function PaymentSheet({
       setPhase('failed')
       return
     }
+    // Invisible-wall fix: while our sheet is open, the scroll-locker sets
+    // `pointer-events: none` on <body> (react-remove-scroll injects
+    // `.block-interactivity-*` on body). Razorpay's modal is appended directly to
+    // <body>, so it inherited the freeze — fully visible, every tap dead.
+    // Re-enable body interactivity while the gateway modal is up (its own
+    // fullscreen backdrop keeps the page behind untouchable) and hand the lock
+    // back the moment the modal closes, so our sheet behaves normally again.
+    document.body.style.pointerEvents = 'auto'
     const rzp = new window.Razorpay({
       key: session.keyId,
       order_id: session.gatewayOrderId,
@@ -363,18 +379,25 @@ export function PaymentSheet({
         : {}),
       theme: { color: '#ea580c' },
       handler: (response: RazorpayHandlerResponse) => {
+        document.body.style.pointerEvents = '' // gateway modal gone — restore the normal lock
         // the gateway accepted the payment — webhook confirmation is pending
         setPhase('confirming')
         void pollUntilPaid(order.code)
       },
       modal: {
         ondismiss: () => {
+          document.body.style.pointerEvents = '' // gateway modal gone — restore the normal lock
           setPhase('form')
           toast.info('Payment window closed — you can retry, or pay later from tracking.')
         },
       },
     })
-    rzp.open()
+    try {
+      rzp.open()
+    } catch (e) {
+      document.body.style.pointerEvents = '' // open() blew up — hand the lock back before error handling
+      throw e
+    }
   }
 
   const startPayment = async () => {
