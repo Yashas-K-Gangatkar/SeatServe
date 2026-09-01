@@ -9,9 +9,11 @@ const securityHeaders = [
   { key: "X-DNS-Prefetch-Control", value: "on" },
   {
     key: "Content-Security-Policy",
-    // sandbox: allow inline styles/Next dev; tighten script-src 'self' in production
+    // Razorpay standard checkout needs: its checkout script, its modal iframe
+    // (api.razorpay.com) and browser XHR to its API + logging endpoints.
+    // Without these the browser silently blocks the gateway for every customer.
     value:
-      "default-src 'self'; img-src 'self' data: blob:; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; connect-src 'self' ws: wss:; font-src 'self' data:",
+      "default-src 'self'; img-src 'self' data: blob: https://*.razorpay.com; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://checkout.razorpay.com; connect-src 'self' ws: wss: https://api.razorpay.com https://checkout.razorpay.com https://lumberjack.razorpay.com; font-src 'self' data:; frame-src https://api.razorpay.com https://checkout.razorpay.com;",
   },
 ];
 

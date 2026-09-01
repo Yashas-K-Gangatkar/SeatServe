@@ -736,3 +736,19 @@ Stage Summary:
 - Commission is 6% platform-wide (prod + local + code defaults) and self-serve editable per store from the admin board
 - Owner's store-side test login live on prod; customer side needs no account (Krishna just opens a seat link)
 - Payments healthy server-side; domain add in Vercel is the single remaining owner click for notifetch.in (then update Razorpay webhook to https://notifetch.in/api/payments/webhook)
+
+---
+Task ID: 18
+Agent: Super Z (main agent)
+Task: Diagnose owner's payment failure ("couldn't reach the payment gateway") — root cause CSP blocking Razorpay; prep notifetch.in migration steps
+
+Work Log:
+- ROOT CAUSE FOUND: next.config.ts security CSP `script-src 'self'` had NO razorpay.com allowlist → every browser blocked https://checkout.razorpay.com/v1/checkout.js; also no frame-src (modal iframe = api.razorpay.com blocked by default-src 'self') and no connect-src (XHR to api.razorpay.com blocked). Payments could never succeed for ANY customer since the real gateway went live — server-side probes (API-level) could not catch a browser-side CSP block
+- FIX (CSP per Razorpay standard-checkout docs): script-src += https://checkout.razorpay.com; frame-src += https://api.razorpay.com https://checkout.razorpay.com; connect-src += https://api.razorpay.com https://checkout.razorpay.com https://lumberjack.razorpay.com; img-src += https://*.razorpay.com
+- HARDENED CheckoutSheet loader: 12s hard timeout (a hung request previously froze the sheet forever), module-level dedupe + preload on PaymentSheet mount (script cached before Pay tap), one automatic retry, actionable fail message (in-app browser/VPN/ad-block guidance, "you were not charged")
+- Gates: tsc 0, eslint 0, 67/67 tests, build OK. Pushed 6509a0a→(this commit); verify live CSP header post-deploy
+- DOMAIN notifetch.in: DNS already points to Vercel (A 216.198.79.1, www CNAME vercel-dns-017); remaining step is owner's single dashboard action (Vercel → Settings → Domains → Add notifetch.in) — no Vercel CLI auth available to do it for him. After it's live: update Razorpay dashboard website + webhook URL to https://notifetch.in/api/payments/webhook, then end-to-end verify + SSL check
+
+Stage Summary:
+- Payments were blocked platform-wide by our own CSP; fixed + loader hardened. Owner should retry the ₹1 momo test after deploy
+- notifetch.in migration is 1 owner click away; I handle verification + Razorpay URL updates guidance after

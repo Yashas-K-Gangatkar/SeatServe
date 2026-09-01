@@ -41,16 +41,41 @@ declare global {
 }
 
 /** Load Razorpay's checkout.js once; resolves false when unreachable. */
-function loadRazorpayScript(): Promise<boolean> {
+let razorpayLoad: Promise<boolean> | null = null
+
+/** Loads checkout.js with a hard timeout so a hung request cannot freeze the
+ *  payment sheet forever. Safe to call repeatedly — deduped while in flight. */
+function loadRazorpayScript(timeoutMs = 12_000): Promise<boolean> {
   return new Promise((resolve) => {
     if (window.Razorpay) return resolve(true)
+    let settled = false
+    const finish = (ok: boolean) => {
+      if (settled) return
+      settled = true
+      clearTimeout(timer)
+      resolve(ok)
+    }
+    const timer = setTimeout(() => finish(false), timeoutMs)
     const script = document.createElement('script')
     script.src = 'https://checkout.razorpay.com/v1/checkout.js'
     script.async = true
-    script.onload = () => resolve(!!window.Razorpay)
-    script.onerror = () => resolve(false)
+    script.onload = () => finish(!!window.Razorpay)
+    script.onerror = () => finish(false)
     document.head.appendChild(script)
   })
+}
+
+/** Preload once when the payment sheet appears — by the time the customer
+ *  taps Pay the gateway script is usually already on the phone. A failed
+ *  attempt clears the cache so the next tap tries fresh. */
+function preloadRazorpayScript(): Promise<boolean> {
+  if (!razorpayLoad) {
+    razorpayLoad = loadRazorpayScript().then((ok) => {
+      if (!ok) razorpayLoad = null
+      return ok
+    })
+  }
+  return razorpayLoad
 }
 
 interface PlacedOrder {
@@ -269,6 +294,11 @@ export function PaymentSheet({
   const sheetScrollRef = useRef<HTMLDivElement>(null)
   const { play } = useSound()
 
+  // start fetching the gateway script the moment the sheet opens
+  useEffect(() => {
+    void preloadRazorpayScript()
+  }, [])
+
   // when the receipt prints, make sure the slot + paper top are in view
   useEffect(() => {
     if (phase === 'paid') sheetScrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' })
@@ -312,9 +342,12 @@ export function PaymentSheet({
   }
 
   const payWithRazorpay = async (session: Extract<CheckoutSession, { mode: 'RAZORPAY' }>) => {
-    const loaded = await loadRazorpayScript()
+    let loaded = await preloadRazorpayScript()
+    if (!loaded) loaded = await loadRazorpayScript() // one automatic second attempt
     if (!loaded || !window.Razorpay) {
-      setFailMsg('Could not reach the payment gateway. Check your connection and retry.')
+      setFailMsg(
+        "Couldn't load the Razorpay checkout. This is almost always the phone's network or browser: open this page in Chrome or Safari (not WhatsApp/Instagram), switch off any VPN or ad-blocker, then retry. You were not charged.",
+      )
       setPhase('failed')
       return
     }
