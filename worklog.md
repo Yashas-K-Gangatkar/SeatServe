@@ -678,3 +678,23 @@ Work Log:
 Stage Summary:
 - Webhook secret step DONE (owner-side + code-side verified)
 - Redeploy triggered 1cfbc15; next: owner confirms remaining env vars → curl-verify webhook 401-on-bad-signature → ₹1 live order + cancel-window refund test
+
+---
+Task ID: 15
+Agent: Super Z (main agent)
+Task: Verify owner's Vercel env vars live; fix silent sound system; confirm same-QR for new shops; UI/UX pass; notifetch.in domain prep
+
+Work Log:
+- PROD PROBE (scripts/prod-gateway-probe.mjs): demo seat -> cheapest item -> real order SS-3X3ENK -> /api/payments/session returned mode=RAZORPAY, real gateway order order_TWiHqQPFA94gEN, keyId rzp_live_TTx4... => ALL 4 VERCEL ENV VARS ARE SET AND LIVE. Site can take real money now.
+- Webhook endpoint verified live (401 on unsigned POST, correct); owner confirmed URL https://ctshop-git-main-noti-fetch.vercel.app/api/payments/webhook configured in Razorpay dashboard
+- SOUND ROOT CAUSE: SoundProvider was mounted ONLY in marketing Landing; customer flow (menu/cart/checkout/tracking) had no context at all, and default was OFF. Fixed: root layout now mounts ONE app-wide SoundProvider; default ON (localStorage 'off' = mute); cues added: add/remove item pop/tap, order placed pop, payment confirmed notif, tracking realtime events pop/success/notif. Kitchen chime already existed. iOS note: ringer/silent switch still mutes WebAudio on iPhones (platform behavior, documented).
+- SAME-QR CONFIRMED (no code change needed): /api/context resolves seat QR -> ALL stores of that seat's mall; a new store added via admin appears on every already-printed QR automatically. Orders API enforces same-mall isolation.
+- UI/UX pass: new Backdrop.tsx (Haikei-style drifting SVG blobs + wave hairlines, reduced-motion safe) mounted on marketing landing; globals.css nf-drift keyframes; in-app hub stale Phase-1/mock copy replaced with live Razorpay + cancel-window language; "Build phases" roadmap replaced with "What's live today" cards; framer-motion (v12, installed) motion system untouched — it already follows motion-primitives patterns.
+- Gates: tsc 0, eslint 0, 67/67 tests, build OK. Commit d0cba31 pushed; live-verified (homepage 200, nf-blob in HTML, /api/health healthy).
+- DOMAIN: notifetch.in DNS ALREADY points to Vercel (A 216.198.79.1, www CNAME vercel-dns-017) but Vercel returns 402 => domain not yet ADDED to the project. Owner's single remaining step: Vercel dashboard -> Project -> Settings -> Domains -> Add notifetch.in (+ www redirect). Then update Razorpay dashboard website URL to https://notifetch.in.
+
+Stage Summary:
+- Payments: LIVE (env vars verified by probe, webhook URL live, cancel-window feature live)
+- Sound: fixed everywhere, default on
+- Same-QR: confirmed working for new shops in same theater
+- Domain: owner does 1 click in Vercel; then I verify https://notifetch.in end-to-end
