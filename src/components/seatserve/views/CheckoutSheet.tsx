@@ -10,6 +10,7 @@ import { useMemo, useRef, useState, useEffect } from 'react'
 import { Loader2, Lock, ShieldCheck, TriangleAlert, Timer, Store as StoreIcon, ChevronDown, CheckCircle2, Copy } from 'lucide-react'
 import { toast } from 'sonner'
 import { get, post, ApiError } from '@/lib/client/api'
+import { useSound } from '@/lib/sound/SoundProvider'
 import { platformFeePaise } from '@/lib/pricing'
 import { useCart } from '@/lib/client/cart'
 import { rememberOrder } from '@/lib/client/orderMemory'
@@ -69,6 +70,7 @@ export function CheckoutSheet({
   onPlaced: (order: OrderCreateResponse) => void
 }) {
   const cart = useCart()
+  const { play } = useSound()
   const [placing, setPlacing] = useState(false)
   const [name, setName] = useState('')
   const [phone, setPhone] = useState('')
@@ -133,6 +135,7 @@ export function CheckoutSheet({
       // QR will then show the order without needing the copied code.
       rememberOrder(order.code, ctx.seat.qrToken)
       setPlacedOrder(order)
+      play('pop')
     } catch (err) {
       toast.error(err instanceof ApiError ? err.message : 'Could not place order')
     } finally {
@@ -264,11 +267,18 @@ export function PaymentSheet({
   const [failMsg, setFailMsg] = useState('')
   const [paidDetail, setPaidDetail] = useState('')
   const sheetScrollRef = useRef<HTMLDivElement>(null)
+  const { play } = useSound()
 
   // when the receipt prints, make sure the slot + paper top are in view
   useEffect(() => {
     if (phase === 'paid') sheetScrollRef.current?.scrollTo({ top: 0, behavior: 'smooth' })
   }, [phase])
+
+  // THE confirmation cue — fires for both the real Razorpay flow and the
+  // sandbox mock the moment the signed webhook (or mock pipeline) lands.
+  useEffect(() => {
+    if (phase === 'paid') play('notif')
+  }, [phase, play])
 
   if (!order) return null
 

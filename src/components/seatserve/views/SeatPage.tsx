@@ -7,6 +7,7 @@ import { Minus, Plus, ShoppingBag, Timer, Store as StoreIcon, ChevronLeft, MapPi
 import { toast } from 'sonner'
 import { get, ApiError } from '@/lib/client/api'
 import { useCart } from '@/lib/client/cart'
+import { useSound } from '@/lib/sound/SoundProvider'
 import type { ContextResponse, OrderCreateResponse } from '@/lib/client/types'
 import { rupees, VegMark, Spinner, LoadError, EmptyState } from '../ui-bits'
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet'
@@ -24,6 +25,7 @@ export default function SeatPage({ qrToken, go }: { qrToken: string; go: (p: str
   const [ordersTick, setOrdersTick] = useState(0)
 
   const cart = useCart()
+  const { play } = useSound()
   const load = useCallback(async () => {
     try {
       setError(null)
@@ -197,7 +199,10 @@ export default function SeatPage({ qrToken, go }: { qrToken: string; go: (p: str
                         {line?.qty ? (
                           <div className="flex items-center gap-1 rounded-full border border-amber-300 bg-amber-50 p-1" aria-label={`Quantity of ${p.name}: ${line.qty}`}>
                             <button
-                              onClick={() => cart.remove(p.id)}
+                              onClick={() => {
+                                cart.remove(p.id)
+                                play('tap', 0.7)
+                              }}
                               className="flex h-8 w-8 items-center justify-center rounded-full text-amber-700 hover:bg-amber-100 focus-visible:outline-2 focus-visible:outline-amber-500"
                               aria-label={`Remove one ${p.name}`}
                             >
@@ -205,7 +210,10 @@ export default function SeatPage({ qrToken, go }: { qrToken: string; go: (p: str
                             </button>
                             <span className="w-5 text-center text-sm font-extrabold tabular text-stone-900">{line.qty}</span>
                             <button
-                              onClick={() => cart.add(p.id)}
+                              onClick={() => {
+                                cart.add(p.id)
+                                play('pop')
+                              }}
                               disabled={line.qty >= 20}
                               className="flex h-8 w-8 items-center justify-center rounded-full text-amber-700 hover:bg-amber-100 focus-visible:outline-2 focus-visible:outline-amber-500 disabled:opacity-40"
                               aria-label={`Add one ${p.name}`}
@@ -217,6 +225,7 @@ export default function SeatPage({ qrToken, go }: { qrToken: string; go: (p: str
                           <button
                             onClick={() => {
                               cart.add(p.id)
+                              play('pop')
                               toast.success(`${p.name} added`, { duration: 1200 })
                             }}
                             disabled={disabled}

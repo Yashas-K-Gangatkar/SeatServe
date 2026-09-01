@@ -7,7 +7,6 @@
 import { useEffect, useState } from 'react'
 import { Clapperboard, LockKeyhole, QrCode, Search, Info } from 'lucide-react'
 import { get } from '@/lib/client/api'
-import { rupees } from '../ui-bits'
 
 interface DemoEntry {
   aurora: { qrToken: string; seat: string; screen: string; mall: string } | null
@@ -33,8 +32,8 @@ function useDemoEntry(): DemoEntry | null {
 
 const DEMO_STEPS = [
   'Open “Customer · demo seat” (or scan a QR from the generator page).',
-  'Add items from 2–3 different stores to ONE cart, then pay (mock UPI).',
-  'You land on live tracking — each store has its own status ticket.',
+  'Add items from 2–3 different stores to ONE cart, then pay by UPI or card.',
+  'You land on live tracking — each store has its own status ticket. Changed your mind? Cancel with automatic money-back until the kitchen accepts.',
   'Sign in to the staff portal as a cook (e.g. kitchen@pizza-corner.demo) — only their tickets appear.',
   'Advance to “Ready”, deliver as the runner (ravi@runner.demo), watch tracking update in realtime.',
 ]
@@ -50,7 +49,7 @@ export default function SeatLanding({ go }: { go: (path: string) => void }) {
       href: seatToken ? `#/seat/${seatToken}` : null,
       icon: QrCode,
       title: `Customer · ${seatLabel}`,
-      sub: 'Scan-to-order menu, cart across stores, mock UPI/Card payment, live tracking',
+      sub: 'Scan-to-order menu, one cart across stores, UPI or card payment, live tracking',
       tint: 'text-orange-500 bg-orange-100',
       tag: 'START HERE',
     },
@@ -96,9 +95,9 @@ export default function SeatLanding({ go }: { go: (path: string) => void }) {
           </span>
         </h1>
         <p className="mt-4 max-w-xl text-sm leading-relaxed text-stone-600 sm:text-base">
-          One QR per seat. One cart across many stores. One payment, automatically split — every store sees only its own
-          ticket. This is the Phase 1 sandbox demo: payments are mocked end-to-end (signed webhooks, idempotency), no real
-          money moves.
+          One QR per seat. One cart across many stores. One payment by UPI or card, automatically split — every store sees
+          only its own ticket. Live payments by Razorpay, and you can cancel with automatic money-back any time before a
+          store accepts your order.
         </p>
         <div className="mt-6 flex flex-wrap items-center gap-3">
           <button
@@ -161,41 +160,32 @@ export default function SeatLanding({ go }: { go: (path: string) => void }) {
         </ol>
         <div className="mt-5 flex flex-wrap items-center gap-3 border-t border-stone-200 pt-4">
           <p className="text-xs text-stone-500">
-            <b>Phase 2:</b> staff consoles are now behind sign-in. Reset &amp; maintenance moved to the staff portal (mall admin).
+            <b>Live today:</b> real payments run through Razorpay — pay once, every store is routed its share
+            automatically, and the money returns to your account by itself if you cancel before the kitchen accepts.
           </p>
         </div>
       </section>
 
-      {/* phase roadmap */}
-      <section className="mt-10" aria-label="Roadmap">
+      {/* what's live */}
+      <section className="mt-10" aria-label="Live platform capabilities">
         <div className="flex items-center gap-2">
           <Info className="h-4 w-4 text-muted-foreground" aria-hidden />
-          <h2 className="text-sm font-bold uppercase tracking-wider text-muted-foreground">Build phases</h2>
+          <h2 className="text-sm font-bold uppercase tracking-wider text-muted-foreground">What's live today</h2>
         </div>
         <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           {[
-            { p: 'Phase 1', t: 'Clickable demo', d: 'Fake payment + simulated order flow, realtime staff dashboards, QR codes', state: 'done' },
-            { p: 'Phase 2', t: 'Platform core', d: 'Auth + RBAC (6 roles), scoped staff portal, session security, tests — YOU ARE HERE', state: 'current' },
-            { p: 'Phase 3', t: 'Real sandbox rails', d: 'Razorpay Route / Cashfree Easy Split, signed webhooks, settlements', state: 'later' },
-            { p: 'Phase 4', t: 'Production', d: 'PostgreSQL migration, merchant KYC onboarding, security & legal review, deployment', state: 'later' },
+            { p: 'Payments', t: 'Real UPI & cards', d: 'Razorpay checkout — pay once and every store is routed its share automatically.' },
+            { p: 'Cancel window', t: 'Change of mind?', d: 'Cancel with automatic money-back until a kitchen taps Accept — then it locks.' },
+            { p: 'Tracking', t: 'Live per-store status', d: 'Accepted → preparing → ready → runner picks up → at your seat, in realtime.' },
+            { p: 'Staff', t: 'Scoped consoles', d: 'Kitchen, runner, cinema and mall roles each see only their own work.' },
           ].map((ph) => (
-            <div
-              key={ph.p}
-              className={`rounded-2xl border p-4 ${
-                ph.state === 'current' ? 'border-orange-300 bg-orange-50 shadow-sm shadow-orange-500/10' : 'border-stone-200 bg-white'
-              }`}
-            >
-              <p className="text-[10px] font-extrabold tracking-wider text-stone-500">{ph.p.toUpperCase()}</p>
-              <h3 className={`mt-1 text-sm font-bold ${ph.state === 'current' ? 'text-orange-700' : 'text-stone-900'}`}>{ph.t}</h3>
+            <div key={ph.p} className="rounded-2xl border border-stone-200 bg-white p-4">
+              <p className="text-[10px] font-extrabold tracking-wider text-orange-600">{ph.p.toUpperCase()}</p>
+              <h3 className="mt-1 text-sm font-bold text-stone-900">{ph.t}</h3>
               <p className="mt-1 text-xs leading-relaxed text-stone-500">{ph.d}</p>
-              {ph.state === 'current' && <p className="mt-2 text-[10px] font-bold text-orange-600">← YOU ARE HERE</p>}
             </div>
           ))}
         </div>
-        <p className="mt-4 text-[11px] leading-relaxed text-muted-foreground/70">
-          Settlement ledger preview: every order writes a split ledger (STORE / PLATFORM_COMMISSION) whose
-          amounts always sum to the paid total. Live sample: seeded order SS-DEMO02 totals {rupees(75440)} with a verified split.
-        </p>
       </section>
     </div>
   )

@@ -7,14 +7,14 @@
  * deployment, rebuilt as modular sections and driven by the central motion
  * (src/lib/motion) + sound (src/lib/sound) systems.
  *
- * One SoundProvider wraps the whole page so cue state is shared; the demo
- * entry lookup (from /api/demo/entry) enables the "Try Demo" buttons exactly
- * like the previous landing did.
+ * The root layout (src/app/layout.tsx) mounts ONE SoundProvider for the whole
+ * app — marketing page, customer flow and staff consoles all share the same
+ * cue state, so a preference set anywhere is honored everywhere.
  */
 import { useEffect, useState } from 'react'
-import { SoundProvider } from '@/lib/sound/SoundProvider'
 import { get } from '@/lib/client/api'
 import { SiteHeader } from './sections/SiteHeader'
+import { Backdrop } from './sections/Backdrop'
 import { Hero } from './sections/Hero'
 import { LiveStatus } from './sections/LiveStatus'
 import { HowItWorks } from './sections/HowItWorks'
@@ -53,7 +53,8 @@ function LandingBody() {
   const demoSeatHref = demoSeatToken ? `#/seat/${demoSeatToken}` : null
 
   return (
-    <div className="flex min-h-dvh flex-col bg-[#FAF8F5] text-[#1A1A1A]">
+    <div className="relative flex min-h-dvh flex-col bg-[#FAF8F5] text-[#1A1A1A]">
+      <Backdrop />
       <SiteHeader />
       <main className="flex-1" aria-label="SeatServe">
         <Hero demoSeatHref={demoSeatHref} />
@@ -74,9 +75,5 @@ function LandingBody() {
 }
 
 export default function Landing() {
-  return (
-    <SoundProvider>
-      <LandingBody />
-    </SoundProvider>
-  )
+  return <LandingBody />
 }

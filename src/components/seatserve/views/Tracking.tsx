@@ -13,6 +13,7 @@ import { Check, ChefHat, Bike, PackageCheck, CircleHelp, ChevronLeft, MapPin, Cr
 import { toast } from 'sonner'
 import { get, post, ApiError } from '@/lib/client/api'
 import { useRealtime, usePolling } from '@/lib/client/realtime'
+import { useSound } from '@/lib/sound/SoundProvider'
 import type { TrackingResponse } from '@/lib/client/types'
 import { rupees, timeHM, StatusPill, RUN_STATUS_LABEL, Spinner, LoadError, EmptyState } from '../ui-bits'
 import { PaymentSheet } from './CheckoutSheet'
@@ -106,7 +107,15 @@ function TrackingInner({ code, go }: { code: string; go: (p: string) => void }) 
 
   usePolling(load, 4000, !!order && order.paymentStatus !== 'PAID')
   usePolling(load, 8000, !!order && order.paymentStatus === 'PAID' && order.status !== 'COMPLETED')
-  useRealtime([`order:${code.toUpperCase()}`], () => void load())
+  const { play } = useSound()
+  useRealtime([`order:${code.toUpperCase()}`], (event) => {
+    // the tracking screen has a voice: kitchen acceptance, readiness and
+    // delivery each land as a distinct cue (mirrors the haptic pattern)
+    if (event === 'ticket:status') play('pop')
+    else if (event === 'order:paid') play('success')
+    else if (event === 'order:update' || event === 'ticket:cancelled') play('notif')
+    void load()
+  })
 
   if (loading && !order) return <Spinner label="Loading your order…" />
   if (error)

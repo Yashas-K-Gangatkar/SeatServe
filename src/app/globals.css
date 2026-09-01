@@ -343,3 +343,27 @@ body {
   .ss-draw-check .ss-draw-circle, .ss-draw-check .ss-draw-path { stroke-dashoffset: 0; animation: none; }
   .ss-reveal { opacity: 1; transition: none; transform: none; }
 }
+
+/* ── NotiFetch ambient backdrop (Haikei-style blobs) ─────────────────── */
+.nf-blob {
+  filter: blur(1.5px);
+  transform-origin: center;
+  will-change: transform;
+}
+.nf-blob-a {
+  animation: nf-drift 26s ease-in-out infinite alternate;
+}
+.nf-blob-b {
+  animation: nf-drift-b 34s ease-in-out infinite alternate;
+}
+@keyframes nf-drift {
+  from { transform: translate3d(0, 0, 0) rotate(0deg) scale(1); }
+  to   { transform: translate3d(3rem, 2.5rem, 0) rotate(12deg) scale(1.07); }
+}
+@keyframes nf-drift-b {
+  from { transform: translate3d(0, 0, 0) rotate(0deg) scale(1); }
+  to   { transform: translate3d(-3.5rem, -2rem, 0) rotate(-10deg) scale(1.09); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .nf-blob-a, .nf-blob-b { animation: none; }
+}

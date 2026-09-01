@@ -3,9 +3,10 @@
 /**
  * NotiFetch — sound preference context.
  *
- * Contract (from the motion brief):
- *  - default OFF, remembered per browser (localStorage)
- *  - the AudioContext is only created inside a user gesture
+ * Contract (owner decision 2026-09: sound ON by default):
+ *  - default ON, remembered per browser (localStorage) — 'off' is the only mute
+ *  - the AudioContext is only created inside a user gesture (browser policy);
+ *    the first pointer press anywhere arms it, so cues start flowing naturally
  *  - `play()` is safe to call from anywhere; it no-ops while disabled,
  *    before unlock, on mobile lock-screen states, or on any failure
  *
@@ -41,9 +42,10 @@ function subscribe(onChange: () => void): () => void {
 
 function getSnapshot(): boolean {
   try {
-    return localStorage.getItem(STORAGE_KEY) === 'on'
+    // default ON — only an explicit 'off' mutes this browser
+    return localStorage.getItem(STORAGE_KEY) !== 'off'
   } catch {
-    return false
+    return true
   }
 }
 
