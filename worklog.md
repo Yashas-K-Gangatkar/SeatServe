@@ -768,3 +768,19 @@ Work Log:
 Stage Summary:
 - ac8a09b pushed: both payment-blocking bugs now fixed (CSP + invisible wall); customer should complete payments on the temp URL within ~2-3 min of this commit
 - Remaining owner action: paste Vercel token in chat → I add notifetch.in + www via API, verify SSL, then owner updates Razorpay dashboard (website URL + webhook https://notifetch.in/api/payments/webhook, same secret)
+
+---
+Task ID: 19
+Agent: Super Z (main)
+Task: Add notifetch.in to Vercel via owner's API token; diagnose why verification stays pending
+
+Work Log:
+- Token validated (owner: clash.2.yashas@gmail.com, username clash2yashas-4207, OWNER of team noti-fetch = team_NFWzuvgK5PeqooCa4tZtb7ki). Saved to .env.vercel-token (gitignored). Project found: ct_shop prj_r9FRGMhgZYcnkD3G3asUqlEK3X2a (prod domain ctshop-five.vercel.app)
+- Added notifetch.in (apex) + www.notifetch.in (308 redirect to apex) to ct_shop via API — both attached, DNS verified correct from 3 angles (Google DoH, both Namecheap authoritative NS: A 216.198.79.1, www CNAME 9d35e98ecec3c678.vercel-dns-017.com which resolves to Vercel edge)
+- Verification stuck pending 40+ min despite flawless DNS. Deep-dive findings: (1) https://notifetch.in serves x-vercel-error: DEPLOYMENT_DISABLED — a GHOST attachment on some other/earlier Vercel context claims the domain and is disabled; (2) POST .../verify returns existing_project_domain "added to a different project" for both names; (3) team-level + personal-level domain registries are EMPTY — ghost is not visible to this token; (4) one BLOCKED ct_shop deployment exists but reason is benign (committer-email↔GitHub mismatch, commit deploys fine with noreply author)
+- CONCLUSION: auto A-record verification is refused because the name is claimed by a disabled deployment Vercel-side; the documented takeover path is the TXT challenge. CURRENT codes fetched: _vercel.notifetch.in TXT vc-domain-verify=notifetch.in,7a10c2385471468736cd AND vc-domain-verify=www.notifetch.in,f3d332c1dd16805a9052 (www code rotated after re-add — must use CURRENT values). Owner action: add both TXT records at Namecheap (Advanced DNS, host _vercel)
+- After owner saves TXT: poll API until verified:true → SSL → https://notifetch.in live → then owner updates Razorpay dashboard (website URL + webhook https://notifetch.in/api/payments/webhook, same secret)
+
+Stage Summary:
+- invisible-wall payment fix ac8a09b LIVE on temp URL — customers can pay NOW while domain finishes
+- Domains attached + DNS proven correct; single remaining step = owner adds 2 TXT records at Namecheap, then I verify + confirm SSL
