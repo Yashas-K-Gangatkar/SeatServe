@@ -10,7 +10,7 @@
     },
     {
       "path": "/api/admin/settlement/auto-daily",
-      "schedule": "30 17 * * *"
+      "schedule": "10 17 * * *"
     }
   ]
 }
