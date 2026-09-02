@@ -7,9 +7,9 @@
 // to that one store (they can never see another store's screen).
 
 import { useCallback, useEffect, useState } from 'react'
-import { KeyRound, Plus, RefreshCw, UserPlus, Users } from 'lucide-react'
+import { KeyRound, Pencil, Plus, RefreshCw, Trash2, UserPlus, Users } from 'lucide-react'
 import { toast } from 'sonner'
-import { get, patch, post, ApiError } from '@/lib/client/api'
+import { del, get, patch, post, ApiError } from '@/lib/client/api'
 import { Spinner, LoadError, EmptyState } from '../ui-bits'
 
 interface StaffRow {
@@ -19,7 +19,9 @@ interface StaffRow {
   phone: string
   role: string
   isActive: boolean
+  storeId: string | null
   storeName: string | null
+  cinemaId: string | null
   cinemaName: string | null
 }
 
@@ -64,6 +66,8 @@ export default function TeamPanel({ stores }: { stores: { id: string; name: stri
   const [justCreated, setJustCreated] = useState<{ email: string; password: string } | null>(null)
   const [resetFor, setResetFor] = useState<{ id: string; name: string } | null>(null)
   const [resetPassword, setResetPassword] = useState('')
+  const [editFor, setEditFor] = useState<{ id: string; name: string } | null>(null)
+  const [removeFor, setRemoveFor] = useState<{ id: string; name: string } | null>(null)
 
   const load = useCallback(async () => {
     try {
@@ -101,6 +105,21 @@ export default function TeamPanel({ stores }: { stores: { id: string; name: stri
       toast.success(res.message ?? 'Password updated')
       setResetFor(null)
       setResetPassword('')
+    } catch (err) {
+      toast.error(err instanceof ApiError ? err.message : 'Failed')
+    } finally {
+      setBusy(false)
+      void load()
+    }
+  }
+
+  const submitRemove = async () => {
+    if (!removeFor) return
+    setBusy(true)
+    try {
+      const res = await del<{ message: string }>(`/api/admin/staff/${removeFor.id}`)
+      toast.success(res.message ?? `${removeFor.name} removed`)
+      setRemoveFor(null)
     } catch (err) {
       toast.error(err instanceof ApiError ? err.message : 'Failed')
     } finally {
@@ -224,9 +243,23 @@ export default function TeamPanel({ stores }: { stores: { id: string; name: stri
                   </p>
                 </div>
                 <div className="flex shrink-0 items-center gap-1.5">
+                  {s.role !== 'MALL_ADMIN' && (
+                    <button
+                      onClick={() => {
+                        setEditFor({ id: s.id, name: s.name })
+                        setResetFor(null)
+                        setRemoveFor(null)
+                      }}
+                      className="rounded-full border border-border px-3 py-1.5 text-[11px] font-bold text-muted-foreground hover:bg-muted"
+                    >
+                      <Pencil className="mr-1 inline h-3 w-3" aria-hidden /> Edit
+                    </button>
+                  )}
                   <button
                     onClick={() => {
                       setResetFor({ id: s.id, name: s.name })
+                      setEditFor(null)
+                      setRemoveFor(null)
                       setResetPassword(generatePassword())
                     }}
                     className="rounded-full border border-border px-3 py-1.5 text-[11px] font-bold text-muted-foreground hover:bg-muted"
@@ -242,16 +275,43 @@ export default function TeamPanel({ stores }: { stores: { id: string; name: stri
                       Disable
                     </button>
                   ) : (
-                    <button
-                      onClick={() => changeState(s.id, 'ACTIVATE', s.name)}
-                      disabled={busy}
-                      className="rounded-full border border-emerald-300 bg-emerald-50 px-3 py-1.5 text-[11px] font-bold text-emerald-700 hover:bg-emerald-100 disabled:opacity-50"
-                    >
-                      Enable
-                    </button>
+                    <>
+                      <button
+                        onClick={() => changeState(s.id, 'ACTIVATE', s.name)}
+                        disabled={busy}
+                        className="rounded-full border border-emerald-300 bg-emerald-50 px-3 py-1.5 text-[11px] font-bold text-emerald-700 hover:bg-emerald-100 disabled:opacity-50"
+                      >
+                        Enable
+                      </button>
+                      <button
+                        onClick={() => {
+                          setRemoveFor({ id: s.id, name: s.name })
+                          setEditFor(null)
+                          setResetFor(null)
+                        }}
+                        disabled={busy}
+                        className="rounded-full border border-stone-300 bg-white px-3 py-1.5 text-[11px] font-bold text-stone-500 hover:border-red-300 hover:bg-red-50 hover:text-red-700 disabled:opacity-50"
+                      >
+                        <Trash2 className="mr-1 inline h-3 w-3" aria-hidden /> Remove
+                      </button>
+                    </>
                   )}
                 </div>
               </div>
+              {editFor?.id === s.id && (
+                <EditStaffForm
+                  staff={s}
+                  stores={stores}
+                  cinemas={data.cinemas}
+                  busy={busy}
+                  setBusy={setBusy}
+                  onSaved={() => {
+                    setEditFor(null)
+                    void load()
+                  }}
+                  onCancel={() => setEditFor(null)}
+                />
+              )}
               {resetFor?.id === s.id && (
                 <div className="mt-3 rounded-xl bg-background p-3">
                   <p className="text-[11px] font-bold">New password for {s.name}</p>
@@ -289,11 +349,134 @@ export default function TeamPanel({ stores }: { stores: { id: string; name: stri
                   </p>
                 </div>
               )}
+              {removeFor?.id === s.id && (
+                <div className="mt-3 rounded-xl border border-red-200 bg-red-50 p-3" role="alert">
+                  <p className="text-[11px] font-bold text-red-800">
+                    Permanently remove {s.name}&apos;s account ({s.email ?? 'no login'})? Their sign-ins stop immediately and
+                    the row disappears from this list. Audit history is kept.
+                  </p>
+                  <div className="mt-2 flex items-center gap-2">
+                    <button
+                      onClick={submitRemove}
+                      disabled={busy}
+                      className="rounded-full bg-red-600 px-3 py-2 text-[11px] font-bold text-white hover:bg-red-700 disabled:opacity-50"
+                    >
+                      Yes, remove permanently
+                    </button>
+                    <button
+                      onClick={() => setRemoveFor(null)}
+                      className="rounded-full border border-border bg-white px-3 py-2 text-[11px] font-bold text-muted-foreground hover:bg-muted"
+                    >
+                      Keep account
+                    </button>
+                  </div>
+                </div>
+              )}
             </li>
           ))}
         </ul>
       )}
     </section>
+  )
+}
+
+// ─────────────────────────── edit-staff form (role / store reassign) ───────────────────────────
+
+function EditStaffForm({
+  staff,
+  stores,
+  cinemas,
+  busy,
+  setBusy,
+  onSaved,
+  onCancel,
+}: {
+  staff: StaffRow
+  stores: { id: string; name: string; emoji: string | null }[]
+  cinemas: { id: string; name: string }[]
+  busy: boolean
+  setBusy: (v: boolean) => void
+  onSaved: () => void
+  onCancel: () => void
+}) {
+  const [role, setRole] = useState(staff.role as 'KITCHEN_STAFF' | 'STORE_MANAGER' | 'CINEMA_MANAGER')
+  const [storeId, setStoreId] = useState(staff.storeId ?? stores[0]?.id ?? '')
+  const [cinemaId, setCinemaId] = useState(staff.cinemaId ?? cinemas[0]?.id ?? '')
+  const [error, setError] = useState<string | null>(null)
+
+  const inputCls =
+    'w-full rounded-xl border border-border bg-white px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-amber-400/40'
+  const labelCls = 'mb-1 block text-[11px] font-bold text-muted-foreground'
+
+  const submit = async () => {
+    setBusy(true)
+    setError(null)
+    try {
+      const res = await patch<{ message: string }>(`/api/admin/staff/${staff.id}`, {
+        action: 'REASSIGN',
+        role,
+        ...(role === 'CINEMA_MANAGER' ? { cinemaId } : { storeId }),
+      })
+      toast.success(res.message ?? `${staff.name} updated`)
+      onSaved()
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'Could not update the account')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <div className="mt-3 rounded-xl bg-background p-3">
+      <p className="text-[11px] font-bold">Change role or workplace — {staff.name}</p>
+      <div className="mt-2 grid gap-2 sm:grid-cols-2">
+        <div>
+          <label className={labelCls} htmlFor={`edit-role-${staff.id}`}>Role</label>
+          <select id={`edit-role-${staff.id}`} value={role} onChange={(e) => setRole(e.target.value as typeof role)} className={inputCls}>
+            <option value="KITCHEN_STAFF">Kitchen staff (chef)</option>
+            <option value="STORE_MANAGER">Store manager</option>
+            <option value="CINEMA_MANAGER">Cinema manager</option>
+          </select>
+          <p className="mt-1 text-[10px] text-muted-foreground">{ROLE_HELP[role]}</p>
+        </div>
+        {role === 'CINEMA_MANAGER' ? (
+          <div>
+            <label className={labelCls} htmlFor={`edit-cinema-${staff.id}`}>Cinema</label>
+            <select id={`edit-cinema-${staff.id}`} value={cinemaId} onChange={(e) => setCinemaId(e.target.value)} className={inputCls}>
+              {cinemas.map((c) => (
+                <option key={c.id} value={c.id}>{c.name}</option>
+              ))}
+            </select>
+          </div>
+        ) : (
+          <div>
+            <label className={labelCls} htmlFor={`edit-store-${staff.id}`}>Store</label>
+            <select id={`edit-store-${staff.id}`} value={storeId} onChange={(e) => setStoreId(e.target.value)} className={inputCls}>
+              {stores.map((s) => (
+                <option key={s.id} value={s.id}>{s.emoji} {s.name}</option>
+              ))}
+            </select>
+          </div>
+        )}
+      </div>
+      {error && <p className="mt-2 text-[11px] font-bold text-red-700" role="alert">{error}</p>}
+      <div className="mt-2 flex flex-wrap items-center gap-2">
+        <button
+          onClick={submit}
+          disabled={busy}
+          className="rounded-full bg-stone-900 px-3 py-2 text-[11px] font-bold text-white hover:bg-stone-800 disabled:opacity-50"
+        >
+          Save changes
+        </button>
+        <button
+          onClick={onCancel}
+          className="text-[11px] font-bold text-muted-foreground hover:text-foreground"
+        >
+          Cancel
+        </button>
+        <p className="text-[10px] text-muted-foreground">Saving signs them out of every device.</p>
+      </div>
+    </div>
   )
 }
 

@@ -3,7 +3,7 @@
 // SeatServe — mall admin board (#/admin)
 // KPIs, live orders, settlement summary, store & inventory controls, audit log.
 import { useCallback, useEffect, useState } from 'react'
-import { ChevronLeft, IndianRupee, Receipt, Timer, Truck, CircleSlash, Wallet, ScrollText, ChevronDown, ChevronUp, ScanSearch } from 'lucide-react'
+import { ChevronLeft, IndianRupee, Pencil, Receipt, Timer, Truck, CircleSlash, Wallet, ScrollText, ChevronDown, ChevronUp, ScanSearch } from 'lucide-react'
 import { toast } from 'sonner'
 import { get, patch, post, ApiError } from '@/lib/client/api'
 import { useRealtime, usePolling, useOnline } from '@/lib/client/realtime'
@@ -212,7 +212,8 @@ function AdminBoard({ go, scopeRole }: { go: (p: string) => void; scopeRole: 'MA
               <div className="flex items-center justify-between gap-2">
                 <div>
                   <p className="text-sm font-bold">
-                    <span aria-hidden>{s.emoji}</span> {s.name}
+                    <span aria-hidden>{s.emoji}</span>{' '}
+                    <StoreName store={s} editable={scopeRole === 'MALL_ADMIN'} onSaved={() => void load()} />
                     <span className={`ml-2 rounded-full px-2 py-0.5 text-[10px] font-bold ${s.kycStatus === 'VERIFIED' ? 'bg-emerald-100 text-emerald-700' : s.kycStatus === 'REJECTED' ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-800'}`}>
                       KYC {s.kycStatus}
                     </span>
@@ -609,6 +610,69 @@ function NewStoreForm({ onCreated }: { onCreated: () => void }) {
 
 // Commission chip on each store card — shows the platform's cut and lets the
 // mall admin change it inline (PATCH /api/stores/[id] enforces role + scope).
+function StoreName({ store, editable, onSaved }: { store: { id: string; name: string }; editable: boolean; onSaved: () => void }) {
+  const [editing, setEditing] = useState(false)
+  const [value, setValue] = useState(store.name)
+  const [busy, setBusy] = useState(false)
+
+  useEffect(() => {
+    if (!editing) setValue(store.name)
+  }, [store.name, editing])
+
+  if (!editing) {
+    if (!editable) return <>{store.name}</>
+    return (
+      <span className="inline-flex items-center gap-1">
+        {store.name}
+        <button
+          onClick={() => setEditing(true)}
+          title="Rename this store"
+          aria-label={`Rename ${store.name}`}
+          className="rounded-full p-1 text-stone-400 hover:bg-amber-100 hover:text-amber-700"
+        >
+          <Pencil className="h-3 w-3" aria-hidden />
+        </button>
+      </span>
+    )
+  }
+
+  const save = async () => {
+    const name = value.trim()
+    if (name.length < 2) {
+      toast.error('Store name is too short')
+      return
+    }
+    setBusy(true)
+    try {
+      await patch(`/api/stores/${store.id}`, { name })
+      toast.success(`Store renamed to “${name}”`)
+      setEditing(false)
+      onSaved()
+    } catch (err) {
+      toast.error(err instanceof ApiError ? err.message : 'Could not rename the store')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <span className="inline-flex items-center gap-1 align-middle">
+      <input
+        value={value}
+        onChange={(e) => setValue(e.target.value)}
+        aria-label="Store name"
+        className="w-36 rounded-lg border border-border bg-white px-1.5 py-0.5 text-[12px] font-bold"
+      />
+      <button onClick={save} disabled={busy} className="rounded-full bg-stone-900 px-2 py-0.5 text-[10px] font-bold text-white disabled:opacity-50">
+        Save
+      </button>
+      <button onClick={() => setEditing(false)} className="text-[10px] font-bold text-muted-foreground hover:text-foreground">
+        Cancel
+      </button>
+    </span>
+  )
+}
+
 function CommissionChip({ storeId, pct, editable, onSaved }: { storeId: string; pct: number; editable: boolean; onSaved: () => void }) {
   const [editing, setEditing] = useState(false)
   const [value, setValue] = useState(String(pct))

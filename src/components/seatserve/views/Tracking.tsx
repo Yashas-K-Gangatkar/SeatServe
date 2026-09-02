@@ -16,6 +16,7 @@ import { useRealtime, usePolling } from '@/lib/client/realtime'
 import { useSound } from '@/lib/sound/SoundProvider'
 import type { TrackingResponse } from '@/lib/client/types'
 import { rupees, timeHM, StatusPill, RUN_STATUS_LABEL, Spinner, LoadError, EmptyState } from '../ui-bits'
+import { WarmBackdrop } from '../WarmBackdrop'
 import { PaymentSheet } from './CheckoutSheet'
 
 const STEPS = [
@@ -42,8 +43,9 @@ function TrackEntry({ go }: { go: (p: string) => void }) {
   const [entry, setEntry] = useState('')
   return (
     <div className="mx-auto w-full max-w-md px-4 pb-16 pt-10">
+      <WarmBackdrop />
       <button onClick={() => go('#/')} className="mb-3 inline-flex items-center gap-1 text-xs font-semibold text-muted-foreground hover:text-foreground">
-        <ChevronLeft className="h-3.5 w-3.5" aria-hidden /> Demo home
+        <ChevronLeft className="h-3.5 w-3.5" aria-hidden /> Home
       </button>
       <div className="rounded-3xl border border-stone-200 bg-white p-6 shadow-xl shadow-orange-500/5">
         <h1 className="text-xl font-black tracking-tight">Track your order</h1>
@@ -166,8 +168,9 @@ function TrackingInner({ code, go }: { code: string; go: (p: string) => void }) 
 
   return (
     <div className="mx-auto w-full max-w-md px-4 pb-16 pt-6">
+      <WarmBackdrop />
       <button onClick={() => go('#/')} className="mb-3 inline-flex items-center gap-1 text-xs font-semibold text-muted-foreground hover:text-foreground">
-        <ChevronLeft className="h-3.5 w-3.5" aria-hidden /> Demo home
+        <ChevronLeft className="h-3.5 w-3.5" aria-hidden /> Home
       </button>
 
       <header className="rounded-2xl border border-border bg-card p-5">

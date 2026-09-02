@@ -1,4 +1,4 @@
-// PATCH /api/stores/[id] — store controls (open/close). Phase 2: role-gated.
+// PATCH /api/stores/[id] — store controls (open/close, rename, commission).
 // STORE_MANAGER: own store only. MALL_ADMIN: any store in their mall.
 // Money model: NO delivery fee (stores are next door); commission stays editable.
 import { z } from 'zod'
@@ -13,6 +13,8 @@ const bodySchema = z.object({
   isOpen: z.boolean().optional(),
   // Audit fix #44 (CRUD increment): commission % is editable
   commissionPct: z.number().min(0).max(50).optional(),
+  // Rename (e.g. "milk products" → the shop's real signboard name)
+  name: z.string().trim().min(2, 'Store name is too short').max(60, 'Store name is too long').optional(),
 })
 
 export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -30,10 +32,29 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
     return fail('Your account is not authorized for this store', 403)
   }
 
-  const data: { isOpen?: boolean; commissionPct?: number } = {}
+  const data: { isOpen?: boolean; commissionPct?: number; name?: string } = {}
   if (parsed.data.isOpen !== undefined) data.isOpen = parsed.data.isOpen
   if (parsed.data.commissionPct !== undefined) data.commissionPct = parsed.data.commissionPct
+  if (parsed.data.name !== undefined) data.name = parsed.data.name
 
+  if (data.name !== undefined) {
+    const previousName = store.name
+    await db.store.update({ where: { id }, data: { name: data.name } })
+    await audit({
+      actorRole: user.role,
+      actorRef: user.email ?? user.id,
+      action: 'STORE_RENAMED',
+      entityType: 'Store',
+      entityId: id,
+      mallId: store.mallId,
+      meta: { previousName, newName: data.name },
+    })
+    await emitToRooms({
+      rooms: [`admin:${store.mallId}`, `store:${id}`],
+      event: 'store:update',
+      data: { storeId: id, name: data.name },
+    })
+  }
   if (data.isOpen !== undefined) {
     await db.store.update({ where: { id }, data: { isOpen: data.isOpen } })
     await audit({
@@ -64,5 +85,5 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
   }
 
   const updated = await db.store.findUnique({ where: { id } })
-  return ok({ id, isOpen: updated?.isOpen, commissionPct: updated?.commissionPct })
+  return ok({ id, name: updated?.name, isOpen: updated?.isOpen, commissionPct: updated?.commissionPct })
 }

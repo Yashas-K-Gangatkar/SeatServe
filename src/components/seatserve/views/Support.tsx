@@ -10,6 +10,7 @@ import { get, ApiError } from '@/lib/client/api'
 import { useRealtime } from '@/lib/client/realtime'
 import type { TrackingResponse } from '@/lib/client/types'
 import { rupees, Spinner, LoadError, StatusPill } from '../ui-bits'
+import { WarmBackdrop } from '../WarmBackdrop'
 
 export default function Support({ code, go }: { code: string; go: (p: string) => void }) {
   const [order, setOrder] = useState<TrackingResponse | null>(null)
@@ -45,6 +46,7 @@ export default function Support({ code, go }: { code: string; go: (p: string) =>
 
   return (
     <div className="mx-auto w-full max-w-md px-4 pb-16 pt-6">
+      <WarmBackdrop />
       <button onClick={() => go(`#/track/${order.code}`)} className="mb-3 inline-flex items-center gap-1 text-xs font-semibold text-muted-foreground hover:text-foreground">
         <ChevronLeft className="h-3.5 w-3.5" aria-hidden /> Back to tracking
       </button>

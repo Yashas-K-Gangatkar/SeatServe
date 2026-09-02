@@ -10,6 +10,7 @@ import { useCart } from '@/lib/client/cart'
 import { useSound } from '@/lib/sound/SoundProvider'
 import type { ContextResponse, OrderCreateResponse } from '@/lib/client/types'
 import { rupees, VegMark, Spinner, LoadError, EmptyState } from '../ui-bits'
+import { WarmBackdrop } from '../WarmBackdrop'
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet'
 import { Input } from '@/components/ui/input'
 import { CheckoutSheet } from './CheckoutSheet'
@@ -80,7 +81,7 @@ export default function SeatPage({ qrToken, go }: { qrToken: string; go: (p: str
       <div className="mx-auto max-w-md px-4 pt-16">
         <LoadError message={error} onRetry={load} />
         <button onClick={() => go('#/')} className="mt-4 block w-full text-center text-xs font-semibold text-muted-foreground hover:text-foreground">
-          ← Back to demo home
+          ← Back to home
         </button>
       </div>
     )
@@ -91,14 +92,15 @@ export default function SeatPage({ qrToken, go }: { qrToken: string; go: (p: str
 
   return (
     <div className="mx-auto w-full max-w-md px-4 pb-32 pt-6">
+      <WarmBackdrop />
       {/* seat header */}
       <header>
         <div className="flex items-center justify-between gap-2">
-          <p className="text-[10px] font-extrabold tracking-[0.18em] text-orange-600">{ctx.mall.name.toUpperCase()} · DEMO</p>
+          <p className="text-[10px] font-extrabold tracking-[0.18em] text-orange-600">{ctx.mall.name.toUpperCase()}</p>
           <button
             onClick={() => go('#/')}
             className="inline-flex items-center gap-1 rounded-full border border-border px-2.5 py-1 text-[11px] font-semibold text-muted-foreground hover:text-foreground"
-            aria-label="Back to demo home"
+            aria-label="Back to home"
           >
             <ChevronLeft className="h-3 w-3" aria-hidden /> Home
           </button>

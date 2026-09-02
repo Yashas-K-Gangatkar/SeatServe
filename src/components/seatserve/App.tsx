@@ -101,7 +101,7 @@ export default function SeatServeApp() {
       </main>
       {route.name !== 'landing' && (
         <footer className="print-hide mt-auto border-t border-border/60 py-4 text-center text-[11px] text-muted-foreground/70">
-          SeatServe · Phase 2 sandbox · mock payments, scoped staff portals, no real money moves
+          SeatServe · in-seat food ordering · secure UPI payments
         </footer>
       )}
     </div>
