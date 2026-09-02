@@ -16,6 +16,7 @@ const bodySchema = z.object({
   action: z.enum(['SET_PASSWORD', 'DEACTIVATE', 'ACTIVATE']),
   password: z
     .string()
+    .trim()
     .min(8, 'Password must be at least 8 characters')
     .max(72)
     .regex(/[A-Za-z]/, 'Password needs at least one letter')

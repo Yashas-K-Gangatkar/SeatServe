@@ -148,21 +148,42 @@ export default function TeamPanel({ stores }: { stores: { id: string; name: stri
             <code className="font-bold">{justCreated.email}</code>
             <span className="text-muted-foreground">·</span>
             <code className="font-bold">{justCreated.password}</code>
-            <button
-              onClick={() => {
-                void navigator.clipboard.writeText(`${justCreated.email} / ${justCreated.password}`).then(
-                  () => toast.success('Copied — paste it to your staff member'),
-                  () => toast.error('Copy failed — select the text manually'),
-                )
-              }}
-              className="ml-auto rounded-full bg-stone-900 px-3 py-1.5 text-[10px] font-bold text-white hover:bg-stone-800"
-            >
-              Copy
-            </button>
+            <span className="ml-auto flex items-center gap-1.5">
+              <button
+                onClick={() => {
+                  void navigator.clipboard.writeText(justCreated.email).then(
+                    () => toast.success('Email copied — paste it into the TO box'),
+                    () => toast.error('Copy failed — select the text manually'),
+                  )
+                }}
+                className="rounded-full bg-stone-900 px-3 py-1.5 text-[10px] font-bold text-white hover:bg-stone-800"
+              >
+                Copy email
+              </button>
+              <button
+                onClick={() => {
+                  void navigator.clipboard.writeText(justCreated.password).then(
+                    () => toast.success('Password copied — paste it into the PASSWORD box (one tap, no retyping)'),
+                    () => toast.error('Copy failed — select the text manually'),
+                  )
+                }}
+                className="rounded-full bg-stone-900 px-3 py-1.5 text-[10px] font-bold text-white hover:bg-stone-800"
+              >
+                Copy password
+              </button>
+              <button
+                onClick={() => setJustCreated(null)}
+                aria-label="Hide credentials"
+                title="Hide — you can always reset the password instead"
+                className="rounded-full border border-stone-300 bg-white px-2 py-1.5 text-[10px] font-bold text-stone-500 hover:bg-stone-50"
+              >
+                Done
+              </button>
+            </span>
           </div>
           <p className="mt-2 text-[11px] text-emerald-800">
-            Sign-in page: the Staff portal (staff sign in with these). Tell them to change nothing — you control the
-            password and can reset it anytime below.
+            This is the ONE-TIME handover card — stored hashed, never shown again. Lost it? Use “Password” on the person’s
+            row below to set a new one.
           </p>
         </div>
       )}
@@ -238,6 +259,11 @@ export default function TeamPanel({ stores }: { stores: { id: string; name: stri
                     <input
                       value={resetPassword}
                       onChange={(e) => setResetPassword(e.target.value)}
+                      type="text"
+                      autoComplete="off"
+                      autoCapitalize="none"
+                      autoCorrect="off"
+                      spellCheck={false}
                       className="min-w-0 flex-1 rounded-xl border border-border bg-white px-3 py-2 font-mono text-sm"
                       aria-label="New password"
                     />
@@ -386,6 +412,11 @@ function AddStaffForm({
               id="staff-password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
+              type="text"
+              autoComplete="off"
+              autoCapitalize="none"
+              autoCorrect="off"
+              spellCheck={false}
               className={`${inputCls} font-mono`}
             />
             <button

@@ -12,7 +12,9 @@ import { audit } from '@/lib/audit'
 
 const bodySchema = z.object({
   email: z.string().trim().toLowerCase().email('Enter a valid email'),
-  password: z.string().min(1, 'Password is required'),
+  // .trim(): the #1 real-world login failure is a paste accident — a trailing
+  // space/newline from copying credentials out of a chat or notes app.
+  password: z.string().trim().min(1, 'Password is required'),
 })
 
 const LOGIN_WINDOW_MS = 10 * 60_000

@@ -7,6 +7,7 @@
 import { ChefHat, LockKeyhole, ShieldAlert, LogIn } from 'lucide-react'
 import { useStaffAuth, ROLE_LABELS, type StaffProfile } from '@/lib/client/auth'
 import { Spinner } from './ui-bits'
+import { WarmBackdrop } from './WarmBackdrop'
 
 type AnyStaffRole = StaffProfile['role']
 
@@ -31,6 +32,7 @@ export default function StaffGate<R extends AnyStaffRole = AnyStaffRole>({
   if (status === 'unauthenticated') {
     return (
       <div className="mx-auto w-full max-w-md px-4 pt-16">
+        <WarmBackdrop />
         <div className="rounded-3xl border border-amber-200 bg-white p-8 text-center shadow-xl shadow-amber-500/5">
           <span className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-amber-100 text-amber-700">
             <LockKeyhole className="h-7 w-7" aria-hidden />
@@ -54,6 +56,7 @@ export default function StaffGate<R extends AnyStaffRole = AnyStaffRole>({
   if (status === 'forbidden' && user) {
     return (
       <div className="mx-auto w-full max-w-md px-4 pt-16">
+        <WarmBackdrop />
         <div className="rounded-3xl border border-red-200 bg-red-50 p-8 text-center" role="alert">
           <span className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-red-100 text-red-600">
             <ShieldAlert className="h-7 w-7" aria-hidden />
@@ -85,7 +88,12 @@ export default function StaffGate<R extends AnyStaffRole = AnyStaffRole>({
   if (status === 'ok' && user) {
     // Sound: useStaffAuth only returns status 'ok' when user.role ∈ roles (checked
     // above at runtime), so user.role is exactly the narrowed union R.
-    return <>{children(user as StaffProfile & { role: R })}</>
+    return (
+      <>
+        <WarmBackdrop />
+        {children(user as StaffProfile & { role: R })}
+      </>
+    )
   }
   return null
 }

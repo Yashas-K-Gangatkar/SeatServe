@@ -20,7 +20,7 @@ const productSchema = z.object({
   name: z.string().trim().min(2).max(60),
   description: z.string().trim().max(200).optional(),
   category: z.string().trim().max(30).default('Snacks'),
-  pricePaise: z.number().int().min(500).max(500_000), // ₹5 … ₹5000
+  pricePaise: z.number().int().min(100, 'Minimum price is ₹1 per item').max(500_000), // ₹1 … ₹5000
   taxRatePct: z.number().min(0).max(28).default(5),
   prepEstimateMin: z.number().int().min(1).max(60).default(8),
   isVeg: z.boolean().default(true),

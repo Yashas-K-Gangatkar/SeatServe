@@ -221,9 +221,15 @@ function AdminBoard({ go, scopeRole }: { go: (p: string) => void; scopeRole: 'MA
                   <p className="text-[11px] text-muted-foreground">
                     24h: {s.ordersLast24h} tickets · {rupees(s.salesPaise)} · live {s.liveTickets}
                   </p>
+                  {s.kycDetail && (
+                    <p className="text-[11px] text-muted-foreground">
+                      KYC on file: GSTIN {s.kycDetail.gstin} · PAN {s.kycDetail.panMasked} · a/c {s.kycDetail.bankMasked} · FSSAI{' '}
+                      {s.kycDetail.fssai}
+                    </p>
+                  )}
                 </div>
                 <div className="flex items-center gap-2">
-                  {scopeRole === 'MALL_ADMIN' && s.kycStatus !== 'VERIFIED' && (
+                  {scopeRole === 'MALL_ADMIN' && s.kycStatus !== 'VERIFIED' && s.kycSubmitted && (
                     <button
                       onClick={() => reviewKyc(s.id, s.name, 'VERIFY')}
                       className="rounded-full bg-emerald-600 px-3 py-1.5 text-[11px] font-bold text-white hover:bg-emerald-700"
@@ -231,13 +237,18 @@ function AdminBoard({ go, scopeRole }: { go: (p: string) => void; scopeRole: 'MA
                       Verify KYC
                     </button>
                   )}
-                  {scopeRole === 'MALL_ADMIN' && s.kycStatus === 'PENDING' && (
+                  {scopeRole === 'MALL_ADMIN' && s.kycStatus === 'PENDING' && s.kycSubmitted && (
                     <button
                       onClick={() => reviewKyc(s.id, s.name, 'REJECT')}
                       className="rounded-full border border-red-300 bg-red-50 px-3 py-1.5 text-[11px] font-bold text-red-700 hover:bg-red-100"
                     >
                       Reject
                     </button>
+                  )}
+                  {scopeRole === 'MALL_ADMIN' && s.kycStatus !== 'VERIFIED' && !s.kycSubmitted && (
+                    <span className="rounded-full border border-amber-200 bg-amber-50 px-3 py-1.5 text-[10px] font-bold text-amber-700">
+                      Waiting for store&apos;s KYC form
+                    </span>
                   )}
                   <button
                     onClick={() => setExpandedStore(expandedStore === s.id ? null : s.id)}
@@ -463,6 +474,10 @@ function NewStoreForm({ onCreated }: { onCreated: () => void }) {
     }
     if (products.length === 0) {
       toast.error('Add at least one menu item with a price')
+      return
+    }
+    if (products.some((p) => p.pricePaise < 100)) {
+      toast.error('Minimum price is ₹1 per item')
       return
     }
     setBusy(true)

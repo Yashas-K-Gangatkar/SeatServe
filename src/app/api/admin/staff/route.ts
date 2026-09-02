@@ -35,6 +35,7 @@ const bodySchema = z
     cinemaId: z.string().trim().min(1).optional(),
     password: z
       .string()
+      .trim()
       .min(8, 'Password must be at least 8 characters')
       .max(72)
       .regex(/[A-Za-z]/, 'Password needs at least one letter')

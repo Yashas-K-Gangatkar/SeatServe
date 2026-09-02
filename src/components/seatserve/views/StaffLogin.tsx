@@ -9,6 +9,7 @@ import { toast } from 'sonner'
 import { ApiError } from '@/lib/client/api'
 import { login, ROLE_LABELS, type StaffProfile } from '@/lib/client/auth'
 import { Spinner } from '../ui-bits'
+import { WarmBackdrop } from '../WarmBackdrop'
 
 const DEMO_ACCOUNTS: { email: string; role: StaffProfile['role']; who: string }[] = [
   { email: 'asha@seatserve.demo', role: 'MALL_ADMIN', who: 'Aurora Mall · oversees all 4 stores' },
@@ -63,6 +64,7 @@ export default function StaffLogin({ go }: { go: (p: string) => void }) {
 
   return (
     <div className="mx-auto w-full max-w-md px-4 pb-16 pt-6">
+      <WarmBackdrop />
       <button onClick={() => go('#/')} className="mb-3 inline-flex items-center gap-1 text-xs font-semibold text-muted-foreground hover:text-foreground">
         <ChevronLeft className="h-3.5 w-3.5" aria-hidden /> Customer app
       </button>
@@ -88,6 +90,9 @@ export default function StaffLogin({ go }: { go: (p: string) => void }) {
                 id="staff-email"
                 type="email"
                 autoComplete="username"
+                autoCapitalize="none"
+                autoCorrect="off"
+                spellCheck={false}
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
@@ -101,6 +106,9 @@ export default function StaffLogin({ go }: { go: (p: string) => void }) {
                 id="staff-password"
                 type="password"
                 autoComplete="current-password"
+                autoCapitalize="none"
+                autoCorrect="off"
+                spellCheck={false}
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}

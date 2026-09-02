@@ -10,6 +10,7 @@ import { toast } from 'sonner'
 import { post } from '@/lib/client/api'
 import { logout, ROLE_LABELS, useStaffAuth, type StaffProfile } from '@/lib/client/auth'
 import { Spinner } from '../ui-bits'
+import { WarmBackdrop } from '../WarmBackdrop'
 
 interface ConsoleCard {
   href: string
@@ -105,6 +106,7 @@ export default function StaffPortal({ go }: { go: (p: string) => void }) {
 
   return (
     <div className="mx-auto w-full max-w-3xl px-4 pb-16 pt-6 sm:px-6">
+      <WarmBackdrop />
       <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
         <button onClick={() => go('#/')} className="inline-flex items-center gap-1 text-xs font-semibold text-muted-foreground hover:text-foreground">
           <ChevronLeft className="h-3.5 w-3.5" aria-hidden /> Customer app

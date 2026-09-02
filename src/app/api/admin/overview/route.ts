@@ -111,6 +111,10 @@ export async function GET(request: Request) {
       emoji: s.emoji,
       isOpen: s.isOpen,
       kycStatus: s.kycStatus,
+      kycSubmitted: !!s.kycDetail,
+      kycDetail: s.kycDetail
+        ? (JSON.parse(s.kycDetail) as { gstin: string; panMasked: string; bankMasked: string; fssai: string })
+        : null,
       commissionPct: s.commissionPct,
       ordersLast24h: storeTickets.length,
       salesPaise: Math.max(0, netStorePaise),

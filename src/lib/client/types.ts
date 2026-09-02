@@ -213,6 +213,8 @@ export interface AdminOverview {
     emoji: string | null
     isOpen: boolean
     kycStatus: string
+    kycSubmitted: boolean
+    kycDetail: { gstin: string; panMasked: string; bankMasked: string; fssai: string } | null
     commissionPct: number
     ordersLast24h: number
     salesPaise: number
