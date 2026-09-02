@@ -801,3 +801,24 @@ Stage Summary:
 - notifetch.in LIVE: DNS+SSL+routing+payments all verified end-to-end on the custom domain
 - Owner's final step: Razorpay dashboard → webhook URL https://notifetch.in/api/payments/webhook (same secret) + website URL https://notifetch.in
 - Invisible-wall fix (ac8a09b) live on same deployment — customers can discover, pay, and get served on notifetch.in
+
+---
+Task ID: 21
+Agent: Super Z (main)
+Task: Post-first-payment round — Razorpay "verified" msg explained, UPI-first checkout, AI food photos compulsory, cinema-tester answer
+
+Work Log:
+- First REAL payment completed by owner on notifetch.in — full money loop closed
+- Razorpay dashboard "download API keys" msg = boilerplate; keys already integrated (live payments prove it)
+- UPI-first checkout: prefill.method='upi' in CheckoutSheet — customers land on UPI tab directly (fewer hops than wallet-login pages)
+- Food images (were entirely absent from the product): Product.imageUrl column (schema.prisma + postgres regen + local sqlite push); context/store-menu APIs return it; types updated; SeatPage menu cards show 56px thumbnails (fallback emoji tile); MenuManager rows show 44px thumbs + missing-photo tile; AddItemSheet has photo picker (19 preset AI photos grid + URL input) + required validation client-side and zod-required server-side
+- Generated 19 AI food photos (z-ai CLI, 1024x1024 -> PIL JPEG q82, 2.6MB total in public/menu/); script scripts/gen-menu-images.sh (idempotent, skip+convert)
+- PROD MIGRATION: vercel.json buildCommand db-push attempt FAILED in Vercel build (dpl_FR1c2VByii ERROR, logs unavailable via API) — reverted buildCommand; added MALL_ADMIN-gated POST /api/admin/db-migrate (idempotent ALTER TABLE ADD COLUMN IF NOT EXISTS), deployed, ran it via asha session, then REMOVED the route (936adfa -> cleanup commit)
+- Attached photos to all 19 prod items via PATCH /api/products/[id] (scripts/attach-menu-images.mjs, waits for deploy, admin session): 19 OK / 0 problems
+- Verified: /menu/*.jpg 200 image/jpeg from notifetch.in; customer API 19/19 items carry imageUrl
+- Cinema testers answer given: mall admin -> Team panel creates staff logins for existing cinemas; NEW cinema/mall onboarding stays dev-side (me)
+
+Stage Summary:
+- Menu photos end-to-end on prod (19/19), photos compulsory for new items
+- UPI-first checkout live — shorter payment path
+- 203b626 (feature) + 936adfa (deploy fix) + cleanup commit pushed; all gates green
