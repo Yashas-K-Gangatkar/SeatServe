@@ -1,0 +1,46 @@
+[
+ {
+  "id": "cmtgyi4240020jz04ii9ouq8h",
+  "orderId": "cmtgyhtoi000rjz04e4j5eo1h",
+  "amountPaise": 29474,
+  "reason": "NEVER_DELIVERED",
+  "detail": "cli test",
+  "status": "PROCESSED",
+  "requestedByRole": "CUSTOMER",
+  "createdAt": "2026-08-31T08:08:28.684Z",
+  "processedAt": "2026-08-31T08:08:30.752Z"
+ },
+ {
+  "id": "cmtgyi7lm002wjz04rq0wo30c",
+  "orderId": "cmtgyi6gn002bjz04d3m9rdcn",
+  "amountPaise": 14737,
+  "reason": "PARTIAL_STORE_CANCEL",
+  "detail": "Auto-opened: Cinema Snacks leg cancelled before fulfilment",
+  "status": "PROCESSED",
+  "requestedByRole": "SYSTEM",
+  "createdAt": "2026-08-31T08:08:33.274Z",
+  "processedAt": "2026-08-31T08:08:34.977Z"
+ },
+ {
+  "id": "cmtgyj8bw005mjz04lvt51ebf",
+  "orderId": "cmtgyiy47004djz048oksyttr",
+  "amountPaise": 29474,
+  "reason": "NEVER_DELIVERED",
+  "detail": "cli test",
+  "status": "PROCESSED",
+  "requestedByRole": "CUSTOMER",
+  "createdAt": "2026-08-31T08:09:20.876Z",
+  "processedAt": "2026-08-31T08:09:22.303Z"
+ },
+ {
+  "id": "cmtgyjbdk006ijz04g97q6o5y",
+  "orderId": "cmtgyja7u005xjz04gway7qvf",
+  "amountPaise": 14737,
+  "reason": "PARTIAL_STORE_CANCEL",
+  "detail": "Auto-opened: Cinema Snacks leg cancelled before fulfilment",
+  "status": "PROCESSED",
+  "requestedByRole": "SYSTEM",
+  "createdAt": "2026-08-31T08:09:24.825Z",
+  "processedAt": "2026-08-31T08:09:26.999Z"
+ }
+]

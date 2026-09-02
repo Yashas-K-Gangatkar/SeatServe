@@ -1,0 +1,20 @@
+[
+ {
+  "id": "cmtgy0d240003l8j31j4xqg3s",
+  "mallId": "cmtgy0cfj0000l8j3ulqzcand",
+  "name": "Zone A · Wing A (Screens 1–3)",
+  "description": null
+ },
+ {
+  "id": "cmtgy0dh50005l8j3iq1uecom",
+  "mallId": "cmtgy0cfj0000l8j3ulqzcand",
+  "name": "Zone B · Wing B (Screens 4–6)",
+  "description": null
+ },
+ {
+  "id": "cmtgy0dop0007l8j3v1bmt9n4",
+  "mallId": "cmtgy0cul0001l8j352bb2hrg",
+  "name": "Zone N · Nexora levels 1–3",
+  "description": null
+ }
+]

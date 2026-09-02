@@ -1,0 +1,66 @@
+[
+ {
+  "id": "cmtgy0eqc000dl8j3fnpfy1mv",
+  "cinemaId": "cmtgy0dw80009l8j36gvy490v",
+  "name": "Screen 1",
+  "seatRows": 6,
+  "seatCols": 12,
+  "createdAt": "2026-08-31T07:54:42.438Z"
+ },
+ {
+  "id": "cmtgy0gyv002fl8j3jqhllr8s",
+  "cinemaId": "cmtgy0dw80009l8j36gvy490v",
+  "name": "Screen 2",
+  "seatRows": 6,
+  "seatCols": 12,
+  "createdAt": "2026-08-31T07:54:45.607Z"
+ },
+ {
+  "id": "cmtgy0i9b004hl8j3p381ppuf",
+  "cinemaId": "cmtgy0dw80009l8j36gvy490v",
+  "name": "Screen 3",
+  "seatRows": 6,
+  "seatCols": 12,
+  "createdAt": "2026-08-31T07:54:47.279Z"
+ },
+ {
+  "id": "cmtgy0jjq006jl8j3t8mqmtzn",
+  "cinemaId": "cmtgy0eb9000bl8j3amawo5xg",
+  "name": "Screen 4",
+  "seatRows": 6,
+  "seatCols": 12,
+  "createdAt": "2026-08-31T07:54:48.950Z"
+ },
+ {
+  "id": "cmtgy0ku2008ll8j3alvpggb3",
+  "cinemaId": "cmtgy0eb9000bl8j3amawo5xg",
+  "name": "Screen 5",
+  "seatRows": 6,
+  "seatCols": 12,
+  "createdAt": "2026-08-31T07:54:50.618Z"
+ },
+ {
+  "id": "cmtgy0m4f00anl8j3fods8clk",
+  "cinemaId": "cmtgy0eb9000bl8j3amawo5xg",
+  "name": "Screen 6",
+  "seatRows": 6,
+  "seatCols": 12,
+  "createdAt": "2026-08-31T07:54:52.287Z"
+ },
+ {
+  "id": "cmtgy0nta00crl8j3xv5rk6kq",
+  "cinemaId": "cmtgy0nlr00cpl8j3nd3qcsr4",
+  "name": "Nexora Screen 1",
+  "seatRows": 4,
+  "seatCols": 8,
+  "createdAt": "2026-08-31T07:54:54.478Z"
+ },
+ {
+  "id": "cmthauolr0001l8akihproa9a",
+  "cinemaId": "cmtgy0dw80009l8j36gvy490v",
+  "name": "Tester Hall",
+  "seatRows": 10,
+  "seatCols": 10,
+  "createdAt": "2026-08-31T13:54:10.575Z"
+ }
+]

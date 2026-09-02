@@ -1,0 +1,23 @@
+[
+ {
+  "id": "cmtgy0dw80009l8j36gvy490v",
+  "mallId": "cmtgy0cfj0000l8j3ulqzcand",
+  "name": "Aurora Cineplex — Wing A",
+  "wing": "A",
+  "createdAt": "2026-08-31T07:54:41.625Z"
+ },
+ {
+  "id": "cmtgy0eb9000bl8j3amawo5xg",
+  "mallId": "cmtgy0cfj0000l8j3ulqzcand",
+  "name": "Aurora Cineplex — Wing B",
+  "wing": "B",
+  "createdAt": "2026-08-31T07:54:42.165Z"
+ },
+ {
+  "id": "cmtgy0nlr00cpl8j3nd3qcsr4",
+  "mallId": "cmtgy0cul0001l8j352bb2hrg",
+  "name": "Nexora Cinemas",
+  "wing": "N",
+  "createdAt": "2026-08-31T07:54:54.207Z"
+ }
+]

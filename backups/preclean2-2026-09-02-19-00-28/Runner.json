@@ -1,0 +1,34 @@
+[
+ {
+  "id": "cmtgy0xpa00fjl8j3v9m38p1s",
+  "name": "Ravi Kumar",
+  "phone": "+91 98200 11111",
+  "zoneId": "cmtgy0d240003l8j31j4xqg3s",
+  "isOnDuty": true,
+  "rating": 4.8
+ },
+ {
+  "id": "cmtgy0y4b00fll8j38bwsctoc",
+  "name": "Sana Sheikh",
+  "phone": "+91 98200 22222",
+  "zoneId": "cmtgy0dh50005l8j3iq1uecom",
+  "isOnDuty": true,
+  "rating": 4.9
+ },
+ {
+  "id": "cmtgy0ybu00fnl8j37ktkn681",
+  "name": "Arjun Das",
+  "phone": "+91 98200 33333",
+  "zoneId": "cmtgy0d240003l8j31j4xqg3s",
+  "isOnDuty": false,
+  "rating": 4.6
+ },
+ {
+  "id": "cmtgy0yjd00fpl8j3a1vwqgo4",
+  "name": "Kiran Patil",
+  "phone": "+91 98200 44444",
+  "zoneId": "cmtgy0dop0007l8j3v1bmt9n4",
+  "isOnDuty": true,
+  "rating": 4.7
+ }
+]

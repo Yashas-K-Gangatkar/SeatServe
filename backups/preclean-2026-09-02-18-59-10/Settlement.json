@@ -1,0 +1,86 @@
+[
+ {
+  "id": "cmtgy170100h0l8j38gxz1nze",
+  "storeId": "cmtgy0r6000e3l8j3coyap6gn",
+  "amountPaise": 28160,
+  "periodStart": "2026-08-30T04:55:16.362Z",
+  "periodEnd": "2026-08-30T06:55:16.362Z",
+  "status": "PROCESSED",
+  "utr": "UTRZKBRXURYL4ES",
+  "detail": null,
+  "processedAt": null,
+  "createdAt": "2026-08-31T07:55:19.345Z"
+ },
+ {
+  "id": "cmtihcvbl0001l104213rapkn",
+  "storeId": "cmtgy0r6000e3l8j3coyap6gn",
+  "amountPaise": 187440,
+  "periodStart": "2026-09-01T09:44:02.938Z",
+  "periodEnd": "2026-09-01T09:44:02.938Z",
+  "status": "PENDING",
+  "utr": null,
+  "detail": "{\"grossPaise\":187440,\"commissionPaise\":25560,\"taxPaise\":0,\"voidAdjustPaise\":0,\"netPayablePaise\":187440,\"splitIds\":[\"cmtgyhtoi000yjz04bcgcmjtp\",\"cmtgyi6go002ijz04it6a10k5\",\"cmtgyifhe003cjz04fwkgiq4j\",\"cmtgyiy47004kjz04cy1evntb\",\"cmtgyja7v0064jz04ud5px2u4\",\"cmtgyjjmm006yjz04xyreet7w\",\"cmthch4bq000ejj04f8xg1g6g\",\"cmthckhwv000gjr04tz0ryxwg\",\"cmthkxqgg0007l40467seigyd\",\"cmtht3fka0006jr04t5pd9rjn\",\"cmtht4cab000zjr04v4ttvhq2\",\"cmtifipuu000akz04j45htidm\"]}",
+  "processedAt": null,
+  "createdAt": "2026-09-01T09:44:02.962Z"
+ },
+ {
+  "id": "cmtihcvde0003l104tfdw6t5h",
+  "storeId": "cmtgy0rm100e5l8j3a7jtgwoi",
+  "amountPaise": 77400,
+  "periodStart": "2026-09-01T09:44:02.938Z",
+  "periodEnd": "2026-09-01T09:44:02.938Z",
+  "status": "PENDING",
+  "utr": null,
+  "detail": "{\"grossPaise\":77400,\"commissionPaise\":12600,\"taxPaise\":0,\"voidAdjustPaise\":0,\"netPayablePaise\":77400,\"splitIds\":[\"cmtgy19da00hel8j37924j5cq\",\"cmthch4bq000gjj04wpcr7pl8\",\"cmthckhwv000hjr04hzm4riyd\"]}",
+  "processedAt": null,
+  "createdAt": "2026-09-01T09:44:03.026Z"
+ },
+ {
+  "id": "cmtihcvew0005l104wm9yi7wm",
+  "storeId": "cmtgy0rtl00e7l8j34mv6kc0i",
+  "amountPaise": 133110,
+  "periodStart": "2026-09-01T09:44:02.938Z",
+  "periodEnd": "2026-09-01T09:44:02.938Z",
+  "status": "PROCESSED",
+  "utr": "UTRMTIHDIB5AXX",
+  "detail": "{\"grossPaise\":133110,\"commissionPaise\":19890,\"taxPaise\":0,\"voidAdjustPaise\":0,\"netPayablePaise\":133110,\"splitIds\":[\"cmtgy1a7e00hml8j36bw8wn34\",\"cmthch4bq000hjj048kle5kw8\",\"cmthckhwv000ijr044ajsjxt1\",\"cmtht4cab0010jr042hb6lluf\"]}",
+  "processedAt": "2026-09-01T09:44:32.753Z",
+  "createdAt": "2026-09-01T09:44:03.081Z"
+ },
+ {
+  "id": "cmtkef10q0005l7047hyek1vu",
+  "storeId": "cmtgy0r6000e3l8j3coyap6gn",
+  "amountPaise": 20240,
+  "periodStart": "2026-09-02T17:57:17.132Z",
+  "periodEnd": "2026-09-02T17:57:17.132Z",
+  "status": "PENDING",
+  "utr": null,
+  "detail": "{\"grossPaise\":20240,\"commissionPaise\":2760,\"taxPaise\":0,\"voidAdjustPaise\":0,\"netPayablePaise\":20240,\"splitIds\":[\"cmtiq579d000bl904emlei2rl\",\"cmtiq6f5g000rl904pvdumd42\",\"cmtiqurpk0016l904u03tmum3\"]}",
+  "processedAt": null,
+  "createdAt": "2026-09-02T17:57:17.162Z"
+ },
+ {
+  "id": "cmtkef1340007l704qqlzy500",
+  "storeId": "cmtgy0rtl00e7l8j34mv6kc0i",
+  "amountPaise": 61558,
+  "periodStart": "2026-09-02T17:57:17.132Z",
+  "periodEnd": "2026-09-02T17:57:17.132Z",
+  "status": "PENDING",
+  "utr": null,
+  "detail": "{\"grossPaise\":61558,\"commissionPaise\":9142,\"taxPaise\":0,\"voidAdjustPaise\":0,\"netPayablePaise\":61558,\"splitIds\":[\"cmtiq579d000cl904na8ohz3x\",\"cmtiq6f5g000sl9049ea75ngu\",\"cmtizxj2y000cky044ike4b85\",\"cmtj0lsvc0006kz043hib6x92\",\"cmtjk7l87000ajm04h7cp083s\",\"cmtjkj48m000ojv04sxg3t0k7\",\"cmtjoigkn000al404fl1r6ph9\",\"cmtjoofeg000ml4040z2jytvj\"]}",
+  "processedAt": null,
+  "createdAt": "2026-09-02T17:57:17.248Z"
+ },
+ {
+  "id": "cmtkef14s0009l704en0wdf18",
+  "storeId": "cmtk1erje0003l804ax1vkas5",
+  "amountPaise": 300,
+  "periodStart": "2026-09-02T17:57:17.132Z",
+  "periodEnd": "2026-09-02T17:57:17.132Z",
+  "status": "PENDING",
+  "utr": null,
+  "detail": "{\"grossPaise\":300,\"commissionPaise\":0,\"taxPaise\":0,\"voidAdjustPaise\":0,\"netPayablePaise\":300,\"splitIds\":[\"cmtke5mt60008l704gpbduc95\"]}",
+  "processedAt": null,
+  "createdAt": "2026-09-02T17:57:17.309Z"
+ }
+]

@@ -1,0 +1,16 @@
+[
+ {
+  "id": "cmtgy0cfj0000l8j3ulqzcand",
+  "name": "Aurora Mall",
+  "city": "Mumbai",
+  "address": "Linking Road, Bandra West, Mumbai 400050",
+  "createdAt": "2026-08-31T07:54:39.727Z"
+ },
+ {
+  "id": "cmtgy0cul0001l8j352bb2hrg",
+  "name": "Nexora Mall",
+  "city": "Pune",
+  "address": "Nagar Road, Yerawada, Pune 411006",
+  "createdAt": "2026-08-31T07:54:40.269Z"
+ }
+]
