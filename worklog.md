@@ -876,3 +876,23 @@ Work Log:
 Stage Summary:
 - Login paste-accidents impossible now; bhagya creds working; price min Rs1 with human errors; KYC flow self-explanatory in UI; warm backdrop on all staff screens
 - Open items: "milk products" store name/owner setup (mom should be STORE_MANAGER of her own store, kitchen login works meanwhile); diag account removable if owner wants
+
+---
+Task ID: 25
+Agent: Super Z (main)
+Task: Owner round 3 — mom's store setup, seat QR poster PDF, customer-app polish, team cleanup
+
+Work Log:
+- Built staff REASSIGN (role/store/cinema change, signs out devices, scope-guarded) + DELETE (deactivated-only, mall-admin-proof) on /api/admin/staff/[id]; staff GET now returns storeId/cinemaId
+- Built store rename: PATCH /api/stores/[id] accepts name (STORE_MANAGER own / MALL_ADMIN mall, audited STORE_RENAMED, realtime push)
+- TeamPanel: Edit button → inline role/workplace editor; Remove (two-step confirm, disabled accounts only); Admin board: pencil rename on store names
+- Customer polish: WarmBackdrop on SeatPage/Tracking/Support + TrackEntry; removed stale "· DEMO" chip + "mock payments / no real money moves" footer → "secure UPI payments"; "Demo home" → "Home"
+- Gates: tsc 0, eslint 0, 73/73, build OK; commit 43ec32f, deploy dpl_HtSgbjZu2t1g95Up8W1WsJuHVtAo READY (sha verified)
+- Prod ops (scripts/owner-round3-prodops.sh, asha session): bhagya REASSIGNED → STORE_MANAGER @ "milk products" (her own dashboard + KYC card); QA Diag throwaway DELETED from team; verified via staff list
+- QR posters: fetched live tokens for all 7 screens (532 seats) via /api/admin/qr; scripts/gen-qr-posters.mjs renders 600px QRs (~500dpi); 30-page A4 deck (cover + 20 stickers/page, dashed cut lines); cover_validate flagged table-cell false positives (skill says don't run cover_validate on documents — visually verified instead); pdf_qa PASS; metadata set
+- Scanned verification: decoded QR straight off rendered PDF page 2 → https://notifetch.in/?qr=GVTHGD4Q6F = Screen 1 · A-1 ✓
+
+Stage Summary:
+- Mom = STORE_MANAGER of "milk products" (rename pending owner's real store name — pencil button now exists on admin store card or I can do it)
+- Team panel self-serve: edit role/store, permanent remove
+- download/notifetch-seat-qr-posters.pdf (9.7 MB, 30 pages, 532 stickers, scan-verified) + HTML source + cover preview PNG

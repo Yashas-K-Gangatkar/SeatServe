@@ -1,0 +1,2172 @@
+[
+ {
+  "screen": "Screen 1",
+  "cinema": "Aurora Cineplex \u2014 Wing A",
+  "seats": [
+   {
+    "code": "A-1",
+    "qrToken": "GVTHGD4Q6F"
+   },
+   {
+    "code": "A-2",
+    "qrToken": "8CG7HTYDYZ"
+   },
+   {
+    "code": "A-3",
+    "qrToken": "8B4DGJZ6B9"
+   },
+   {
+    "code": "A-4",
+    "qrToken": "4RQPNWTAP2"
+   },
+   {
+    "code": "A-5",
+    "qrToken": "5UEUW8662B"
+   },
+   {
+    "code": "A-6",
+    "qrToken": "74BUDTFD7W"
+   },
+   {
+    "code": "A-7",
+    "qrToken": "KBWFTW4N2D"
+   },
+   {
+    "code": "A-8",
+    "qrToken": "82YUA7BFWF"
+   },
+   {
+    "code": "A-9",
+    "qrToken": "TCPXAU82AY"
+   },
+   {
+    "code": "A-10",
+    "qrToken": "49UJ324F7R"
+   },
+   {
+    "code": "A-11",
+    "qrToken": "UGLY5KLMPX"
+   },
+   {
+    "code": "A-12",
+    "qrToken": "7WWWUVQ3EL"
+   },
+   {
+    "code": "B-1",
+    "qrToken": "34SD9N23JP"
+   },
+   {
+    "code": "B-2",
+    "qrToken": "MTMDQ4M9YB"
+   },
+   {
+    "code": "B-3",
+    "qrToken": "Z8BMRFWJF8"
+   },
+   {
+    "code": "B-4",
+    "qrToken": "GQZFA98G7A"
+   },
+   {
+    "code": "B-5",
+    "qrToken": "NNF88H4FKX"
+   },
+   {
+    "code": "B-6",
+    "qrToken": "KNXZ75ZH8F"
+   },
+   {
+    "code": "B-7",
+    "qrToken": "3FEGQUXAME"
+   },
+   {
+    "code": "B-8",
+    "qrToken": "YCPH7BRUAA"
+   },
+   {
+    "code": "B-9",
+    "qrToken": "43MB3NWZ3B"
+   },
+   {
+    "code": "B-10",
+    "qrToken": "XT6959BTQ2"
+   },
+   {
+    "code": "B-11",
+    "qrToken": "8RZCG49J4Z"
+   },
+   {
+    "code": "B-12",
+    "qrToken": "26V45APNH7"
+   },
+   {
+    "code": "C-1",
+    "qrToken": "RPQA4RDK86"
+   },
+   {
+    "code": "C-2",
+    "qrToken": "BR2E64HXDH"
+   },
+   {
+    "code": "C-3",
+    "qrToken": "X7Y4SQQS5A"
+   },
+   {
+    "code": "C-4",
+    "qrToken": "LWB2Z6X4MV"
+   },
+   {
+    "code": "C-5",
+    "qrToken": "7D5F2KUMT6"
+   },
+   {
+    "code": "C-6",
+    "qrToken": "QLTQZTNFQ9"
+   },
+   {
+    "code": "C-7",
+    "qrToken": "GBXSFJ6NTB"
+   },
+   {
+    "code": "C-8",
+    "qrToken": "EWLHDXEJHJ"
+   },
+   {
+    "code": "C-9",
+    "qrToken": "LXC4G3HYKG"
+   },
+   {
+    "code": "C-10",
+    "qrToken": "BRKEYRHTDG"
+   },
+   {
+    "code": "C-11",
+    "qrToken": "JFGAVCFUDY"
+   },
+   {
+    "code": "C-12",
+    "qrToken": "TYMCBXMJW4"
+   },
+   {
+    "code": "D-1",
+    "qrToken": "RS5VN8FKGP"
+   },
+   {
+    "code": "D-2",
+    "qrToken": "ZTN8AXKHZD"
+   },
+   {
+    "code": "D-3",
+    "qrToken": "XQN3PZANG8"
+   },
+   {
+    "code": "D-4",
+    "qrToken": "WYNXHLNSNT"
+   },
+   {
+    "code": "D-5",
+    "qrToken": "WU7QHS9948"
+   },
+   {
+    "code": "D-6",
+    "qrToken": "CP9LXLS732"
+   },
+   {
+    "code": "D-7",
+    "qrToken": "L2386TR7LQ"
+   },
+   {
+    "code": "D-8",
+    "qrToken": "ALDYV7688C"
+   },
+   {
+    "code": "D-9",
+    "qrToken": "47BJNWNRQT"
+   },
+   {
+    "code": "D-10",
+    "qrToken": "6N5FL875T2"
+   },
+   {
+    "code": "D-11",
+    "qrToken": "ZVCM9CYHL8"
+   },
+   {
+    "code": "D-12",
+    "qrToken": "KFB7ZMKYQ7"
+   },
+   {
+    "code": "E-1",
+    "qrToken": "K2A9T3244N"
+   },
+   {
+    "code": "E-2",
+    "qrToken": "UDSWSQZXA3"
+   },
+   {
+    "code": "E-3",
+    "qrToken": "2FW2LRSRB9"
+   },
+   {
+    "code": "E-4",
+    "qrToken": "9MX786MNZL"
+   },
+   {
+    "code": "E-5",
+    "qrToken": "98X23JHA4D"
+   },
+   {
+    "code": "E-6",
+    "qrToken": "R922U9B6XW"
+   },
+   {
+    "code": "E-7",
+    "qrToken": "T2VA2DQX6F"
+   },
+   {
+    "code": "E-8",
+    "qrToken": "P9JDA3CBEK"
+   },
+   {
+    "code": "E-9",
+    "qrToken": "TSYWGT67E3"
+   },
+   {
+    "code": "E-10",
+    "qrToken": "2L2ZAWQAL4"
+   },
+   {
+    "code": "E-11",
+    "qrToken": "2XHXFGKWN3"
+   },
+   {
+    "code": "E-12",
+    "qrToken": "BP9JUSXXFL"
+   },
+   {
+    "code": "F-1",
+    "qrToken": "VXSHVMJGLV"
+   },
+   {
+    "code": "F-2",
+    "qrToken": "AUHU9WJCDY"
+   },
+   {
+    "code": "F-3",
+    "qrToken": "8ZKHTLFAFW"
+   },
+   {
+    "code": "F-4",
+    "qrToken": "YG77AV3XHV"
+   },
+   {
+    "code": "F-5",
+    "qrToken": "G6AYLJ8WC9"
+   },
+   {
+    "code": "F-6",
+    "qrToken": "NCX5NDZHXD"
+   },
+   {
+    "code": "F-7",
+    "qrToken": "6XJE5FK9V5"
+   },
+   {
+    "code": "F-8",
+    "qrToken": "PRQ85AHK2X"
+   },
+   {
+    "code": "F-9",
+    "qrToken": "4KW43GMD8S"
+   },
+   {
+    "code": "F-10",
+    "qrToken": "H3PU8UYKGQ"
+   },
+   {
+    "code": "F-11",
+    "qrToken": "W8A28E4B4A"
+   },
+   {
+    "code": "F-12",
+    "qrToken": "Q7TVRNJJRT"
+   }
+  ]
+ },
+ {
+  "screen": "Screen 2",
+  "cinema": "Aurora Cineplex \u2014 Wing A",
+  "seats": [
+   {
+    "code": "A-1",
+    "qrToken": "ZC7Z7NHT5A"
+   },
+   {
+    "code": "A-2",
+    "qrToken": "CZ5M9PWSL4"
+   },
+   {
+    "code": "A-3",
+    "qrToken": "JU9THT3B53"
+   },
+   {
+    "code": "A-4",
+    "qrToken": "XN953ZHPE5"
+   },
+   {
+    "code": "A-5",
+    "qrToken": "8X29D8RG5C"
+   },
+   {
+    "code": "A-6",
+    "qrToken": "YSUVWCQL6H"
+   },
+   {
+    "code": "A-7",
+    "qrToken": "AVRQQ433F3"
+   },
+   {
+    "code": "A-8",
+    "qrToken": "RWMJZ2MSN9"
+   },
+   {
+    "code": "A-9",
+    "qrToken": "QH8YNHEWGU"
+   },
+   {
+    "code": "A-10",
+    "qrToken": "MLP3YV55B7"
+   },
+   {
+    "code": "A-11",
+    "qrToken": "6ZH9NC3FTU"
+   },
+   {
+    "code": "A-12",
+    "qrToken": "DMUN2VK8P4"
+   },
+   {
+    "code": "B-1",
+    "qrToken": "WCJT6LAYZ9"
+   },
+   {
+    "code": "B-2",
+    "qrToken": "CBM9NSP4BE"
+   },
+   {
+    "code": "B-3",
+    "qrToken": "RAVJ74U2TF"
+   },
+   {
+    "code": "B-4",
+    "qrToken": "A3W6ME979G"
+   },
+   {
+    "code": "B-5",
+    "qrToken": "GQM5TPVT8K"
+   },
+   {
+    "code": "B-6",
+    "qrToken": "GTPHVCMU7J"
+   },
+   {
+    "code": "B-7",
+    "qrToken": "WVWVLSGCWZ"
+   },
+   {
+    "code": "B-8",
+    "qrToken": "TJUKCRNBFD"
+   },
+   {
+    "code": "B-9",
+    "qrToken": "9B9DKCNY9V"
+   },
+   {
+    "code": "B-10",
+    "qrToken": "8QSBZBPLQH"
+   },
+   {
+    "code": "B-11",
+    "qrToken": "SZC96JUBGV"
+   },
+   {
+    "code": "B-12",
+    "qrToken": "9SLWE78JHD"
+   },
+   {
+    "code": "C-1",
+    "qrToken": "YFX66PFUQA"
+   },
+   {
+    "code": "C-2",
+    "qrToken": "K7N6WYWNRW"
+   },
+   {
+    "code": "C-3",
+    "qrToken": "HTXL9FMZWF"
+   },
+   {
+    "code": "C-4",
+    "qrToken": "2RAQGWMGR3"
+   },
+   {
+    "code": "C-5",
+    "qrToken": "E692Q2H7Z4"
+   },
+   {
+    "code": "C-6",
+    "qrToken": "EV6R93Z3DP"
+   },
+   {
+    "code": "C-7",
+    "qrToken": "YPYGAPA74X"
+   },
+   {
+    "code": "C-8",
+    "qrToken": "NJL77DLC4A"
+   },
+   {
+    "code": "C-9",
+    "qrToken": "97QZHGWDAZ"
+   },
+   {
+    "code": "C-10",
+    "qrToken": "RV6DXZ7VHR"
+   },
+   {
+    "code": "C-11",
+    "qrToken": "26EFC3DFZ2"
+   },
+   {
+    "code": "C-12",
+    "qrToken": "5DQHH42JH7"
+   },
+   {
+    "code": "D-1",
+    "qrToken": "KH3TQM777S"
+   },
+   {
+    "code": "D-2",
+    "qrToken": "GLJZCYZMFU"
+   },
+   {
+    "code": "D-3",
+    "qrToken": "NZJXLWH62N"
+   },
+   {
+    "code": "D-4",
+    "qrToken": "HURL48SXT5"
+   },
+   {
+    "code": "D-5",
+    "qrToken": "KLB7XC6W23"
+   },
+   {
+    "code": "D-6",
+    "qrToken": "5FWCYKN9ML"
+   },
+   {
+    "code": "D-7",
+    "qrToken": "NGYA4AQ7SW"
+   },
+   {
+    "code": "D-8",
+    "qrToken": "BCZK6X7E5J"
+   },
+   {
+    "code": "D-9",
+    "qrToken": "XQTGXEE86D"
+   },
+   {
+    "code": "D-10",
+    "qrToken": "AZCRNDP7S2"
+   },
+   {
+    "code": "D-11",
+    "qrToken": "ZDWX6AXDQC"
+   },
+   {
+    "code": "D-12",
+    "qrToken": "U8W3QMN2DQ"
+   },
+   {
+    "code": "E-1",
+    "qrToken": "U82DXETB5P"
+   },
+   {
+    "code": "E-2",
+    "qrToken": "HX2AQCGPBY"
+   },
+   {
+    "code": "E-3",
+    "qrToken": "WEMMNQWF7S"
+   },
+   {
+    "code": "E-4",
+    "qrToken": "4Z3Z3666A2"
+   },
+   {
+    "code": "E-5",
+    "qrToken": "552RJCQKU5"
+   },
+   {
+    "code": "E-6",
+    "qrToken": "CK2QR465XZ"
+   },
+   {
+    "code": "E-7",
+    "qrToken": "HAWYE3D2UJ"
+   },
+   {
+    "code": "E-8",
+    "qrToken": "HWRH3RJGD8"
+   },
+   {
+    "code": "E-9",
+    "qrToken": "AZUDSTK9B6"
+   },
+   {
+    "code": "E-10",
+    "qrToken": "EKJ67B3KGQ"
+   },
+   {
+    "code": "E-11",
+    "qrToken": "L2V36UWKHU"
+   },
+   {
+    "code": "E-12",
+    "qrToken": "9PZZVUYMUN"
+   },
+   {
+    "code": "F-1",
+    "qrToken": "SXLCQNV2KC"
+   },
+   {
+    "code": "F-2",
+    "qrToken": "F7TFUL4RT5"
+   },
+   {
+    "code": "F-3",
+    "qrToken": "56D4YVKZ42"
+   },
+   {
+    "code": "F-4",
+    "qrToken": "NPC2HJB8NH"
+   },
+   {
+    "code": "F-5",
+    "qrToken": "HEZF6BMGMQ"
+   },
+   {
+    "code": "F-6",
+    "qrToken": "AU4HUCAJ9N"
+   },
+   {
+    "code": "F-7",
+    "qrToken": "7DPAPG3NWL"
+   },
+   {
+    "code": "F-8",
+    "qrToken": "JKWPEFW3ZE"
+   },
+   {
+    "code": "F-9",
+    "qrToken": "J4FM2YW65W"
+   },
+   {
+    "code": "F-10",
+    "qrToken": "AUEU3SCTNN"
+   },
+   {
+    "code": "F-11",
+    "qrToken": "F2JWYHFP2U"
+   },
+   {
+    "code": "F-12",
+    "qrToken": "RLE8296PG8"
+   }
+  ]
+ },
+ {
+  "screen": "Screen 3",
+  "cinema": "Aurora Cineplex \u2014 Wing A",
+  "seats": [
+   {
+    "code": "A-1",
+    "qrToken": "EWCL56TZ7F"
+   },
+   {
+    "code": "A-2",
+    "qrToken": "M7C3T4GNCB"
+   },
+   {
+    "code": "A-3",
+    "qrToken": "CEQR5CUG7L"
+   },
+   {
+    "code": "A-4",
+    "qrToken": "4NGJBT5SES"
+   },
+   {
+    "code": "A-5",
+    "qrToken": "DFN8XB6HA6"
+   },
+   {
+    "code": "A-6",
+    "qrToken": "6NYLSVJ8LW"
+   },
+   {
+    "code": "A-7",
+    "qrToken": "S9G8NX6W4C"
+   },
+   {
+    "code": "A-8",
+    "qrToken": "XJT4GRW4C4"
+   },
+   {
+    "code": "A-9",
+    "qrToken": "9PBLAKBB37"
+   },
+   {
+    "code": "A-10",
+    "qrToken": "D7XASQV9QP"
+   },
+   {
+    "code": "A-11",
+    "qrToken": "ZYCK96WNV5"
+   },
+   {
+    "code": "A-12",
+    "qrToken": "2SD4PKPZJQ"
+   },
+   {
+    "code": "B-1",
+    "qrToken": "NXBA8EJ9YC"
+   },
+   {
+    "code": "B-2",
+    "qrToken": "MNEECTJBBV"
+   },
+   {
+    "code": "B-3",
+    "qrToken": "DP3DJCA6TB"
+   },
+   {
+    "code": "B-4",
+    "qrToken": "GAYZ2Q2LBC"
+   },
+   {
+    "code": "B-5",
+    "qrToken": "GU634GM6L7"
+   },
+   {
+    "code": "B-6",
+    "qrToken": "2KA8T54MNB"
+   },
+   {
+    "code": "B-7",
+    "qrToken": "6VRCNKNS85"
+   },
+   {
+    "code": "B-8",
+    "qrToken": "KURBRLGZ9L"
+   },
+   {
+    "code": "B-9",
+    "qrToken": "ELDQTMD2WW"
+   },
+   {
+    "code": "B-10",
+    "qrToken": "7F996WZ7UD"
+   },
+   {
+    "code": "B-11",
+    "qrToken": "C96LLPTB6F"
+   },
+   {
+    "code": "B-12",
+    "qrToken": "RN5ELWMBYA"
+   },
+   {
+    "code": "C-1",
+    "qrToken": "M9TJ3A53K6"
+   },
+   {
+    "code": "C-2",
+    "qrToken": "BNHZMCZAW2"
+   },
+   {
+    "code": "C-3",
+    "qrToken": "TULHWD2N73"
+   },
+   {
+    "code": "C-4",
+    "qrToken": "MXKNRYRBQV"
+   },
+   {
+    "code": "C-5",
+    "qrToken": "YLURFRQHWK"
+   },
+   {
+    "code": "C-6",
+    "qrToken": "7BRTFW7CLF"
+   },
+   {
+    "code": "C-7",
+    "qrToken": "LLYPM984PV"
+   },
+   {
+    "code": "C-8",
+    "qrToken": "SW2YMUK2CN"
+   },
+   {
+    "code": "C-9",
+    "qrToken": "5EHZY5D37K"
+   },
+   {
+    "code": "C-10",
+    "qrToken": "2VD6RQVGV8"
+   },
+   {
+    "code": "C-11",
+    "qrToken": "CX8DH2V5AU"
+   },
+   {
+    "code": "C-12",
+    "qrToken": "ATRLV7JFEJ"
+   },
+   {
+    "code": "D-1",
+    "qrToken": "Z3X45H2KPT"
+   },
+   {
+    "code": "D-2",
+    "qrToken": "VXW2B7LXUS"
+   },
+   {
+    "code": "D-3",
+    "qrToken": "SRHS6KTTQV"
+   },
+   {
+    "code": "D-4",
+    "qrToken": "HU2WDXQ59L"
+   },
+   {
+    "code": "D-5",
+    "qrToken": "W6FFHBSE98"
+   },
+   {
+    "code": "D-6",
+    "qrToken": "NU3A7XCYE8"
+   },
+   {
+    "code": "D-7",
+    "qrToken": "42G9VMV8DV"
+   },
+   {
+    "code": "D-8",
+    "qrToken": "BC32B464EV"
+   },
+   {
+    "code": "D-9",
+    "qrToken": "2H77VYJNLQ"
+   },
+   {
+    "code": "D-10",
+    "qrToken": "9DD4GUAKSW"
+   },
+   {
+    "code": "D-11",
+    "qrToken": "PCU2NNM529"
+   },
+   {
+    "code": "D-12",
+    "qrToken": "U7NA85UT3L"
+   },
+   {
+    "code": "E-1",
+    "qrToken": "DG4H4TK3DJ"
+   },
+   {
+    "code": "E-2",
+    "qrToken": "U8FMFV8CAY"
+   },
+   {
+    "code": "E-3",
+    "qrToken": "QU6NWRKD28"
+   },
+   {
+    "code": "E-4",
+    "qrToken": "GLN887J47N"
+   },
+   {
+    "code": "E-5",
+    "qrToken": "URAYSXXCB6"
+   },
+   {
+    "code": "E-6",
+    "qrToken": "A8AZQTWBT6"
+   },
+   {
+    "code": "E-7",
+    "qrToken": "3J4XRTN2KC"
+   },
+   {
+    "code": "E-8",
+    "qrToken": "FMFCUTKFBW"
+   },
+   {
+    "code": "E-9",
+    "qrToken": "4X3RL22CDU"
+   },
+   {
+    "code": "E-10",
+    "qrToken": "ZK4WBJCRQV"
+   },
+   {
+    "code": "E-11",
+    "qrToken": "DLGFHKSQHX"
+   },
+   {
+    "code": "E-12",
+    "qrToken": "3F2BR2APQW"
+   },
+   {
+    "code": "F-1",
+    "qrToken": "V9T6HEZFS7"
+   },
+   {
+    "code": "F-2",
+    "qrToken": "E8J8X528DG"
+   },
+   {
+    "code": "F-3",
+    "qrToken": "8S2ZYSAL82"
+   },
+   {
+    "code": "F-4",
+    "qrToken": "ZKTDR369EM"
+   },
+   {
+    "code": "F-5",
+    "qrToken": "FVPBCTHWV5"
+   },
+   {
+    "code": "F-6",
+    "qrToken": "Q98FT3AEH2"
+   },
+   {
+    "code": "F-7",
+    "qrToken": "TK27HSA3L3"
+   },
+   {
+    "code": "F-8",
+    "qrToken": "EK2745THLV"
+   },
+   {
+    "code": "F-9",
+    "qrToken": "P9Y37UU3C8"
+   },
+   {
+    "code": "F-10",
+    "qrToken": "K4CPZ9DPBU"
+   },
+   {
+    "code": "F-11",
+    "qrToken": "SJTD8NQUNJ"
+   },
+   {
+    "code": "F-12",
+    "qrToken": "Y6JHEX99PW"
+   }
+  ]
+ },
+ {
+  "screen": "Screen 4",
+  "cinema": "Aurora Cineplex \u2014 Wing B",
+  "seats": [
+   {
+    "code": "A-1",
+    "qrToken": "LJU9YBFLLZ"
+   },
+   {
+    "code": "A-2",
+    "qrToken": "J3V9A8WA6V"
+   },
+   {
+    "code": "A-3",
+    "qrToken": "VHXHXWL9JN"
+   },
+   {
+    "code": "A-4",
+    "qrToken": "G9PCE9XGCM"
+   },
+   {
+    "code": "A-5",
+    "qrToken": "RJ9WD27JZ4"
+   },
+   {
+    "code": "A-6",
+    "qrToken": "TQQF9RU4N6"
+   },
+   {
+    "code": "A-7",
+    "qrToken": "3K8PV9J9G4"
+   },
+   {
+    "code": "A-8",
+    "qrToken": "6VM4BS5JLQ"
+   },
+   {
+    "code": "A-9",
+    "qrToken": "PYFD7LV6XZ"
+   },
+   {
+    "code": "A-10",
+    "qrToken": "FAS267GSQT"
+   },
+   {
+    "code": "A-11",
+    "qrToken": "EQRK6RTZK8"
+   },
+   {
+    "code": "A-12",
+    "qrToken": "TLRD4VP62Z"
+   },
+   {
+    "code": "B-1",
+    "qrToken": "L3GR4M6RET"
+   },
+   {
+    "code": "B-2",
+    "qrToken": "2YFZ6WYTLX"
+   },
+   {
+    "code": "B-3",
+    "qrToken": "5R68LG7KVN"
+   },
+   {
+    "code": "B-4",
+    "qrToken": "XN5QJYDUPK"
+   },
+   {
+    "code": "B-5",
+    "qrToken": "CZ8SP9JCWW"
+   },
+   {
+    "code": "B-6",
+    "qrToken": "AAKQJM5SWF"
+   },
+   {
+    "code": "B-7",
+    "qrToken": "22X8LA3LU9"
+   },
+   {
+    "code": "B-8",
+    "qrToken": "A6BH72UWFP"
+   },
+   {
+    "code": "B-9",
+    "qrToken": "5C2K5ZF7HL"
+   },
+   {
+    "code": "B-10",
+    "qrToken": "GDEZUJFHCP"
+   },
+   {
+    "code": "B-11",
+    "qrToken": "UADRUL2E56"
+   },
+   {
+    "code": "B-12",
+    "qrToken": "R7Z2ECA65W"
+   },
+   {
+    "code": "C-1",
+    "qrToken": "LDS8STR6GL"
+   },
+   {
+    "code": "C-2",
+    "qrToken": "327HP4NCUT"
+   },
+   {
+    "code": "C-3",
+    "qrToken": "D495X7S57F"
+   },
+   {
+    "code": "C-4",
+    "qrToken": "FDEAUKRRAY"
+   },
+   {
+    "code": "C-5",
+    "qrToken": "D788QH4HDY"
+   },
+   {
+    "code": "C-6",
+    "qrToken": "S3FH56KCYQ"
+   },
+   {
+    "code": "C-7",
+    "qrToken": "YQYSHL7NT8"
+   },
+   {
+    "code": "C-8",
+    "qrToken": "J35QYVWL5Y"
+   },
+   {
+    "code": "C-9",
+    "qrToken": "CVAQAJCW5N"
+   },
+   {
+    "code": "C-10",
+    "qrToken": "KTQMQXEXVZ"
+   },
+   {
+    "code": "C-11",
+    "qrToken": "2RKG77TLYP"
+   },
+   {
+    "code": "C-12",
+    "qrToken": "XJENHZSQ43"
+   },
+   {
+    "code": "D-1",
+    "qrToken": "URBR6QDVXX"
+   },
+   {
+    "code": "D-2",
+    "qrToken": "32KADGVSYT"
+   },
+   {
+    "code": "D-3",
+    "qrToken": "S7X3HGYDYY"
+   },
+   {
+    "code": "D-4",
+    "qrToken": "G92BYB39D9"
+   },
+   {
+    "code": "D-5",
+    "qrToken": "FQLQJRS7RE"
+   },
+   {
+    "code": "D-6",
+    "qrToken": "JKDZHEJF8B"
+   },
+   {
+    "code": "D-7",
+    "qrToken": "UB6BJXAWZU"
+   },
+   {
+    "code": "D-8",
+    "qrToken": "9539JQDXDX"
+   },
+   {
+    "code": "D-9",
+    "qrToken": "LQJQYU72VL"
+   },
+   {
+    "code": "D-10",
+    "qrToken": "CKS3LNZS57"
+   },
+   {
+    "code": "D-11",
+    "qrToken": "43LUBNJUNM"
+   },
+   {
+    "code": "D-12",
+    "qrToken": "M6HRZ8UFVT"
+   },
+   {
+    "code": "E-1",
+    "qrToken": "LAN5N6JZ3P"
+   },
+   {
+    "code": "E-2",
+    "qrToken": "QCF5SYA3JJ"
+   },
+   {
+    "code": "E-3",
+    "qrToken": "2FKDWAUJ7D"
+   },
+   {
+    "code": "E-4",
+    "qrToken": "GE58GJAUBK"
+   },
+   {
+    "code": "E-5",
+    "qrToken": "8NB6HAZ6ZL"
+   },
+   {
+    "code": "E-6",
+    "qrToken": "PYD7E9EEQH"
+   },
+   {
+    "code": "E-7",
+    "qrToken": "4WBRACLQER"
+   },
+   {
+    "code": "E-8",
+    "qrToken": "PMURXCPFN9"
+   },
+   {
+    "code": "E-9",
+    "qrToken": "VZFUA8XC8Y"
+   },
+   {
+    "code": "E-10",
+    "qrToken": "M3YBFYVFA7"
+   },
+   {
+    "code": "E-11",
+    "qrToken": "3ZCGZZKKAR"
+   },
+   {
+    "code": "E-12",
+    "qrToken": "354MV3LG8K"
+   },
+   {
+    "code": "F-1",
+    "qrToken": "5FRH6LMWCF"
+   },
+   {
+    "code": "F-2",
+    "qrToken": "3SVE9LGPBG"
+   },
+   {
+    "code": "F-3",
+    "qrToken": "6BJML4S3VW"
+   },
+   {
+    "code": "F-4",
+    "qrToken": "JE6QJJ5SG7"
+   },
+   {
+    "code": "F-5",
+    "qrToken": "WALAV4ZUHJ"
+   },
+   {
+    "code": "F-6",
+    "qrToken": "76M6DCNZ4P"
+   },
+   {
+    "code": "F-7",
+    "qrToken": "MB5QVRTYEK"
+   },
+   {
+    "code": "F-8",
+    "qrToken": "5HDQFJATWL"
+   },
+   {
+    "code": "F-9",
+    "qrToken": "NNNGMAMDPP"
+   },
+   {
+    "code": "F-10",
+    "qrToken": "WLB3QBENEA"
+   },
+   {
+    "code": "F-11",
+    "qrToken": "ZE3JLFCAAE"
+   },
+   {
+    "code": "F-12",
+    "qrToken": "3YA2RRCZ4S"
+   }
+  ]
+ },
+ {
+  "screen": "Screen 5",
+  "cinema": "Aurora Cineplex \u2014 Wing B",
+  "seats": [
+   {
+    "code": "A-1",
+    "qrToken": "WFXPXMEMAJ"
+   },
+   {
+    "code": "A-2",
+    "qrToken": "BH88KABLM2"
+   },
+   {
+    "code": "A-3",
+    "qrToken": "HMCQRNR3ZR"
+   },
+   {
+    "code": "A-4",
+    "qrToken": "YWKHZGF7DR"
+   },
+   {
+    "code": "A-5",
+    "qrToken": "JWHSKCVDFG"
+   },
+   {
+    "code": "A-6",
+    "qrToken": "YCYYKPZG97"
+   },
+   {
+    "code": "A-7",
+    "qrToken": "G8JX24Q3NE"
+   },
+   {
+    "code": "A-8",
+    "qrToken": "AQSD7622C5"
+   },
+   {
+    "code": "A-9",
+    "qrToken": "ZLYZKKQP5D"
+   },
+   {
+    "code": "A-10",
+    "qrToken": "TQWGMK24G8"
+   },
+   {
+    "code": "A-11",
+    "qrToken": "B398JW6QG9"
+   },
+   {
+    "code": "A-12",
+    "qrToken": "2Z55C3MAVC"
+   },
+   {
+    "code": "B-1",
+    "qrToken": "EL82SUGLM8"
+   },
+   {
+    "code": "B-2",
+    "qrToken": "9SADAR7HE7"
+   },
+   {
+    "code": "B-3",
+    "qrToken": "WD4XRTYJTG"
+   },
+   {
+    "code": "B-4",
+    "qrToken": "LSQJWETQRM"
+   },
+   {
+    "code": "B-5",
+    "qrToken": "A85W4W66F7"
+   },
+   {
+    "code": "B-6",
+    "qrToken": "QEBKP979CX"
+   },
+   {
+    "code": "B-7",
+    "qrToken": "B48Z8TG28G"
+   },
+   {
+    "code": "B-8",
+    "qrToken": "U354ATMA74"
+   },
+   {
+    "code": "B-9",
+    "qrToken": "H4M44GGGZG"
+   },
+   {
+    "code": "B-10",
+    "qrToken": "EQRS4QEJK8"
+   },
+   {
+    "code": "B-11",
+    "qrToken": "C3D596KE82"
+   },
+   {
+    "code": "B-12",
+    "qrToken": "BK6457HZ7R"
+   },
+   {
+    "code": "C-1",
+    "qrToken": "GGNBXDAW9Y"
+   },
+   {
+    "code": "C-2",
+    "qrToken": "JNKDR84UQ9"
+   },
+   {
+    "code": "C-3",
+    "qrToken": "MJA4GVXNLE"
+   },
+   {
+    "code": "C-4",
+    "qrToken": "LCX9EMW26N"
+   },
+   {
+    "code": "C-5",
+    "qrToken": "H4JTVSZR6M"
+   },
+   {
+    "code": "C-6",
+    "qrToken": "4YFX5PSLDR"
+   },
+   {
+    "code": "C-7",
+    "qrToken": "SY4CEPNQ8A"
+   },
+   {
+    "code": "C-8",
+    "qrToken": "M2E46JHF45"
+   },
+   {
+    "code": "C-9",
+    "qrToken": "ZND72RYXNT"
+   },
+   {
+    "code": "C-10",
+    "qrToken": "WWB6NASVB7"
+   },
+   {
+    "code": "C-11",
+    "qrToken": "VG6D85FWJ5"
+   },
+   {
+    "code": "C-12",
+    "qrToken": "ACKTRDKHGQ"
+   },
+   {
+    "code": "D-1",
+    "qrToken": "XWPWJF7CBY"
+   },
+   {
+    "code": "D-2",
+    "qrToken": "YWCBM2P5N4"
+   },
+   {
+    "code": "D-3",
+    "qrToken": "NW32SCMT3G"
+   },
+   {
+    "code": "D-4",
+    "qrToken": "AX4X2E8UM9"
+   },
+   {
+    "code": "D-5",
+    "qrToken": "NLKXUMWSXF"
+   },
+   {
+    "code": "D-6",
+    "qrToken": "LDKD7CHKD4"
+   },
+   {
+    "code": "D-7",
+    "qrToken": "RG94Q39KQB"
+   },
+   {
+    "code": "D-8",
+    "qrToken": "QTQAK8B54P"
+   },
+   {
+    "code": "D-9",
+    "qrToken": "S56MHVDWJB"
+   },
+   {
+    "code": "D-10",
+    "qrToken": "7YKW7KEDDQ"
+   },
+   {
+    "code": "D-11",
+    "qrToken": "FVSWAV8UVG"
+   },
+   {
+    "code": "D-12",
+    "qrToken": "2M43ZZSHHR"
+   },
+   {
+    "code": "E-1",
+    "qrToken": "HW7KPN3RQ6"
+   },
+   {
+    "code": "E-2",
+    "qrToken": "CLM6N5GHCQ"
+   },
+   {
+    "code": "E-3",
+    "qrToken": "CAX8BDA43D"
+   },
+   {
+    "code": "E-4",
+    "qrToken": "62UXH6PL7Y"
+   },
+   {
+    "code": "E-5",
+    "qrToken": "Q4PXJSTM5A"
+   },
+   {
+    "code": "E-6",
+    "qrToken": "LPXQ97C6XQ"
+   },
+   {
+    "code": "E-7",
+    "qrToken": "XUXT3DCU2Q"
+   },
+   {
+    "code": "E-8",
+    "qrToken": "NYB92TWA5B"
+   },
+   {
+    "code": "E-9",
+    "qrToken": "VM5RQJGBVV"
+   },
+   {
+    "code": "E-10",
+    "qrToken": "882VHH9FNX"
+   },
+   {
+    "code": "E-11",
+    "qrToken": "AWTBE7P9E3"
+   },
+   {
+    "code": "E-12",
+    "qrToken": "AECM2YF4AT"
+   },
+   {
+    "code": "F-1",
+    "qrToken": "3C2M9G9EAY"
+   },
+   {
+    "code": "F-2",
+    "qrToken": "Z5QHY5YKUA"
+   },
+   {
+    "code": "F-3",
+    "qrToken": "TP5CJYTJLJ"
+   },
+   {
+    "code": "F-4",
+    "qrToken": "MB7VZJF4Y2"
+   },
+   {
+    "code": "F-5",
+    "qrToken": "U2CAW8FHJ2"
+   },
+   {
+    "code": "F-6",
+    "qrToken": "3QB6JM6U3E"
+   },
+   {
+    "code": "F-7",
+    "qrToken": "FGNL6G8MZR"
+   },
+   {
+    "code": "F-8",
+    "qrToken": "Q4QSYY9QU9"
+   },
+   {
+    "code": "F-9",
+    "qrToken": "Q4E782D4CE"
+   },
+   {
+    "code": "F-10",
+    "qrToken": "L5GV7NU9UT"
+   },
+   {
+    "code": "F-11",
+    "qrToken": "3RGKZ6HU84"
+   },
+   {
+    "code": "F-12",
+    "qrToken": "DG6TFT4BPC"
+   }
+  ]
+ },
+ {
+  "screen": "Screen 6",
+  "cinema": "Aurora Cineplex \u2014 Wing B",
+  "seats": [
+   {
+    "code": "A-1",
+    "qrToken": "CUBP5AWAAY"
+   },
+   {
+    "code": "A-2",
+    "qrToken": "EZYP5CW8RE"
+   },
+   {
+    "code": "A-3",
+    "qrToken": "JHBNFMUSWU"
+   },
+   {
+    "code": "A-4",
+    "qrToken": "9MEMHHJG22"
+   },
+   {
+    "code": "A-5",
+    "qrToken": "CEH7MSNL6N"
+   },
+   {
+    "code": "A-6",
+    "qrToken": "2ATFBU6Z55"
+   },
+   {
+    "code": "A-7",
+    "qrToken": "42KECZ3989"
+   },
+   {
+    "code": "A-8",
+    "qrToken": "NMSJV98HD7"
+   },
+   {
+    "code": "A-9",
+    "qrToken": "7735H448DJ"
+   },
+   {
+    "code": "A-10",
+    "qrToken": "DFH45KSSZ2"
+   },
+   {
+    "code": "A-11",
+    "qrToken": "SXDM3DV5Q8"
+   },
+   {
+    "code": "A-12",
+    "qrToken": "UWY2SG7H43"
+   },
+   {
+    "code": "B-1",
+    "qrToken": "AC4BJ4C8UX"
+   },
+   {
+    "code": "B-2",
+    "qrToken": "WPAAEQ93ZL"
+   },
+   {
+    "code": "B-3",
+    "qrToken": "2ULWNSC92H"
+   },
+   {
+    "code": "B-4",
+    "qrToken": "RCSMCR5B8Q"
+   },
+   {
+    "code": "B-5",
+    "qrToken": "TFPBX4TMSN"
+   },
+   {
+    "code": "B-6",
+    "qrToken": "DZSVWGKAA2"
+   },
+   {
+    "code": "B-7",
+    "qrToken": "6UGQ56VHCZ"
+   },
+   {
+    "code": "B-8",
+    "qrToken": "NQ3TM4UFNF"
+   },
+   {
+    "code": "B-9",
+    "qrToken": "SFYPP79D5G"
+   },
+   {
+    "code": "B-10",
+    "qrToken": "G6VYY9VCXC"
+   },
+   {
+    "code": "B-11",
+    "qrToken": "CSRZ53GS3W"
+   },
+   {
+    "code": "B-12",
+    "qrToken": "NLGJ545BVJ"
+   },
+   {
+    "code": "C-1",
+    "qrToken": "9822NQUYM5"
+   },
+   {
+    "code": "C-2",
+    "qrToken": "SJCPUW2NJJ"
+   },
+   {
+    "code": "C-3",
+    "qrToken": "WGTTEH82XY"
+   },
+   {
+    "code": "C-4",
+    "qrToken": "VX3RYVNH2P"
+   },
+   {
+    "code": "C-5",
+    "qrToken": "4ZXNBVHA2P"
+   },
+   {
+    "code": "C-6",
+    "qrToken": "4CE883GV28"
+   },
+   {
+    "code": "C-7",
+    "qrToken": "89HMJSKKNH"
+   },
+   {
+    "code": "C-8",
+    "qrToken": "8E3TX52QVH"
+   },
+   {
+    "code": "C-9",
+    "qrToken": "CR45A4P8UW"
+   },
+   {
+    "code": "C-10",
+    "qrToken": "HQ99VCJKWD"
+   },
+   {
+    "code": "C-11",
+    "qrToken": "MB6D5263LH"
+   },
+   {
+    "code": "C-12",
+    "qrToken": "QGUC2M9MWX"
+   },
+   {
+    "code": "D-1",
+    "qrToken": "HALJF4JUSU"
+   },
+   {
+    "code": "D-2",
+    "qrToken": "R9643Y4Q7W"
+   },
+   {
+    "code": "D-3",
+    "qrToken": "S54RGQTRAL"
+   },
+   {
+    "code": "D-4",
+    "qrToken": "AT7Y2ZJM5S"
+   },
+   {
+    "code": "D-5",
+    "qrToken": "49PC2M2XWV"
+   },
+   {
+    "code": "D-6",
+    "qrToken": "C4JBZUV8K5"
+   },
+   {
+    "code": "D-7",
+    "qrToken": "LDXTX8K68V"
+   },
+   {
+    "code": "D-8",
+    "qrToken": "8AWP26Z5GV"
+   },
+   {
+    "code": "D-9",
+    "qrToken": "MGZ88QJNWF"
+   },
+   {
+    "code": "D-10",
+    "qrToken": "9T699HMV89"
+   },
+   {
+    "code": "D-11",
+    "qrToken": "U8UZXW4DKD"
+   },
+   {
+    "code": "D-12",
+    "qrToken": "W6KD8VVPD8"
+   },
+   {
+    "code": "E-1",
+    "qrToken": "8348S4766W"
+   },
+   {
+    "code": "E-2",
+    "qrToken": "SQ5QMJ5LW3"
+   },
+   {
+    "code": "E-3",
+    "qrToken": "M4MU5FAKM5"
+   },
+   {
+    "code": "E-4",
+    "qrToken": "LVRBDJ7FLE"
+   },
+   {
+    "code": "E-5",
+    "qrToken": "WJH2Y2ECRH"
+   },
+   {
+    "code": "E-6",
+    "qrToken": "PF72Z88FL5"
+   },
+   {
+    "code": "E-7",
+    "qrToken": "APH46L8MKU"
+   },
+   {
+    "code": "E-8",
+    "qrToken": "8TTFG2ST96"
+   },
+   {
+    "code": "E-9",
+    "qrToken": "FC7JBLRVTN"
+   },
+   {
+    "code": "E-10",
+    "qrToken": "MGLYEU2MPX"
+   },
+   {
+    "code": "E-11",
+    "qrToken": "X54FAZPFMM"
+   },
+   {
+    "code": "E-12",
+    "qrToken": "KKAUWQWT4V"
+   },
+   {
+    "code": "F-1",
+    "qrToken": "XNQ374M434"
+   },
+   {
+    "code": "F-2",
+    "qrToken": "3PQ3SPE24B"
+   },
+   {
+    "code": "F-3",
+    "qrToken": "RNDZX3M2FP"
+   },
+   {
+    "code": "F-4",
+    "qrToken": "MJBMFN4YX3"
+   },
+   {
+    "code": "F-5",
+    "qrToken": "G4RYJH63MD"
+   },
+   {
+    "code": "F-6",
+    "qrToken": "JKZCQHXAH8"
+   },
+   {
+    "code": "F-7",
+    "qrToken": "3C8LRLSTHL"
+   },
+   {
+    "code": "F-8",
+    "qrToken": "QFC5FLLJCF"
+   },
+   {
+    "code": "F-9",
+    "qrToken": "B45454NH9K"
+   },
+   {
+    "code": "F-10",
+    "qrToken": "NDNA33CMTE"
+   },
+   {
+    "code": "F-11",
+    "qrToken": "2PYB3ER8NZ"
+   },
+   {
+    "code": "F-12",
+    "qrToken": "8JU3SJYGG6"
+   }
+  ]
+ },
+ {
+  "screen": "Tester Hall",
+  "cinema": "Aurora Cineplex \u2014 Wing A",
+  "seats": [
+   {
+    "code": "A-1",
+    "qrToken": "PDMRMRLG4H"
+   },
+   {
+    "code": "A-2",
+    "qrToken": "W5NFQHG8U4"
+   },
+   {
+    "code": "A-3",
+    "qrToken": "34U7LVCCYH"
+   },
+   {
+    "code": "A-4",
+    "qrToken": "4ET8XZW75S"
+   },
+   {
+    "code": "A-5",
+    "qrToken": "MYB284K2SH"
+   },
+   {
+    "code": "A-6",
+    "qrToken": "5D3VGC5XK4"
+   },
+   {
+    "code": "A-7",
+    "qrToken": "49NHEK46X8"
+   },
+   {
+    "code": "A-8",
+    "qrToken": "W2TM2PZJ7U"
+   },
+   {
+    "code": "A-9",
+    "qrToken": "CL8SN7VU3J"
+   },
+   {
+    "code": "A-10",
+    "qrToken": "C5L3CMQ9W7"
+   },
+   {
+    "code": "B-1",
+    "qrToken": "HDWXSP8GGH"
+   },
+   {
+    "code": "B-2",
+    "qrToken": "RD74AFHYXT"
+   },
+   {
+    "code": "B-3",
+    "qrToken": "27VU8UKV5Y"
+   },
+   {
+    "code": "B-4",
+    "qrToken": "HZE7Y8HL98"
+   },
+   {
+    "code": "B-5",
+    "qrToken": "7PUHM8PFXV"
+   },
+   {
+    "code": "B-6",
+    "qrToken": "R9U7RHNVD2"
+   },
+   {
+    "code": "B-7",
+    "qrToken": "EPLNPM7UAG"
+   },
+   {
+    "code": "B-8",
+    "qrToken": "LU5NMFLH5S"
+   },
+   {
+    "code": "B-9",
+    "qrToken": "HEXCWDAQRT"
+   },
+   {
+    "code": "B-10",
+    "qrToken": "6HYT2YFP4Z"
+   },
+   {
+    "code": "C-1",
+    "qrToken": "CGYC7WUAL9"
+   },
+   {
+    "code": "C-2",
+    "qrToken": "PGABN7QYZJ"
+   },
+   {
+    "code": "C-3",
+    "qrToken": "XT8ZMHXJMV"
+   },
+   {
+    "code": "C-4",
+    "qrToken": "V7XQGHC9QP"
+   },
+   {
+    "code": "C-5",
+    "qrToken": "4TV5P7GM9H"
+   },
+   {
+    "code": "C-6",
+    "qrToken": "FB5MMB8WGV"
+   },
+   {
+    "code": "C-7",
+    "qrToken": "N4V3X8BXE6"
+   },
+   {
+    "code": "C-8",
+    "qrToken": "F7M99X3KUW"
+   },
+   {
+    "code": "C-9",
+    "qrToken": "67E42UHQ8T"
+   },
+   {
+    "code": "C-10",
+    "qrToken": "P6S8XJHGLB"
+   },
+   {
+    "code": "D-1",
+    "qrToken": "GC9LRY536J"
+   },
+   {
+    "code": "D-2",
+    "qrToken": "LXUBNHMYSR"
+   },
+   {
+    "code": "D-3",
+    "qrToken": "9XGCUEP258"
+   },
+   {
+    "code": "D-4",
+    "qrToken": "Z84QMZGXPW"
+   },
+   {
+    "code": "D-5",
+    "qrToken": "LABWJZAKMB"
+   },
+   {
+    "code": "D-6",
+    "qrToken": "LCKRZW622F"
+   },
+   {
+    "code": "D-7",
+    "qrToken": "3ZSBD73PFD"
+   },
+   {
+    "code": "D-8",
+    "qrToken": "SEYKKKVG3W"
+   },
+   {
+    "code": "D-9",
+    "qrToken": "LDPDHVJJLA"
+   },
+   {
+    "code": "D-10",
+    "qrToken": "899ZTQRFU5"
+   },
+   {
+    "code": "E-1",
+    "qrToken": "H6HMAU7EEE"
+   },
+   {
+    "code": "E-2",
+    "qrToken": "48BVQSN9Z4"
+   },
+   {
+    "code": "E-3",
+    "qrToken": "R75U9UCTHC"
+   },
+   {
+    "code": "E-4",
+    "qrToken": "SWC9WADX3D"
+   },
+   {
+    "code": "E-5",
+    "qrToken": "XFCGY56PFZ"
+   },
+   {
+    "code": "E-6",
+    "qrToken": "6KLAMJFSCR"
+   },
+   {
+    "code": "E-7",
+    "qrToken": "ECMJLUVLA7"
+   },
+   {
+    "code": "E-8",
+    "qrToken": "HZH26UXXC5"
+   },
+   {
+    "code": "E-9",
+    "qrToken": "YRK2HDT3UC"
+   },
+   {
+    "code": "E-10",
+    "qrToken": "WE2LRNK5YP"
+   },
+   {
+    "code": "F-1",
+    "qrToken": "28ARTFAHMR"
+   },
+   {
+    "code": "F-2",
+    "qrToken": "LUKLWJ5M8X"
+   },
+   {
+    "code": "F-3",
+    "qrToken": "U7PNDL6AC3"
+   },
+   {
+    "code": "F-4",
+    "qrToken": "CKJEEVJS7Z"
+   },
+   {
+    "code": "F-5",
+    "qrToken": "M97SC8UYCG"
+   },
+   {
+    "code": "F-6",
+    "qrToken": "QLU33VELC3"
+   },
+   {
+    "code": "F-7",
+    "qrToken": "Z674YZMDZJ"
+   },
+   {
+    "code": "F-8",
+    "qrToken": "K6CRTK24G5"
+   },
+   {
+    "code": "F-9",
+    "qrToken": "E3CBXABRF5"
+   },
+   {
+    "code": "F-10",
+    "qrToken": "ZWUQM4ZXRP"
+   },
+   {
+    "code": "G-1",
+    "qrToken": "HQ4PA4GVDT"
+   },
+   {
+    "code": "G-2",
+    "qrToken": "YTJRWKJFW4"
+   },
+   {
+    "code": "G-3",
+    "qrToken": "KJAVJ38ASU"
+   },
+   {
+    "code": "G-4",
+    "qrToken": "WJW6RE4P9S"
+   },
+   {
+    "code": "G-5",
+    "qrToken": "WPN8QN6QVG"
+   },
+   {
+    "code": "G-6",
+    "qrToken": "C9T5XRLNA5"
+   },
+   {
+    "code": "G-7",
+    "qrToken": "LQV542JNTF"
+   },
+   {
+    "code": "G-8",
+    "qrToken": "VYEZQ3PAHT"
+   },
+   {
+    "code": "G-9",
+    "qrToken": "LFWTDTKC6A"
+   },
+   {
+    "code": "G-10",
+    "qrToken": "5TJ6PXW7TT"
+   },
+   {
+    "code": "H-1",
+    "qrToken": "SG3DAGPPY9"
+   },
+   {
+    "code": "H-2",
+    "qrToken": "YVR257PRTV"
+   },
+   {
+    "code": "H-3",
+    "qrToken": "NTUJDDAQWA"
+   },
+   {
+    "code": "H-4",
+    "qrToken": "QWY6VYFEBD"
+   },
+   {
+    "code": "H-5",
+    "qrToken": "YVMBKGGDEG"
+   },
+   {
+    "code": "H-6",
+    "qrToken": "62NXFWSYXA"
+   },
+   {
+    "code": "H-7",
+    "qrToken": "SUKNZM3LR9"
+   },
+   {
+    "code": "H-8",
+    "qrToken": "AB4P8CY7M6"
+   },
+   {
+    "code": "H-9",
+    "qrToken": "HHMU4Z2QCZ"
+   },
+   {
+    "code": "H-10",
+    "qrToken": "QAJR4TXPD8"
+   },
+   {
+    "code": "I-1",
+    "qrToken": "ES3YSZ54AU"
+   },
+   {
+    "code": "I-2",
+    "qrToken": "FSRXEMNFRZ"
+   },
+   {
+    "code": "I-3",
+    "qrToken": "3T2PLHZXTQ"
+   },
+   {
+    "code": "I-4",
+    "qrToken": "8QAL3ZWPUL"
+   },
+   {
+    "code": "I-5",
+    "qrToken": "M6P7Z6QB26"
+   },
+   {
+    "code": "I-6",
+    "qrToken": "HF5R4MPVBY"
+   },
+   {
+    "code": "I-7",
+    "qrToken": "C5B8EE8FEQ"
+   },
+   {
+    "code": "I-8",
+    "qrToken": "FGLEE5GVC3"
+   },
+   {
+    "code": "I-9",
+    "qrToken": "TBDMABG3TU"
+   },
+   {
+    "code": "I-10",
+    "qrToken": "XTNALZ9PLR"
+   },
+   {
+    "code": "J-1",
+    "qrToken": "DLHLAGJUDT"
+   },
+   {
+    "code": "J-2",
+    "qrToken": "Q9YDLX3REU"
+   },
+   {
+    "code": "J-3",
+    "qrToken": "T59B5JUU8D"
+   },
+   {
+    "code": "J-4",
+    "qrToken": "LQEBWQ7PTC"
+   },
+   {
+    "code": "J-5",
+    "qrToken": "KDHYGRS9HQ"
+   },
+   {
+    "code": "J-6",
+    "qrToken": "JGQKX9XHPA"
+   },
+   {
+    "code": "J-7",
+    "qrToken": "53SL8JQ373"
+   },
+   {
+    "code": "J-8",
+    "qrToken": "CVTLMALWGQ"
+   },
+   {
+    "code": "J-9",
+    "qrToken": "DZZJ497ZM2"
+   },
+   {
+    "code": "J-10",
+    "qrToken": "QMYS6SRYE6"
+   }
+  ]
+ }
+]
