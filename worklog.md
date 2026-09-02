@@ -839,3 +839,22 @@ Stage Summary:
 - notifetch.in now presents as NotiFetch to search engines and link previews; no user-reachable 404 for stray paths; sitemap live for fast re-crawl
 - Owner accelerator (optional): Google Search Console URL-prefix property -> HTML-tag verification (paste tag to me to ship) -> Request Indexing
 - Open product decision offered: rename visible "SeatServe" strings to "NotiFetch" across landing/staff UI (metadata already NotiFetch)
+
+---
+Task ID: 23
+Agent: Super Z (main)
+Task: Owner's family money-loop test (mom=store owner @5% commission, dad=customer, owner=platform) + nightly 11 PM all-store settlement automation
+
+Work Log:
+- Verified settlement engine already does all-store-at-once batches (runSettlementBatch) with double-payout structurally impossible (settlementId unique backlink); manual "Run settlement batch" + "Mark transferred" UTR flow already in SettlementPanel
+- Built nightly automation: GET /api/admin/settlement/auto-daily (cron-only, CRON_SECRET bearer auth via new pure src/lib/cron-auth.ts with length-check + XOR-fold compare; unset secret = endpoint disabled; ?dry=1 mirrors engine eligibility exactly without writing)
+- 6 new unit tests for cronSecretMatches -> 73/73 total; tsc 0, eslint 0, build OK (route listed)
+- vercel.json: added cron "30 17 * * *" (= 23:00 IST daily) alongside existing health ping; CRON_SECRET generated + set on Vercel (production+preview) via API before push
+- Sandbox reset wiped .env.vercel-token again -> recreated from chat; push rejected due to sandbox-reset duplicate Task-22 commit (a861be3 vs 86f0447) -> rebased onto origin/main, verified worklog has exactly one Task 22 section and Task-22 files intact
+- Deploy READY dpl_DukuZ3pSvURRUTrMMeLQTJyiM5hB; live verification: no-auth 401; dry=1 200 with real report — wouldSettle: Cinema Snacks 202.40 INR (3 rows), Wrap House 615.58 INR (8 rows, includes owner's real test payment); skipped: Mithai & More (KYC pending), Pizza Corner (nothing pending)
+- Deliberately did NOT run the non-dry path — first automatic batch fires tonight 23:00 IST
+
+Stage Summary:
+- Nightly 23:00 IST auto-settlement LIVE: platform prepares all-store payout batches automatically; money moves only when admin pastes real UTR (human-in-the-loop preserved)
+- KYC payout gate confirmed working on prod (unverified stores skipped with reason)
+- Owner guidance delivered: new store with cut=5% self-serve, mom as Store Manager + KYC, customer side needs no login; Razorpay T+2 float caveat + Route auto-split as the future pro path
