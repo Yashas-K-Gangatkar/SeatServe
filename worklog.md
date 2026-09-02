@@ -930,3 +930,21 @@ Task 26 (cont., 23:27 IST) — FAMILY MONEY LOOP VERIFIED END-TO-END WITH REAL M
 - 23:25 cron did NOT fire (Vercel cron lag after rapid redeploys) → fired /api/admin/settlement/auto-daily manually with CRON_SECRET (identical code path): 3 batches PENDING — milk products ₹3.00, Cinema Snacks ₹202.40, Wrap House ₹615.58; Mithai & More skipped (KYC pending); Pizza Corner nothing
 - Double-payout guard confirmed: batched rows backlinked (settlementId), only Mithai ₹450 remains pending
 - Remaining human step: owner sends mom ₹3 via UPI → Mark transferred + UTR
+
+---
+Task ID: 27
+Agent: Super Z (main)
+Task: Razorpay fee question, auto-payout ask, FULL test-data cleanup ("be real, no test subjects")
+
+Work Log:
+- Screenshot read: Razorpay settlement-speed selector — T+0 0.15% / T+1 0.09% / T+2 0% (owner already on free T+2); explained: speed-of-money-to-owner-bank fee, unrelated to paying stores
+- Cleanup round 1 (scripts/preclean-wipe.mjs, full JSON backup to backups/preclean-*): wiped ALL commerce — 24 orders, 24 payments, 4 refunds, 79 splits, 7 settlements, carts, tickets, delivery runs, 5 demo stores + 22 products; first run rolled back on DeliveryRun→StoreTicket FK order, fixed (DeliveryRun first)
+- Cleanup round 2 (preclean-wipe2.mjs): deleted demo Nexora Mall subtree (1 cinema/screen/32 seats/1 showtime/1 zone), 4 demo runners, 16 demo staff (fake kitchens/managers incl. "Yashas (Owner · Wrap House)", meera@nexora MALL_ADMIN, vikram, Priya demo customer); FK fix: DeliveryZone before Mall
+- KEPT: Aurora Mall (2 cinemas, 7 screens, 532 seats, 26 showtimes — QR poster deck still valid), asha (owner MALL_ADMIN), bhagya@gmail.com (real, STORE_MANAGER), "milk products" store (VERIFIED, 0% commission, 3-item menu, clean ledger), landing testimonials (code)
+- Verified live: settlement dry-run clean (wouldSettle: [], only milk products tracked); customer entry via real seat token GVTHGD4Q6F → seat A-1 resolves, exactly 1 store visible (milk products, open, 3 items); /api/stores 405 GET is by-design (POST-only), /api/context 400 without ?qr= is by-design
+- Sandbox reset wiped .env.vercel-token + .env.prod-db mid-run → recreated from chat/Vercel env API
+
+Stage Summary:
+- Platform is now REAL-ONLY: zero fake stores, zero fake rupees anywhere in admin panels; one store (mom's) ready for fresh loop tests
+- Settlement timing still 23:25 IST (test value) — revert to 23:00 on owner's word
+- Auto-payout path communicated: needs RazorpayX activation + mom's UPI ID; until then 3-tap manual flow (send via own UPI app → Mark transferred → UTR)
