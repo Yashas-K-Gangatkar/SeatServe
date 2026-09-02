@@ -965,3 +965,8 @@ Stage Summary:
 - Audit verdict delivered to owner: ~60% of the scary claims were already built; real gaps closed in this wave = CI/CD, HSTS, session purge, FSSAI display, replay window
 - Remaining roadmap (owner actions in parens): durable rate limiting (Upstash account), error tracking/alerting (Sentry), scheduled off-site backups (Neon PITR toggle or paste DATABASE_URL), grievance-officer real name/phone, RazorpayX activation for auto-payout, 2FA + GST tax invoice + SMS as pre-scale phase
 - Settlement cron still 23:25 IST test value — revert to 23:00 on owner's word
+
+Task 28 (cont.) — README rewrite:
+- Owner asked "did you write readme.md" — old README still described Phase 2 sandbox (mock payments, 35 tests, demo-credentials table for accounts deleted in Task 27 cleanup)
+- Rewrote (commit 85d86d9): live status (notifetch.in, real Razorpay rupees end-to-end), money model + settlement engine/KYC gate, 6-role permission table, CI/CD quality gate, security posture (HSTS, replay window, session purge), Vercel/Neon ops + crons + backup tooling, accurate env-var table, next-step roadmap (RazorpayX auto-payout first)
+- Pushed; CI run #2 triggered on the commit (README-only, gate expected green)
