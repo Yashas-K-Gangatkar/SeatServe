@@ -917,3 +917,8 @@ Task 26 (cont., 23:0x IST) — bhagya "login not working":
 - Server-side login verified 200 OK with old password (exact + trailing-space) — account never broken; typo trap in Wr4pHouseM0m (4/zero)
 - SET_PASSWORD via asha session → new typo-proof password MilkShop22; bhagya login 200 + /api/auth/me 200 (STORE_MANAGER @ milk products)
 - Night check: zero orders for milk products in 6h → nothing to batch at 23:00 (expected); engine idempotent — next paid order lands in next 11 PM batch or instant "Run settlement batch"
+
+Task 26 (cont., 23:07 IST) — cron moved for tonight's test:
+- vercel.json: settlement cron 30 17 * * * → 10 17 * * * (23:00 → 23:10 IST), TEMP for owner's live test; revert to 23:00 after test
+- Push 23:05:11 → deploy dpl_5X2FB6ZNVVVb2CNm2RVE6HeDPiAc READY ~23:07 (before fire time); .env.cron-secret recreated (sandbox reset)
+- Dry-run verified 23:06:50: milk products now skips as "nothing pending" (NOT KYC) → payout gate PASSED; Cinema Snacks ₹202.40 + Wrap House ₹615.58 still pending from earlier test payments — will batch too
