@@ -75,3 +75,4 @@ download/Tester-QR-Stickers.pdf
 public/downloads/
 upload/
 git token
+.env.prod-db

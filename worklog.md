@@ -896,3 +896,19 @@ Stage Summary:
 - Mom = STORE_MANAGER of "milk products" (rename pending owner's real store name — pencil button now exists on admin store card or I can do it)
 - Team panel self-serve: edit role/store, permanent remove
 - download/notifetch-seat-qr-posters.pdf (9.7 MB, 30 pages, 532 stickers, scan-verified) + HTML source + cover preview PNG
+
+---
+Task ID: 26
+Agent: Super Z (main)
+Task: Family money-loop night test — make the 23:00 IST auto-settlement include mom's store; owner money-flow explanation
+
+Work Log:
+- Confirmed Task 25 had already shipped in a lost segment (bhagya=STORE_MANAGER @ "milk products", QR sticker deck, customer warm polish, team cleanup); cleaned file-mode noise with git checkout -- .
+- Verified money math end-to-end: customer total = subtotal/0.95 (fixed 5% platform fee, PLATFORM_FEE_PCT); STORE split row = subtotal − commission; settlement pays Σ STORE rows
+- Prod DB prep (scripts/family-loop-prep.mjs, pg + Vercel-decrypted DATABASE_URL in gitignored .env.prod-db): "milk products" commissionPct 6 → 0 (owner keeps exactly the 5% platform fee, mom gets 95%), kycStatus PENDING → VERIFIED with masked kycDetail snapshot (family test store; real stores go through mall-admin verify), isOpen confirmed true
+- bhagya confirmed STORE_MANAGER @ milk products, active; menu ready (plain milk ₹100, coffee ₹100.50, tea ₹200); PENDING store rows 0 until dad's paid order
+- No store rename (owner: test store only); pencil rename on admin card available anytime
+
+Stage Summary:
+- 23:00 IST batch will include "milk products" the moment a paid order lands; payout = 95% of what dad paid; owner sends that exact amount via UPI then "Mark transferred" + UTR (the only human step; RazorpayX auto-payout is the future zero-touch path)
+- Scripts: family-loop-prep.mjs (idempotent, re-runnable); .env.prod-db gitignored
