@@ -4,6 +4,9 @@ const securityHeaders = [
   // Phase 4 security review hardening (see docs/SECURITY-REVIEW.md)
   { key: "X-Frame-Options", value: "DENY" }, // clickjacking
   { key: "X-Content-Type-Options", value: "nosniff" },
+  // Force HTTPS for 1 year once the browser has seen the site over TLS
+  // (no `preload` on purpose — that list is effectively irreversible).
+  { key: "Strict-Transport-Security", value: "max-age=31536000; includeSubDomains" },
   { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
   { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=()" },
   { key: "X-DNS-Prefetch-Control", value: "on" },
@@ -19,8 +22,11 @@ const securityHeaders = [
 
 const nextConfig: NextConfig = {
   output: "standalone",
+  // Type errors now block the build locally AND in CI (.github/workflows/ci.yml
+  // runs tsc before build), so shipping broken types to production is no longer
+  // possible. Keep this off.
   typescript: {
-    ignoreBuildErrors: true,
+    ignoreBuildErrors: false,
   },
   reactStrictMode: false,
   async headers() {

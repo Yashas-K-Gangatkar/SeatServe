@@ -268,6 +268,16 @@ const cashfreeAdapter: PaymentProviderAdapter = {
     if (!timestamp || !cashfreeVerify(secret, timestamp, rawBody, signature)) {
       return { ok: false, status: 401, error: 'Invalid webhook signature' }
     }
+    // Replay hardening: a captured request stays signature-valid forever if
+    // replayed byte-for-byte. The dedupeKey blocks exact replays of events we
+    // processed, but a never-processed stale event (e.g. captured while the
+    // deployment was down) must not flip money state days later — reject
+    // timestamps outside a 10-minute window (±skew). Late gateway events are
+    // recovered by reconciliation (src/lib/reconcile.ts), not by trusting them.
+    const tsMs = Number(timestamp) * 1000
+    if (!Number.isFinite(tsMs) || Math.abs(Date.now() - tsMs) > 10 * 60 * 1000) {
+      return { ok: false, status: 401, error: 'Stale webhook timestamp (replay rejected)' }
+    }
     // Cashfree payload: { type, data: { order: { order_id }, payment: { cf_payment_id, payment_method, ... } } }
     let body: {
       type?: string

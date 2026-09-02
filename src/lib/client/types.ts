@@ -29,6 +29,8 @@ export interface StoreData {
   tagline: string | null
   isOpen: boolean
   kycStatus: string
+  /** FSSAI license number — surfaced ONLY for KYC-VERIFIED stores (India food-safety display rule). */
+  fssai: string | null
   rating: number
   prepBufferMin: number
   products: ProductData[]

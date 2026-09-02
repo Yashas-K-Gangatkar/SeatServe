@@ -48,6 +48,20 @@ export async function GET(request: Request) {
     include: { products: { orderBy: [{ category: 'asc' }, { name: 'asc' }] } },
   })
 
+  // FSSAI display rule: a food business's license number is shown to customers
+  // ONLY once the mall admin has KYC-VERIFIED the store (a pending/fake store
+  // can never borrow credibility). The 14-digit shape is re-validated here so
+  // a malformed legacy KYC payload can never leak into the customer UI.
+  const fssaiOf = (s: (typeof stores)[number]): string | null => {
+    if (s.kycStatus !== 'VERIFIED' || !s.kycDetail) return null
+    try {
+      const d = JSON.parse(s.kycDetail) as { fssai?: unknown }
+      return typeof d.fssai === 'string' && /^\d{14}$/.test(d.fssai) ? d.fssai : null
+    } catch {
+      return null
+    }
+  }
+
   const screenSeats = await db.seat.findMany({
     where: { screenId: seat.screenId },
     orderBy: [{ rowLabel: 'asc' }, { seatNumber: 'asc' }],
@@ -81,6 +95,7 @@ export async function GET(request: Request) {
       tagline: s.tagline,
       isOpen: s.isOpen,
       kycStatus: s.kycStatus,
+      fssai: fssaiOf(s),
       rating: s.rating,
       prepBufferMin: s.prepBufferMin,
       products: s.products.map((p) => ({

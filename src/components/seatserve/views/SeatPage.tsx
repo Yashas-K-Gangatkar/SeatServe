@@ -175,6 +175,11 @@ export default function SeatPage({ qrToken, go }: { qrToken: string; go: (p: str
                   <p className="mt-0.5 text-[11px] text-muted-foreground">
                     ★ {store.rating.toFixed(1)} · prep ~{Math.max(...store.products.map((p) => p.prepEstimateMin), 0) + store.prepBufferMin} min · delivered to your seat
                   </p>
+                  {store.fssai && (
+                    <p className="mt-0.5 text-[10px] tracking-wide text-stone-400">
+                      FSSAI Lic. No. {store.fssai}
+                    </p>
+                  )}
                 </div>
                 <ChevronDown className={`h-4 w-4 shrink-0 text-muted-foreground transition ${open ? '' : '-rotate-90'}`} aria-hidden />
               </button>

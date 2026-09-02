@@ -1,0 +1,45 @@
+name: CI
+
+# Quality gate — mirrors the local pre-push ritual (tsc → eslint → bun test →
+# build). Broken code can no longer reach notifetch.in silently: Vercel deploys
+# from main, so every push runs this first and a red check = investigate.
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  quality-gate:
+    runs-on: ubuntu-latest
+    env:
+      # Build-time placeholder only — no page queries the DB during
+      # `next build` (all live-data pages are request-time dynamic), but the
+      # Prisma client + Next want the variable to exist with a valid shape.
+      DATABASE_URL: postgresql://ci:ci@localhost:5432/ci
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Generate PostgreSQL schema + Prisma client
+        run: |
+          node scripts/make-postgres-schema.mjs
+          bunx prisma generate --schema prisma/schema.postgres.prisma
+
+      - name: Type check (tsc --noEmit)
+        run: bunx tsc --noEmit
+
+      - name: Lint (eslint)
+        run: bun run lint
+
+      - name: Tests (bun test)
+        run: bun test
+
+      - name: Production build (next build)
+        run: bun run build
