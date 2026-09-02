@@ -15,10 +15,37 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+const SITE_URL = "https://notifetch.in";
+const SITE_TITLE = "NotiFetch — order food to your cinema seat";
+const SITE_DESCRIPTION =
+  "NotiFetch turns your cinema seat into a food counter. Scan the seat QR, order from multiple outlets, pay by UPI or card, and get snacks delivered to your Screen & Seat. Payments by Razorpay.";
+
 export const metadata: Metadata = {
-  title: "SeatServe — order food to your cinema seat",
-  description:
-    "Multi-store food ordering and delivery inside malls with cinemas. Scan the seat QR, pay once by UPI or card, get snacks delivered to Screen & Seat. Payments by Razorpay.",
+  metadataBase: new URL(SITE_URL),
+  title: SITE_TITLE,
+  description: SITE_DESCRIPTION,
+  alternates: { canonical: "/" },
+  openGraph: {
+    type: "website",
+    url: SITE_URL,
+    siteName: "NotiFetch",
+    title: SITE_TITLE,
+    description: SITE_DESCRIPTION,
+    images: [
+      {
+        url: "/menu/popcorn-salted.jpg",
+        width: 1024,
+        height: 1024,
+        alt: "Fresh popcorn — ordered from your seat with NotiFetch",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: SITE_TITLE,
+    description: SITE_DESCRIPTION,
+    images: ["/menu/popcorn-salted.jpg"],
+  },
   icons: {
     icon: "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍿</text></svg>",
   },
