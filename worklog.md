@@ -922,3 +922,11 @@ Task 26 (cont., 23:07 IST) — cron moved for tonight's test:
 - vercel.json: settlement cron 30 17 * * * → 10 17 * * * (23:00 → 23:10 IST), TEMP for owner's live test; revert to 23:00 after test
 - Push 23:05:11 → deploy dpl_5X2FB6ZNVVVb2CNm2RVE6HeDPiAc READY ~23:07 (before fire time); .env.cron-secret recreated (sandbox reset)
 - Dry-run verified 23:06:50: milk products now skips as "nothing pending" (NOT KYC) → payout gate PASSED; Cinema Snacks ₹202.40 + Wrap House ₹615.58 still pending from earlier test payments — will batch too
+
+Task 26 (cont., 23:27 IST) — FAMILY MONEY LOOP VERIFIED END-TO-END WITH REAL MONEY:
+- Dad's order SS-PETNZT: ₹3 items + ₹0.16 platform fee = ₹3.16 PAID via Razorpay live (one failed attempt 23:20, retried, captured 23:21) — order COMPLETED
+- Owner + mom both used the new price-edit button (PRODUCT_REPRICED by MALL_ADMIN + STORE_MANAGER in audit)
+- Split ledger: milk products STORE row ₹3.00, commission ₹0 → 95/5 math exact
+- 23:25 cron did NOT fire (Vercel cron lag after rapid redeploys) → fired /api/admin/settlement/auto-daily manually with CRON_SECRET (identical code path): 3 batches PENDING — milk products ₹3.00, Cinema Snacks ₹202.40, Wrap House ₹615.58; Mithai & More skipped (KYC pending); Pizza Corner nothing
+- Double-payout guard confirmed: batched rows backlinked (settlementId), only Mithai ₹450 remains pending
+- Remaining human step: owner sends mom ₹3 via UPI → Mark transferred + UTR
