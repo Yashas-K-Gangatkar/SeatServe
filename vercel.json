@@ -7,6 +7,10 @@
     {
       "path": "/api/health?cron=1",
       "schedule": "0 4 * * *"
+    },
+    {
+      "path": "/api/admin/settlement/auto-daily",
+      "schedule": "30 17 * * *"
     }
   ]
 }
