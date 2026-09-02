@@ -912,3 +912,8 @@ Work Log:
 Stage Summary:
 - 23:00 IST batch will include "milk products" the moment a paid order lands; payout = 95% of what dad paid; owner sends that exact amount via UPI then "Mark transferred" + UTR (the only human step; RazorpayX auto-payout is the future zero-touch path)
 - Scripts: family-loop-prep.mjs (idempotent, re-runnable); .env.prod-db gitignored
+
+Task 26 (cont., 23:0x IST) — bhagya "login not working":
+- Server-side login verified 200 OK with old password (exact + trailing-space) — account never broken; typo trap in Wr4pHouseM0m (4/zero)
+- SET_PASSWORD via asha session → new typo-proof password MilkShop22; bhagya login 200 + /api/auth/me 200 (STORE_MANAGER @ milk products)
+- Night check: zero orders for milk products in 6h → nothing to batch at 23:00 (expected); engine idempotent — next paid order lands in next 11 PM batch or instant "Run settlement batch"
