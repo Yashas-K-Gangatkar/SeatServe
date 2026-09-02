@@ -858,3 +858,21 @@ Stage Summary:
 - Nightly 23:00 IST auto-settlement LIVE: platform prepares all-store payout batches automatically; money moves only when admin pastes real UTR (human-in-the-loop preserved)
 - KYC payout gate confirmed working on prod (unverified stores skipped with reason)
 - Owner guidance delivered: new store with cut=5% self-serve, mom as Store Manager + KYC, customer side needs no login; Razorpay T+2 float caveat + Route auto-split as the future pro path
+
+---
+Task ID: 24
+Agent: Super Z (main)
+Task: Owner round 2 — bhagya login failure, price-min confusion, KYC how-to, boring background
+
+Work Log:
+- Live diag: asha/yashas logins 200; bhagya@gmail.com 401 with BOTH email cases; row exists (KITCHEN_STAFF @ Cinema Snacks, active)
+- Controlled E2E on PROD (scripts/diag-staff-login.sh, asha session): create->login 200, reset->login 200, trailing-space password 401 => server flow healthy; culprit = paste accidents (old Copy button emitted "email / password" as one string)
+- Fixed bhagya via SET_PASSWORD (Wr4pHouseM0m) -> verified login 200; throwaway diag account deactivated
+- Fixes shipped (dcdbb70): password .trim() in login + staff create + reset; TeamPanel green card = separate Copy email / Copy password buttons + Done (hide) + one-time-card explainer; all credential inputs autoCapitalize/autoCorrect/spellCheck off; price min unified to Rs1 (api/stores productSchema min(500)->min(100) w/ friendly msg) + parseBody prettyPath ("Menu item 1 price: Minimum price is Rs1 per item"); NewStoreForm client check; overview adds kycSubmitted+kycDetail; Admin store card shows "Waiting for store's KYC form" instead of erroring 409 + KYC details line when submitted; WarmBackdrop blooms on StaffGate (all consoles) + StaffLogin + StaffPortal
+- Gates: tsc 0, eslint 0, 73/73, build OK; deploy dpl_9hekdb3FUyV9dNjpU2kWhp4swEV8 READY
+- Live verify: 422 error text human; trailing-space login 200; bhagya 200; overview kycSubmitted present (Cinema Snacks/Pizza/Wrap VERIFIED; Mithai & More + "milk products" PENDING unsubmitted)
+- Discovered owner already created "milk products" store (his price error happened in its opening-menu form); sandbox reset wiped .env.vercel-token again (recreated)
+
+Stage Summary:
+- Login paste-accidents impossible now; bhagya creds working; price min Rs1 with human errors; KYC flow self-explanatory in UI; warm backdrop on all staff screens
+- Open items: "milk products" store name/owner setup (mom should be STORE_MANAGER of her own store, kitchen login works meanwhile); diag account removable if owner wants
