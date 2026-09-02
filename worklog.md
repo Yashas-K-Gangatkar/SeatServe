@@ -948,3 +948,20 @@ Stage Summary:
 - Platform is now REAL-ONLY: zero fake stores, zero fake rupees anywhere in admin panels; one store (mom's) ready for fresh loop tests
 - Settlement timing still 23:25 IST (test value) — revert to 23:00 on owner's word
 - Auto-payout path communicated: needs RazorpayX activation + mom's UPI ID; until then 3-tap manual flow (send via own UPI app → Mark transferred → UTR)
+
+---
+Task ID: 28
+Agent: Super Z (main)
+Task: External AI audit report — verify every claim against real code, build the genuine gaps ("loop engineering, leave nothing")
+
+Work Log:
+- Explore-agent verification of all 20 audit claims: report was substantially WRONG about the live platform — prod is PostgreSQL/Neon (not SQLite), legal pages exist with grievance officer (DPDP 2023 + Consumer Protection E-Commerce Rules cited), delivery state machine complete + role-enforced (Order/StoreTicket/DeliveryRun matrices), 6 roles enforced across 25 route files, webhook HMAC-SHA256 + PaymentEvent dedupeKey idempotency solid, login scrypt+timingSafeEqual+lockout, /0.95 gross-up confirmed in pricing.ts
+- Genuine gaps found + BUILT this task (commit 146b589): (1) .github/workflows/ci.yml — full gate on push: bun install → pg schema+prisma generate → tsc → eslint → bun test → next build with dummy DATABASE_URL; run #1 completed success on GitHub runners; (2) HSTS header (1yr, subdomains, no preload); (3) ignoreBuildErrors flipped FALSE — type errors now block builds; (4) /api/health?cron=1 maintenance branch purges expired sessions nightly (was lazy-delete-only), cron-secret fail-closed; (5) FSSAI customer display: /api/context emits fssai only for KYC-VERIFIED stores (14-digit re-validated), SeatPage shows "FSSAI Lic. No." chip; (6) Cashfree webhook replay window 10 min (stale events 401, reconcile.ts is recovery path); (7) package.json "test" script; (8) scripts/backup-db.mjs full read-only DB export → backups/backup-<ts>/
+- Quality gate ALL GREEN: tsc PASS, eslint clean, 73/73 tests, next build PASS under CI conditions (type checking ON for the first time); deployed + verified live: HSTS header present, /api/health 200 healthy 9ms
+- Razorpay key check: no Vercel token in sandbox (reset wiped .env.vercel-token again) — live-key proof stands via Task 26's real ₹3.16 capture; keys verified in code (gateway-client live via rzp_live_ prefix); owner re-supply token to re-run live API ping
+- Sandbox reset also wiped .env.prod-db + .env.cron-secret; git remote token recoverable (push OK)
+
+Stage Summary:
+- Audit verdict delivered to owner: ~60% of the scary claims were already built; real gaps closed in this wave = CI/CD, HSTS, session purge, FSSAI display, replay window
+- Remaining roadmap (owner actions in parens): durable rate limiting (Upstash account), error tracking/alerting (Sentry), scheduled off-site backups (Neon PITR toggle or paste DATABASE_URL), grievance-officer real name/phone, RazorpayX activation for auto-payout, 2FA + GST tax invoice + SMS as pre-scale phase
+- Settlement cron still 23:25 IST test value — revert to 23:00 on owner's word
