@@ -4,7 +4,7 @@
 // Owners create menu items and mark items out of stock (86'd) in one place.
 // STORE_MANAGER: their own store. MALL_ADMIN: pick any store in the mall.
 import { useCallback, useEffect, useState } from 'react'
-import { ChevronLeft, Plus, UtensilsCrossed, PackageX, PackageCheck, Loader2, ImageOff } from 'lucide-react'
+import { ChevronLeft, Plus, UtensilsCrossed, PackageX, PackageCheck, Loader2, ImageOff, Pencil } from 'lucide-react'
 import { toast } from 'sonner'
 import { get, post, patch, ApiError } from '@/lib/client/api'
 import { MENU_IMAGES } from '@/lib/menu-images'
@@ -49,6 +49,8 @@ function MenuBoard({ go }: { go: (p: string) => void }) {
   const [loading, setLoading] = useState(true)
   const [addOpen, setAddOpen] = useState(false)
   const [busyId, setBusyId] = useState<string | null>(null)
+  const [editPriceId, setEditPriceId] = useState<string | null>(null)
+  const [priceDraft, setPriceDraft] = useState('')
 
   const load = useCallback(
     async (id?: string | null) => {
@@ -77,6 +79,31 @@ function MenuBoard({ go }: { go: (p: string) => void }) {
       void load(storeId)
     } catch (err) {
       toast.error(err instanceof ApiError ? err.message : 'Could not update the item')
+    } finally {
+      setBusyId(null)
+    }
+  }
+
+  const startPriceEdit = (item: MenuItem) => {
+    setEditPriceId(item.id)
+    setPriceDraft((item.pricePaise / 100).toFixed(2).replace(/\.00$/, ''))
+  }
+
+  const savePrice = async (item: MenuItem) => {
+    const n = Number.parseFloat(priceDraft)
+    if (!Number.isFinite(n) || n < 1) {
+      toast.error('Enter a price of ₹1 or more')
+      return
+    }
+    setBusyId(item.id)
+    try {
+      const paise = Math.round(n * 100)
+      await patch(`/api/products/${item.id}`, { pricePaise: paise })
+      toast.success(`${item.name} repriced to ${rupees(paise)}`)
+      setEditPriceId(null)
+      void load(storeId)
+    } catch (err) {
+      toast.error(err instanceof ApiError ? err.message : 'Could not update the price')
     } finally {
       setBusyId(null)
     }
@@ -169,10 +196,56 @@ function MenuBoard({ go }: { go: (p: string) => void }) {
                       </span>
                     )}
                   </p>
-                  <p className="mt-0.5 truncate text-[11px] text-muted-foreground">
-                    {item.category} · {rupees(item.pricePaise)} · GST {item.taxRatePct}% · ~{item.prepEstimateMin} min
-                    {item.allergens ? ` · allergens: ${item.allergens}` : ''}
+                  <p className="mt-0.5 flex flex-wrap items-center gap-1 text-[11px] text-muted-foreground">
+                    <span className="truncate">{item.category}</span>
+                    <span aria-hidden>·</span>
+                    <button
+                      onClick={() => startPriceEdit(item)}
+                      className="inline-flex items-center gap-0.5 rounded-md bg-amber-50 px-1.5 py-0.5 font-bold text-amber-700 ring-1 ring-amber-200 hover:bg-amber-100"
+                      aria-label={`Change price of ${item.name}`}
+                    >
+                      {rupees(item.pricePaise)} <Pencil className="h-3 w-3" aria-hidden />
+                    </button>
+                    <span aria-hidden>·</span>
+                    <span>GST {item.taxRatePct}%</span>
+                    <span aria-hidden>·</span>
+                    <span>~{item.prepEstimateMin} min</span>
+                    {item.allergens ? (
+                      <>
+                        <span aria-hidden>·</span>
+                        <span className="truncate">allergens: {item.allergens}</span>
+                      </>
+                    ) : null}
                   </p>
+                  {editPriceId === item.id && (
+                    <div className="mt-2 flex items-center gap-2">
+                      <Input
+                        type="number"
+                        inputMode="decimal"
+                        min={1}
+                        step="0.5"
+                        value={priceDraft}
+                        onChange={(e) => setPriceDraft(e.target.value)}
+                        className="h-8 w-24 text-sm"
+                        aria-label={`New price for ${item.name} in rupees`}
+                        autoFocus
+                      />
+                      <button
+                        onClick={() => void savePrice(item)}
+                        disabled={busyId === item.id}
+                        className="inline-flex h-8 items-center gap-1 rounded-lg bg-gradient-to-b from-amber-500 to-orange-500 px-3 text-[11px] font-extrabold text-white disabled:opacity-40"
+                      >
+                        {busyId === item.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden /> : null}
+                        Save price
+                      </button>
+                      <button
+                        onClick={() => setEditPriceId(null)}
+                        className="h-8 rounded-lg border border-stone-300 px-3 text-[11px] font-bold text-stone-500 hover:bg-stone-50"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  )}
                 </div>
                 <label className="flex shrink-0 items-center gap-2 text-[11px] font-bold text-stone-500">
                   <span className="hidden sm:inline">{item.isAvailable ? 'In stock' : 'Sold out'}</span>
