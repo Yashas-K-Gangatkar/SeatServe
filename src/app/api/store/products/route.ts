@@ -18,6 +18,8 @@ const bodySchema = z.object({
   prepEstimateMin: z.number().int().min(1).max(60).default(8),
   isVeg: z.boolean().default(true),
   allergens: z.string().trim().max(80).optional().or(z.literal('')),
+  // Photos are compulsory — every menu item must ship with a food photo.
+  imageUrl: z.string().trim().min(4, 'Item photo is required — pick one or paste an image URL').max(400),
   isAvailable: z.boolean().default(true),
 })
 
@@ -51,6 +53,7 @@ export async function POST(request: Request) {
       prepEstimateMin: input.prepEstimateMin,
       isVeg: input.isVeg,
       allergens: input.allergens || null,
+      imageUrl: input.imageUrl,
       isAvailable: input.isAvailable,
     },
   })

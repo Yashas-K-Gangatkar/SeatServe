@@ -183,6 +183,13 @@ export default function SeatPage({ qrToken, go }: { qrToken: string; go: (p: str
                     const disabled = !p.isAvailable || !store.isOpen
                     return (
                       <li key={p.id} className={`flex items-center gap-3 px-4 py-3 ${disabled ? 'opacity-50' : ''}`}>
+                        {p.imageUrl ? (
+                          <img src={p.imageUrl} alt="" loading="lazy" className="h-14 w-14 shrink-0 rounded-xl border border-border object-cover" />
+                        ) : (
+                          <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl border border-dashed border-stone-300 bg-stone-50 text-lg" aria-hidden>
+                            🍽️
+                          </div>
+                        )}
                         <div className="min-w-0 flex-1">
                           <p className="flex items-center gap-1.5 text-sm font-semibold">
                             <VegMark veg={p.isVeg} /> {p.name}

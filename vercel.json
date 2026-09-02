@@ -1,7 +1,7 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "framework": "nextjs",
-  "buildCommand": "node scripts/make-postgres-schema.mjs && bunx prisma generate --schema prisma/schema.postgres.prisma && next build",
+  "buildCommand": "node scripts/make-postgres-schema.mjs && bunx prisma generate --schema prisma/schema.postgres.prisma && bunx prisma db push --schema prisma/schema.postgres.prisma --skip-generate && next build",
   "installCommand": "bun install",
   "crons": [
     {

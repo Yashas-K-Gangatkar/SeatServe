@@ -42,6 +42,7 @@ export async function GET(request: Request) {
       prepEstimateMin: p.prepEstimateMin,
       isVeg: p.isVeg,
       allergens: p.allergens,
+      imageUrl: p.imageUrl,
       isAvailable: p.isAvailable,
     })),
   })

@@ -12,6 +12,8 @@ const bodySchema = z.object({
   isAvailable: z.boolean().optional(),
   // Audit fix #44 (CRUD increment): mall admin / store manager can reprice items
   pricePaise: z.number().int().min(100).max(10_000_00).optional(),
+  // photo can be attached/updated any time (compulsory at creation)
+  imageUrl: z.string().trim().min(4).max(400).optional(),
 })
 
 export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -29,9 +31,10 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
     return fail('Your account is not authorized for this store', 403)
   }
 
-  const data: { isAvailable?: boolean; pricePaise?: number } = {}
+  const data: { isAvailable?: boolean; pricePaise?: number; imageUrl?: string } = {}
   if (parsed.data.isAvailable !== undefined) data.isAvailable = parsed.data.isAvailable
   if (parsed.data.pricePaise !== undefined) data.pricePaise = parsed.data.pricePaise
+  if (parsed.data.imageUrl !== undefined) data.imageUrl = parsed.data.imageUrl
   if (Object.keys(data).length === 0) return fail('Nothing to update', 422)
 
   await db.product.update({ where: { id }, data })
@@ -46,6 +49,6 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
   })
   await emitToRooms({ rooms: [`admin:${product.store.mallId}`], event: 'product:update', data: { productId: id, isAvailable: data.isAvailable ?? product.isAvailable } })
 
-  const fresh = await db.product.findUnique({ where: { id }, select: { id: true, isAvailable: true, pricePaise: true } })
+  const fresh = await db.product.findUnique({ where: { id }, select: { id: true, isAvailable: true, pricePaise: true, imageUrl: true } })
   return ok(fresh)
 }

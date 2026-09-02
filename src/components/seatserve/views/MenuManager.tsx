@@ -4,9 +4,10 @@
 // Owners create menu items and mark items out of stock (86'd) in one place.
 // STORE_MANAGER: their own store. MALL_ADMIN: pick any store in the mall.
 import { useCallback, useEffect, useState } from 'react'
-import { ChevronLeft, Plus, UtensilsCrossed, PackageX, PackageCheck, Loader2 } from 'lucide-react'
+import { ChevronLeft, Plus, UtensilsCrossed, PackageX, PackageCheck, Loader2, ImageOff } from 'lucide-react'
 import { toast } from 'sonner'
 import { get, post, patch, ApiError } from '@/lib/client/api'
+import { MENU_IMAGES } from '@/lib/menu-images'
 import StaffGate from '../StaffGate'
 import { Spinner, LoadError, EmptyState, VegMark, rupees } from '../ui-bits'
 import { Switch } from '@/components/ui/switch'
@@ -23,6 +24,7 @@ interface MenuItem {
   prepEstimateMin: number
   isVeg: boolean
   allergens: string | null
+  imageUrl: string | null
   isAvailable: boolean
 }
 
@@ -151,6 +153,13 @@ function MenuBoard({ go }: { go: (p: string) => void }) {
           <ul className="divide-y divide-border/60">
             {products.map((item) => (
               <li key={item.id} className={`flex items-center gap-3 px-4 py-3.5 ${item.isAvailable ? '' : 'opacity-70'}`}>
+                {item.imageUrl ? (
+                  <img src={item.imageUrl} alt="" loading="lazy" className="h-11 w-11 shrink-0 rounded-lg border border-border object-cover" />
+                ) : (
+                  <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-dashed border-stone-300 bg-stone-50 text-stone-300" title="No photo yet">
+                    <ImageOff className="h-4 w-4" aria-hidden />
+                  </div>
+                )}
                 <div className="min-w-0 flex-1">
                   <p className="flex flex-wrap items-center gap-1.5 text-sm font-extrabold text-stone-900">
                     <VegMark veg={item.isVeg} /> {item.name}
@@ -219,18 +228,20 @@ function AddItemSheet({
   const [prep, setPrep] = useState('8')
   const [isVeg, setIsVeg] = useState(true)
   const [allergens, setAllergens] = useState('')
+  const [image, setImage] = useState('')
   const [startSoldOut, setStartSoldOut] = useState(false)
   const [saving, setSaving] = useState(false)
 
   const reset = () => {
     setName(''); setDescription(''); setCategory('Snacks'); setPrice(''); setPrep('8')
-    setIsVeg(true); setAllergens(''); setStartSoldOut(false)
+    setIsVeg(true); setAllergens(''); setImage(''); setStartSoldOut(false)
   }
 
   const submit = async () => {
     const priceRupees = Number.parseFloat(price)
     if (!name.trim()) return toast.error('Item name is required')
     if (!Number.isFinite(priceRupees) || priceRupees < 1) return toast.error('Enter a price of ₹1 or more')
+    if (!image.trim()) return toast.error('Pick a photo for the item — every item needs one')
     setSaving(true)
     try {
       await post('/api/store/products', {
@@ -242,6 +253,7 @@ function AddItemSheet({
         prepEstimateMin: Math.max(1, Math.round(Number.parseInt(prep, 10) || 8)),
         isVeg,
         allergens: allergens.trim(),
+        imageUrl: image.trim(),
         isAvailable: !startSoldOut,
       })
       toast.success(`${name.trim()} added to the menu`)
@@ -295,6 +307,37 @@ function AddItemSheet({
             <div>
               <label htmlFor="mi-allerg" className="mb-1 block text-xs font-semibold text-muted-foreground">Allergens</label>
               <Input id="mi-allerg" value={allergens} onChange={(e) => setAllergens(e.target.value)} placeholder="nuts, dairy" maxLength={80} />
+            </div>
+          </div>
+          <div>
+            <label htmlFor="mi-photo" className="mb-1 block text-xs font-semibold text-muted-foreground">Item photo *</label>
+            <div className="flex items-center gap-3 rounded-xl border border-border bg-card p-2">
+              {image ? (
+                <img src={image} alt="Selected item photo" className="h-16 w-16 rounded-lg border border-border object-cover" />
+              ) : (
+                <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-lg border border-dashed border-stone-300 text-[9px] font-bold text-stone-400">NO PHOTO</div>
+              )}
+              <div className="min-w-0 flex-1">
+                <Input id="mi-photo" value={image} onChange={(e) => setImage(e.target.value)} placeholder="/menu/momo.jpg or https://…" maxLength={400} className="text-xs" />
+                <p className="mt-1 text-[10px] text-muted-foreground">Pick a ready photo below or paste any image link — photos are compulsory.</p>
+              </div>
+            </div>
+            <div className="mt-2 grid grid-cols-5 gap-1.5 overflow-y-auto rounded-xl border border-border bg-card p-2 sm:grid-cols-6" style={{ maxHeight: 136 }}>
+              {MENU_IMAGES.map((m) => {
+                const val = `/menu/${m.file}.jpg`
+                return (
+                  <button
+                    key={m.file}
+                    type="button"
+                    onClick={() => setImage(val)}
+                    aria-label={`Use ${m.label} photo`}
+                    aria-pressed={image === val}
+                    className={`overflow-hidden rounded-lg border-2 transition ${image === val ? 'border-orange-500 ring-1 ring-orange-300' : 'border-transparent hover:border-stone-200'}`}
+                  >
+                    <img src={val} alt="" loading="lazy" className="h-12 w-full object-cover" />
+                  </button>
+                )
+              })}
             </div>
           </div>
           <div className="flex items-center justify-between rounded-xl border border-border bg-card px-3 py-2.5">

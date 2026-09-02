@@ -131,6 +131,7 @@ model Product {
   prepEstimateMin Int         @default(8)
   isVeg           Boolean     @default(true)
   allergens       String? // "nuts, dairy"
+  imageUrl        String? // food photo (/menu/xxx.jpg or full URL) — compulsory via manager UI
   isAvailable     Boolean     @default(true)
   createdAt       DateTime    @default(now())
   cartItems       CartItem[]

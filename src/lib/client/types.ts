@@ -17,6 +17,7 @@ export interface ProductData {
   prepEstimateMin: number
   isVeg: boolean
   allergens: string | null
+  imageUrl: string | null
   isAvailable: boolean
 }
 

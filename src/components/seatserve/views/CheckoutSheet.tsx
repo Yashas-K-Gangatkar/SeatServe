@@ -374,9 +374,14 @@ export function PaymentSheet({
       currency: 'INR',
       name: 'SeatServe',
       description: `Order ${order.code}`,
-      ...(customer?.name || customer?.phone
-        ? { prefill: { name: customer.name || undefined, contact: customer.phone || undefined } }
-        : {}),
+      // UPI first: pre-select the UPI tab so most customers go straight to their
+      // UPI app (GPay / PhonePe / Paytm) with the amount prefilled — instead of
+      // hopping through wallet-login pages inside the checkout.
+      prefill: {
+        ...(customer?.name ? { name: customer.name } : {}),
+        ...(customer?.phone ? { contact: customer.phone } : {}),
+        method: 'upi',
+      },
       theme: { color: '#ea580c' },
       handler: (response: RazorpayHandlerResponse) => {
         document.body.style.pointerEvents = '' // gateway modal gone — restore the normal lock
