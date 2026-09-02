@@ -822,3 +822,20 @@ Stage Summary:
 - Menu photos end-to-end on prod (19/19), photos compulsory for new items
 - UPI-first checkout live — shorter payment path
 - 203b626 (feature) + 936adfa (deploy fix) + cleanup commit pushed; all gates green
+
+---
+Task ID: 22
+Agent: Super Z (main)
+Task: Diagnose owner's "searching NotiFetch.in shows 404 but direct link works" — fix search visibility
+
+Work Log:
+- Verified every entry path healthy on prod: apex https 200, http 308->https, www 308->apex, /api/health 200, /menu/*.jpg 200 image/jpeg (19/19 photos live from Task 21)
+- Root cause of what owner saw: (1) Google crawled the domain during the ghost-account broken window and snapshotted the error page — new domains take days to refresh; (2) page <title> was "SeatServe — ..." so a "NotiFetch" brand search matched poorly; (3) any non-root path (e.g. /staff/login) 404'd since the app is hash-routed at /
+- Fixes shipped (commit 3f83850, deploy dpl_9ip2Ej94WQXGYzFD5wHCjv2kPoBW READY): metadataBase + NotiFetch-branded title/description + OG/Twitter cards (og:image = menu popcorn photo -> rich WhatsApp/link previews); src/app/sitemap.ts (6 public URLs, verified 200 application/xml); public/robots.txt Sitemap line + Disallow /api/; catch-all src/app/[...not-found]/page.tsx permanentRedirect('/') so stale indexed links land on the live app (verified /staff/login + /old-broken-link -> 308 -> /, real routes /faq + /api/* + /menu/* unaffected)
+- Gates: tsc 0, eslint 0, 67/67 bun tests, production build OK. Also pushed pending worklog commit 3293bd1
+- Confirmed prior-task state from worklog Task 21: UPI-first + name/phone prefill live in CheckoutSheet; Team panel staff creation = testers answer; 19/19 AI menu photos attached on prod
+
+Stage Summary:
+- notifetch.in now presents as NotiFetch to search engines and link previews; no user-reachable 404 for stray paths; sitemap live for fast re-crawl
+- Owner accelerator (optional): Google Search Console URL-prefix property -> HTML-tag verification (paste tag to me to ship) -> Request Indexing
+- Open product decision offered: rename visible "SeatServe" strings to "NotiFetch" across landing/staff UI (metadata already NotiFetch)
