@@ -1069,3 +1069,22 @@ Stage Summary:
 - Delegation chain the owner asked for is now real: OWNER creates testers → MANAGER (ramesh) opens stores, feeds menus, submits+verifies KYC, creates staff logins & sets their passwords, runs/oversees the kitchen → rest of the loop (orders/pay/deliver/settle) already proven live
 - Cross-mall overview leak found and fixed while wiring delegation
 - Next: seed the mall demo store live (store + menu + photos + KYC verified) so the owner can walk into malls with a working end-to-end demo
+
+---
+Task ID: 34
+Agent: Super Z (main)
+Task: Founder's sales pack - set live ₹2 demo price + build 3 PDF deliverables (pitch sheet, LOI, Bengaluru targets playbook)
+
+Work Log:
+- Demo price set LIVE via scripts/set-demo-price.mjs: ramesh (CINEMA_MANAGER delegation, Task 33) PATCHed Masala Chai in Wraphouse Kitchen from 2000 to 200 paise; verified via public GET /api/context?qr=GVTHGD4Q6F that customer sees ₹2.00 and store open. Revert = PATCH pricePaise 2000 (waiting for owner to say test done)
+- Generated notifetch-demo-qr.png (QR -> https://notifetch.in/?qr=GVTHGD4Q6F) via scripts/make-demo-qr.py
+- Doc 1 Pitch Sheet (poster flow): scripts/pitch-sheet.html (794px, corporate clean, steel-blue cascade palette, QR embedded as b64, "Swiggy delivers the cinema's own popcorn / NotiFetch delivers your entire food court" headline, 4 stats, failure->fix rows, how-it-works, live ₹2 chai demo strip, contact placeholders) -> poster_validate ok -> html2poster 794px -> download/NotiFetch-Pitch-Sheet.pdf (794x2288) -> pdf_qa --poster --no-tables pass -> meta.brand -> PNG preview via scripts/shot-pitch-sheet.js -> download/NotiFetch-Pitch-Sheet.png
+- Doc 2 LOI (report flow, letter type, no cover/TOC): scripts/build-loi.py - ReportLab, FreeSerif, body 14pt (fill-engine floor), H1 32 clause H 18, palette cascade --intent cold --seed 42 (matches pitch sheet steel blue #2b6886), NOTIFETCH letterhead onFirst canvas, 8 clauses (Purpose/30-day Pilot/6-10% commission final in definitive agreement/Fulfilment runner+tech/Packaging dry sealed/Settlement weekly+dashboard/Non-binding conditional/90-day validity), dual signature blocks, [PLACEHOLDERS] for venue/date/phone -> 4 pages A4 -> meta.brand + font.check 0 issues + pages.clean none + pdf_qa pass (only false-positive "cover not full-bleed" - it is a letterhead letter)
+- Doc 3 Playbook (report flow, internal doc, no cover): scripts/build-playbook.py - same seed-42 palette, priority targets table (Gopalan 5-venues-one-owner / Miraj TGN Lotus Elite / MovieTime YGR Signature RR Nagar+Whitefield / Rajhans ~140-screen expansion / Pallavi single screen) with Where/Why/Ask/Angle, Urvashi note (excluded, demolition litigation), warm-leads table (Orion x3 emails: jejjujacob@brigadegroup.com leasing, priyanka@ + poonamnaik@orionmalls.com marketing; Lulu leasingblr@ parked 90 days - Swiggy deal is cinema-counter, food court open), 10-min 2-phone ₹2 chai demo table, 4-objection cheat sheet (PVR/Swiggy/tried-failed/outside-food-ban), Orion follow-up email card, visit checklist (before/at/same-evening) -> 7 pages A4, repeatRows=1 verified on split targets table -> meta.brand + font.check 0 + pages.clean none + pdf_qa pass
+- Layout iterations on Doc 3: moved Urvashi note above its table (was orphaned), email addresses broken after @ (clean wrap), email section heading moved inside its card (was orphaned at page bottom), checklist CondPageBreak 0.55 + KeepTogether so it opens as one block
+- Verified visually page-by-page via PDF renders for both docs
+
+Stage Summary:
+- Delivered: download/NotiFetch-Pitch-Sheet.pdf (+.png, .html source), download/NotiFetch-Brand-LOI.pdf, download/NotiFetch-Bengaluru-Targets.pdf
+- Live demo state: Wraphouse Kitchen Masala Chai = ₹2 (200 paise) at seat QR GVTHGD4Q6F; revert PATCH /api/products/{id} {"pricePaise": 2000} when owner says done
+- Pending: chai revert (owner test), asha password rotation (Vercel token), cron restore after tests, RazorpayX activation
