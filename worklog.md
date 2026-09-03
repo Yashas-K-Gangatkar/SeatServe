@@ -987,3 +987,21 @@ Work Log:
 Stage Summary:
 - Edge burn fixed at the mechanism level; real traffic can now be judged honestly (Pro upgrade = only when real customers justify it)
 - Platform UI is now demo-free for the owner's final self-built test; DB wipe script armed pending token
+
+---
+Task ID: 30
+Agent: Super Z (main)
+Task: Owner token → secrets restore + live Razorpay API check + FINAL DB WIPE + order limit (max 5/item) + Razorpay screenshot verdicts
+
+Work Log:
+- Owner supplied Vercel token (vcp_…) → saved to .env.vercel-token (gitignored, chmod 600); v10 env API returns {type:'encrypted', value:<plaintext>} shape (NOT the old nested decrypted.value) — patch applied to scripts/restore-secrets-and-check-razorpay.mjs
+- Secrets restored: .env.prod-db (Neon) + .env.cron-secret; Razorpay keys decrypted in-memory only (never written to disk)
+- LIVE Razorpay API check: rzp_live_ keys ✓; payments list — ₹3.16 CAPTURED upi (family loop), ₹1.05×2 captured + 1 failed, ₹10.00 REFUNDED (cancel-refund path proven); settlements — ₹14.61 PROCESSED UTR AXISCN1447013958 (money reached owner's bank, T+2 chain verified at bank level); balance ₹5.11
+- FINAL WIPE EXECUTED (scripts/final-clean.mjs, backup-first to backups/finalclean-*): milk products store + 3 products, 23 sessions, 233 audit rows deleted; fixed pg quoting bug (""User"" → bare User for the helper). Verified: 0 stores/orders/payments/splits/settlements/sessions/audit; users = asha MALL_ADMIN + bhagya STORE_MANAGER (storeId NULL); 532 seats kept
+- Order limit (owner: "add 5 or less"): qty max 20→5 in POST /api/orders zod + cart store + SeatPage stepper
+- Live verified post-deploy: /api/context?qr=GVTHGD4Q6F → Aurora Mall seat A-1, 0 stores (blank slate); demo/entry 404; gates green (tsc/eslint/73/build), pushed
+
+Stage Summary:
+- Platform is 100% blank for owner's self-built final test; settlement cron still 23:25 IST until owner says done
+- Razorpay verdicts delivered: "Access denied" on x.razorpay.com = missing X product role (owner must add user via Manage Team or activate X with owner login) — NOT a ban; 120-day tooltip = faster-settlement eligibility only, T+2 free continues unchanged
+- Next: owner builds real store/staff/KYC → final family loop → flip cron 23:25→23:00
