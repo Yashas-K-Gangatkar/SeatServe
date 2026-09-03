@@ -1,12 +1,12 @@
 // GET /api/stores — public demo list (kitchen selector, admin toggles reuse overview)
-// POST /api/stores — MALL_ADMIN opens a NEW store in their mall (same-mall
-// expansion): storefront + its opening menu in one call. The new store starts
-// KYC=PENDING (settlement skips payout until verified) and isOpen=true so the
-// customer app can list it immediately.
+// POST /api/stores — MALL_ADMIN or the delegated CINEMA_MANAGER opens a NEW
+// store in their mall (same-mall expansion): storefront + its opening menu in
+// one call. The new store starts KYC=PENDING (settlement skips payout until
+// verified) and isOpen=true so the customer app can list it immediately.
 //
 // Role boundaries:
 //   MALL_ADMIN     — may create stores inside their own mall
-//   CINEMA_MANAGER — 403 (cinema ≠ merchant onboarding)
+//   CINEMA_MANAGER — delegated mall operator: same mall-wide store onboarding
 //   STORE_MANAGER  — 403 (they run their own store; they don't open new ones)
 
 import { z } from 'zod'
@@ -45,7 +45,7 @@ function slugify(name: string): string {
 }
 
 export async function POST(request: Request) {
-  const auth = await requireStaff(request, ['MALL_ADMIN'])
+  const auth = await requireStaff(request, ['MALL_ADMIN', 'CINEMA_MANAGER'])
   if ('error' in auth) return auth.error
   const user = auth.user
 

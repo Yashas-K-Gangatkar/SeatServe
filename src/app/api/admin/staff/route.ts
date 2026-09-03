@@ -1,10 +1,13 @@
 // GET  /api/admin/staff — list staff accounts scoped to the caller:
-//   MALL_ADMIN    → every account inside their mall (+ cinemas & delivery zones)
-//   STORE_MANAGER → only their own store's accounts (their kitchen team)
+//   MALL_ADMIN     → every account inside their mall (+ cinemas & delivery zones)
+//   CINEMA_MANAGER → the delegated mall operator: same mall-wide list
+//   STORE_MANAGER  → only their own store's accounts (their kitchen team)
 // POST /api/admin/staff — create a staff account with an email + password the
 // caller hands over in person:
-//   MALL_ADMIN    → STORE_MANAGER / KITCHEN_STAFF / CINEMA_MANAGER / RUNNER
-//   STORE_MANAGER → KITCHEN_STAFF pinned to their OWN store (nothing else)
+//   MALL_ADMIN     → STORE_MANAGER / KITCHEN_STAFF / CINEMA_MANAGER / RUNNER
+//   CINEMA_MANAGER → same mall-wide creation power (delegated onboarding),
+//                    minus anything touching MALL_ADMIN accounts
+//   STORE_MANAGER  → KITCHEN_STAFF pinned to their OWN store (nothing else)
 //
 // This is the onboarding screen for real staff: no Google/Gmail login exists
 // anywhere in the platform — the "email" is a work login ID (it does not need
@@ -69,7 +72,7 @@ const STAFF_SELECT = {
 } as const
 
 export async function GET(request: Request) {
-  const auth = await requireStaff(request, ['MALL_ADMIN', 'STORE_MANAGER'])
+  const auth = await requireStaff(request, ['MALL_ADMIN', 'CINEMA_MANAGER', 'STORE_MANAGER'])
   if ('error' in auth) return auth.error
   const user = auth.user
 
@@ -128,7 +131,7 @@ function toRow(u: {
 }
 
 export async function POST(request: Request) {
-  const auth = await requireStaff(request, ['MALL_ADMIN', 'STORE_MANAGER'])
+  const auth = await requireStaff(request, ['MALL_ADMIN', 'CINEMA_MANAGER', 'STORE_MANAGER'])
   if ('error' in auth) return auth.error
   const caller = auth.user
 

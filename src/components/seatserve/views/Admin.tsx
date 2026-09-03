@@ -188,7 +188,7 @@ function AdminBoard({ go, scopeRole }: { go: (p: string) => void; scopeRole: 'MA
       <section className="mt-6" aria-label="Stores and inventory">
         <div className="mb-2 flex items-center justify-between gap-2">
           <h2 className="text-xs font-extrabold uppercase tracking-wider text-muted-foreground">Stores & inventory</h2>
-          {scopeRole === 'MALL_ADMIN' && (
+          {scopeRole !== 'STORE_MANAGER' && (
             <button
               onClick={() => setShowNewStore((v) => !v)}
               className="rounded-full bg-gradient-to-b from-amber-500 to-orange-500 px-3.5 py-1.5 text-[11px] font-extrabold text-white shadow-sm hover:from-amber-600 hover:to-orange-600"
@@ -198,7 +198,7 @@ function AdminBoard({ go, scopeRole }: { go: (p: string) => void; scopeRole: 'MA
             </button>
           )}
         </div>
-        {scopeRole === 'MALL_ADMIN' && showNewStore && (
+        {scopeRole !== 'STORE_MANAGER' && showNewStore && (
           <NewStoreForm
             onCreated={() => {
               setShowNewStore(false)
@@ -230,7 +230,7 @@ function AdminBoard({ go, scopeRole }: { go: (p: string) => void; scopeRole: 'MA
                   )}
                 </div>
                 <div className="flex items-center gap-2">
-                  {scopeRole === 'MALL_ADMIN' && s.kycStatus !== 'VERIFIED' && s.kycSubmitted && (
+                  {scopeRole !== 'STORE_MANAGER' && s.kycStatus !== 'VERIFIED' && s.kycSubmitted && (
                     <button
                       onClick={() => reviewKyc(s.id, s.name, 'VERIFY')}
                       className="rounded-full bg-emerald-600 px-3 py-1.5 text-[11px] font-bold text-white hover:bg-emerald-700"
@@ -238,7 +238,7 @@ function AdminBoard({ go, scopeRole }: { go: (p: string) => void; scopeRole: 'MA
                       Verify KYC
                     </button>
                   )}
-                  {scopeRole === 'MALL_ADMIN' && s.kycStatus === 'PENDING' && s.kycSubmitted && (
+                  {scopeRole !== 'STORE_MANAGER' && s.kycStatus === 'PENDING' && s.kycSubmitted && (
                     <button
                       onClick={() => reviewKyc(s.id, s.name, 'REJECT')}
                       className="rounded-full border border-red-300 bg-red-50 px-3 py-1.5 text-[11px] font-bold text-red-700 hover:bg-red-100"
@@ -246,7 +246,7 @@ function AdminBoard({ go, scopeRole }: { go: (p: string) => void; scopeRole: 'MA
                       Reject
                     </button>
                   )}
-                  {scopeRole === 'MALL_ADMIN' && s.kycStatus !== 'VERIFIED' && !s.kycSubmitted && (
+                  {scopeRole !== 'STORE_MANAGER' && s.kycStatus !== 'VERIFIED' && !s.kycSubmitted && (
                     <span className="rounded-full border border-amber-200 bg-amber-50 px-3 py-1.5 text-[10px] font-bold text-amber-700">
                       Waiting for store&apos;s KYC form
                     </span>
@@ -307,7 +307,7 @@ function AdminBoard({ go, scopeRole }: { go: (p: string) => void; scopeRole: 'MA
       {scopeRole === 'MALL_ADMIN' && <SettlementPanel canAct />}
 
       {/* staff logins: create chef/manager accounts, reset passwords, disable access */}
-      {scopeRole === 'MALL_ADMIN' && (
+      {(scopeRole === 'MALL_ADMIN' || scopeRole === 'CINEMA_MANAGER') && (
         <TeamPanel stores={data.stores.map((s) => ({ id: s.id, name: s.name, emoji: s.emoji }))} />
       )}
       {scopeRole === 'STORE_MANAGER' && <TeamPanel managerMode />}

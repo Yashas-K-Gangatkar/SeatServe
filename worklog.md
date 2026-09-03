@@ -1049,3 +1049,23 @@ Stage Summary:
 - Access chain now: OWNER (asha) creates testers/managers/runners → MANAGER submits KYC + feeds menu + creates own kitchen logins → KITCHEN runs tickets → RUNNER or owner completes delivery
 - Fixed en route: STORE_MANAGER was hard-blocked from the admin board despite the API supporting them (dead console card)
 - Still pending: asha password rotation (needs Vercel token re-paste), cron 23:25→23:00 after final test
+
+---
+Task ID: 33
+Agent: Super Z (main)
+Task: Delegation upgrade — CINEMA_MANAGER becomes the owner's delegated mall operator (create testers ✓ already worked; manager must verify KYC + feed stores/menus + create staff names & passwords)
+
+Work Log:
+- LIVE proof first: ramesh@wraphouse.serve login 200 OK (role CINEMA_MANAGER, mall pinned, store null) — owner created the tester himself via Team panel, so the "create new testers" access is confirmed working before any code change
+- RBAC core (src/lib/auth.ts): staffMutationError gains CINEMA_MANAGER branch — same powers as MALL_ADMIN over the mall workforce (SET_PASSWORD/DEACTIVATE/ACTIVATE/REASSIGN/DELETE) but MALL_ADMIN accounts are untouchable by a delegate; canAccessStore now lets CINEMA_MANAGER act on any store in their own mall
+- API widening (all mall-scoped, server-pinned): POST /api/admin/staff (CINEMA_MANAGER = mall-wide creation incl. RUNNER); PATCH+DELETE /api/admin/staff/[id]; POST /api/stores (open new stores); POST /api/admin/kyc/[storeId] (verify/reject KYC); POST /api/stores/[id]/kyc (submit on store's behalf); /api/store/menu + /api/store/products + /api/products/[id] (feed menus); /api/kitchen/tickets(+status) (supervise/operate any mall kitchen)
+- Money/signage rails stay owner-only: PATCH /api/stores/[id] allows CINEMA_MANAGER open/close but 403s on name/commission changes; settlement runs/process + demo reset remain MALL_ADMIN-only
+- SECURITY FIX en route: /api/admin/overview store list for CINEMA_MANAGER was unfiltered (platform-wide, all malls' store names + KYC details leaked to a cinema-manager board). Now pinned to their mall (realtimeMallId resolution moved above the scope and prefers the user's mallId with cinema fallback)
+- UI: Admin board New Store + KYC Verify/Reject now render for CINEMA_MANAGER (STORE_MANAGER still read-only); TeamPanel full-mode for CINEMA_MANAGER; StaffPortal CINEMA_MANAGER cards = Operations board / Menu manager / Kitchen supervise / Seat QR; MenuManager + Kitchen gates admit CINEMA_MANAGER
+- Tests: auth matrix +2 (delegated operator power, mall-admin untouchable) and canAccessStore CM test updated for mall-scoped truth → 82 pass across 8 files
+- Gates: tsc clean, eslint clean, 82/82 bun tests, next build clean with dummy DATABASE_URL
+
+Stage Summary:
+- Delegation chain the owner asked for is now real: OWNER creates testers → MANAGER (ramesh) opens stores, feeds menus, submits+verifies KYC, creates staff logins & sets their passwords, runs/oversees the kitchen → rest of the loop (orders/pay/deliver/settle) already proven live
+- Cross-mall overview leak found and fixed while wiring delegation
+- Next: seed the mall demo store live (store + menu + photos + KYC verified) so the owner can walk into malls with a working end-to-end demo

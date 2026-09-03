@@ -31,7 +31,9 @@ function consolesFor(user: StaffProfile): ConsoleCard[] {
       ]
     case 'CINEMA_MANAGER':
       return [
-        { href: '#/admin', icon: LayoutDashboard, title: 'Cinema board', sub: 'Live orders & KPIs for YOUR cinema only — other cinemas are invisible', tint: 'text-amber-600 bg-amber-100' },
+        { href: '#/admin', icon: LayoutDashboard, title: 'Operations board', sub: 'Your cinema\u2019s live orders + every mall store: open new stores, verify KYC, manage staff logins', tint: 'text-amber-600 bg-amber-100' },
+        { href: '#/menu', icon: UtensilsCrossed, title: 'Menu manager', sub: 'Any store in your mall: create items, set prices, mark items out of stock', tint: 'text-teal-600 bg-teal-100' },
+        { href: '#/kitchen', icon: ChefHat, title: 'Any kitchen (supervise)', sub: 'Open any store\u2019s kitchen console inside your mall', tint: 'text-violet-600 bg-violet-100' },
         { href: '#/qr', icon: ScanLine, title: 'Seat QR generator', sub: 'Your cinema\u2019s screens only', tint: 'text-rose-600 bg-rose-100' },
       ]
     case 'STORE_MANAGER':

@@ -1,5 +1,5 @@
 // PATCH /api/products/[id] — mark item unavailable/available (86'd items).
-// Phase 2: STORE_MANAGER (own store) or MALL_ADMIN (own mall) only.
+// Phase 2: STORE_MANAGER (own store); MALL_ADMIN / CINEMA_MANAGER (own mall).
 import { z } from 'zod'
 import { db } from '@/lib/db'
 import { ok, fail, parseBody } from '@/lib/api-helpers'
@@ -18,7 +18,7 @@ const bodySchema = z.object({
 
 export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
-  const auth = await requireStaff(request, ['STORE_MANAGER', 'MALL_ADMIN'])
+  const auth = await requireStaff(request, ['STORE_MANAGER', 'MALL_ADMIN', 'CINEMA_MANAGER'])
   if ('error' in auth) return auth.error
   const user = auth.user
 

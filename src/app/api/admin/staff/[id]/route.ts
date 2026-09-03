@@ -7,9 +7,11 @@
 // DELETE /api/admin/staff/[id] — permanently remove a DEACTIVATED account from
 //                  the team list (never a mall admin). Sessions cascade.
 // Who may do what (pure matrix in src/lib/auth.ts → staffMutationError):
-//   MALL_ADMIN    — everything above for their whole mall (except on itself)
-//   STORE_MANAGER — SET_PASSWORD / DEACTIVATE / ACTIVATE on KITCHEN_STAFF of
-//                   their OWN store only
+//   MALL_ADMIN     — everything above for their whole mall (except on itself)
+//   CINEMA_MANAGER — the delegated mall operator: same powers for the mall's
+//                    workforce, but never on MALL_ADMIN accounts
+//   STORE_MANAGER  — SET_PASSWORD / DEACTIVATE / ACTIVATE on KITCHEN_STAFF of
+//                    their OWN store only
 // The target's membership is checked by scope columns, never client input.
 
 import { z } from 'zod'
@@ -38,7 +40,7 @@ const bodySchema = z.object({
 })
 
 export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
-  const auth = await requireStaff(request, ['MALL_ADMIN', 'STORE_MANAGER'])
+  const auth = await requireStaff(request, ['MALL_ADMIN', 'CINEMA_MANAGER', 'STORE_MANAGER'])
   if ('error' in auth) return auth.error
   const admin = auth.user
   const { id } = await params
@@ -174,7 +176,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
 // vaporise an active login. Sessions cascade via the schema; audit rows keep
 // string refs (no FK), so history survives the delete.
 export async function DELETE(request: Request, { params }: { params: Promise<{ id: string }> }) {
-  const auth = await requireStaff(request, ['MALL_ADMIN'])
+  const auth = await requireStaff(request, ['MALL_ADMIN', 'CINEMA_MANAGER'])
   if ('error' in auth) return auth.error
   const admin = auth.user
   if (!admin.mallId) return fail('Your admin account is not tied to a mall', 403)

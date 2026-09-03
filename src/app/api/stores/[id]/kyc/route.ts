@@ -1,10 +1,11 @@
 // POST /api/stores/[id]/kyc — Phase 4: merchant KYC submission (store onboarding).
 //
-// The STORE_MANAGER (or the mall admin on their behalf) submits compliance
-// details. ONLY MASKED values are accepted and stored — the platform never
-// holds raw bank/PAN credentials (legal review rule; see docs/LEGAL-NOTES.md).
-// Submission (re)sets kycStatus to PENDING for mall-admin review; payouts via
-// the settlement engine are BLOCKED until the mall admin VERIFIES the store.
+// The STORE_MANAGER (or the mall admin / delegated cinema manager on their
+// behalf) submits compliance details. ONLY MASKED values are accepted and
+// stored — the platform never holds raw bank/PAN credentials (legal review
+// rule; see docs/LEGAL-NOTES.md). Submission (re)sets kycStatus to PENDING for
+// review; payouts via the settlement engine are BLOCKED until the mall admin
+// or delegated cinema manager VERIFIES the store.
 
 import { z } from 'zod'
 import { db } from '@/lib/db'
@@ -22,7 +23,7 @@ const bodySchema = z.object({
 
 export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
-  const auth = await requireStaff(request, ['STORE_MANAGER', 'MALL_ADMIN'])
+  const auth = await requireStaff(request, ['STORE_MANAGER', 'MALL_ADMIN', 'CINEMA_MANAGER'])
   if ('error' in auth) return auth.error
   const user = auth.user
 

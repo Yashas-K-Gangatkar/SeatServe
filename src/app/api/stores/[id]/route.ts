@@ -1,5 +1,8 @@
 // PATCH /api/stores/[id] — store controls (open/close, rename, commission).
-// STORE_MANAGER: own store only. MALL_ADMIN: any store in their mall.
+// STORE_MANAGER: own store only. MALL_ADMIN / CINEMA_MANAGER: any store in
+// their mall — but renaming a store and changing commission are money/signage
+// decisions that stay with the MALL_ADMIN; the cinema manager gets floor
+// controls (open/close).
 // Money model: NO delivery fee (stores are next door); commission stays editable.
 import { z } from 'zod'
 import { db } from '@/lib/db'
@@ -19,12 +22,18 @@ const bodySchema = z.object({
 
 export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
-  const auth = await requireStaff(request, ['STORE_MANAGER', 'MALL_ADMIN'])
+  const auth = await requireStaff(request, ['STORE_MANAGER', 'MALL_ADMIN', 'CINEMA_MANAGER'])
   if ('error' in auth) return auth.error
   const user = auth.user
 
   const parsed = await parseBody(request, bodySchema)
   if ('error' in parsed) return parsed.error
+
+  // Rename + commission are owner decisions — the delegated cinema manager
+  // runs the floor (open/close) but never touches signage or revenue share.
+  if (user.role === 'CINEMA_MANAGER' && (parsed.data.name !== undefined || parsed.data.commissionPct !== undefined)) {
+    return fail('Only the mall admin can rename a store or change its commission', 403)
+  }
 
   const store = await db.store.findUnique({ where: { id } })
   if (!store) return fail('Store not found', 404)

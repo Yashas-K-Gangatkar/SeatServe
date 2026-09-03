@@ -1,6 +1,7 @@
 // POST /api/store/products — create a menu item (owner console).
-// STORE_MANAGER (own store) or MALL_ADMIN (own mall). Audited; realtime-pushed
-// to the admin board. New items start AVAILABLE unless explicitly added as sold out.
+// STORE_MANAGER (own store), MALL_ADMIN or delegated CINEMA_MANAGER (own mall).
+// Audited; realtime-pushed to the admin board. New items start AVAILABLE
+// unless explicitly added as sold out.
 import { z } from 'zod'
 import { db } from '@/lib/db'
 import { ok, fail, parseBody } from '@/lib/api-helpers'
@@ -24,7 +25,7 @@ const bodySchema = z.object({
 })
 
 export async function POST(request: Request) {
-  const auth = await requireStaff(request, ['STORE_MANAGER', 'MALL_ADMIN'])
+  const auth = await requireStaff(request, ['STORE_MANAGER', 'MALL_ADMIN', 'CINEMA_MANAGER'])
   if ('error' in auth) return auth.error
   const user = auth.user
 

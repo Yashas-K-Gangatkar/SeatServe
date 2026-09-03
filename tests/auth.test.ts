@@ -123,10 +123,11 @@ describe('tenant scope guards', () => {
     expect(canAccessStore(admin, { id: 'store_elsewhere', mallId: 'mall2' })).toBe(false)
   })
 
-  test('canAccessStore: cinema manager and runner never pass store checks', () => {
-    const cm = mkUser({ role: 'CINEMA_MANAGER', storeId: null, cinemaId: 'c1' })
+  test('canAccessStore: cinema manager covers their mall, runner never passes', () => {
+    const cm = mkUser({ role: 'CINEMA_MANAGER', storeId: null, cinemaId: 'c1', mallId: 'mall1' })
     const runner = mkUser({ role: 'RUNNER', storeId: null, runnerId: 'r1' })
-    expect(canAccessStore(cm, { id: 'store_snacks', mallId: 'mall1' })).toBe(false)
+    expect(canAccessStore(cm, { id: 'store_snacks', mallId: 'mall1' })).toBe(true)
+    expect(canAccessStore(cm, { id: 'store_elsewhere', mallId: 'mall2' })).toBe(false)
     expect(canAccessStore(runner, { id: 'store_snacks', mallId: 'mall1' })).toBe(false)
   })
 })
@@ -158,6 +159,22 @@ describe('staffMutationError matrix', () => {
     const admin2 = mkUser({ id: 'admin2', role: 'MALL_ADMIN', mallId: 'mall_1' })
     expect(staffMutationError(admin, target(admin2), 'DELETE')).toMatch(/cannot be removed/)
     expect(staffMutationError(admin, target(admin2), 'REASSIGN')).toMatch(/cannot be reassigned/)
+  })
+
+  test('cinema manager (delegated operator) manages the mall workforce', () => {
+    const cm = mkUser({ id: 'cm', role: 'CINEMA_MANAGER', mallId: 'mall_1', storeId: null, cinemaId: 'c1' })
+    for (const action of ['SET_PASSWORD', 'DEACTIVATE', 'ACTIVATE', 'REASSIGN', 'DELETE'] as const) {
+      expect(staffMutationError(cm, target(chefA), action)).toBeNull()
+      expect(staffMutationError(cm, target(managerA), action)).toBeNull()
+    }
+  })
+
+  test('cinema manager can never touch mall admin accounts', () => {
+    const cm = mkUser({ id: 'cm', role: 'CINEMA_MANAGER', mallId: 'mall_1', storeId: null, cinemaId: 'c1' })
+    const admin2 = mkUser({ id: 'admin2', role: 'MALL_ADMIN', mallId: 'mall_1' })
+    for (const action of ['SET_PASSWORD', 'DEACTIVATE', 'REASSIGN', 'DELETE'] as const) {
+      expect(staffMutationError(cm, target(admin2), action)).toMatch(/only be managed by another mall admin/)
+    }
   })
 
   test('store manager manages ONLY kitchen staff of their own store', () => {

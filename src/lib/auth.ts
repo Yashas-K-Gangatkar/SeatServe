@@ -127,16 +127,21 @@ export interface StaffMutationTarget {
  * Who may mutate which staff account, and how? Pure RBAC matrix for the Team
  * panel — unit-tested in tests/auth.test.ts, consumed by /api/admin/staff/[id].
  *
- *   MALL_ADMIN     — full control over every account in their mall (the route
- *                    re-checks mall membership) except self-mutation: changing
- *                    your own password/deactivating yourself needs a second
- *                    admin, by design, so one person can never be locked out
- *                    of everything by their own hand.
- *   STORE_MANAGER  — runs their shop's floor team: reset password / disable /
- *                    re-enable KITCHEN_STAFF of their OWN store. Never other
- *                    stores, never managers, never reassign/remove (mall-level
- *                    decisions stay with the mall admin).
- *   everyone else  — no staff management at all.
+ *   MALL_ADMIN       — full control over every account in their mall (the route
+ *                      re-checks mall membership) except self-mutation: changing
+ *                      your own password/deactivating yourself needs a second
+ *                      admin, by design, so one person can never be locked out
+ *                      of everything by their own hand.
+ *   CINEMA_MANAGER   — the owner's delegated mall operator: same powers as the
+ *                      mall admin for store/cinema floor staff (create logins,
+ *                      set passwords, reassign, disable), but MALL_ADMIN
+ *                      accounts themselves stay out of reach — the owner is
+ *                      never managed by a delegate.
+ *   STORE_MANAGER    — runs their shop's floor team: reset password / disable /
+ *                      re-enable KITCHEN_STAFF of their OWN store. Never other
+ *                      stores, never managers, never reassign/remove (mall-level
+ *                      decisions stay with the mall admin).
+ *   everyone else    — no staff management at all.
  *
  * Returns an error message for the denial, or null when allowed.
  */
@@ -155,6 +160,11 @@ export function staffMutationError(
     if (action === 'REASSIGN' && target.role === 'MALL_ADMIN') return 'Mall admin accounts cannot be reassigned here'
     return null
   }
+  if (actor.role === 'CINEMA_MANAGER') {
+    // Delegated mall operator — manages the workforce, never the owner.
+    if (target.role === 'MALL_ADMIN') return 'Mall admin accounts can only be managed by another mall admin'
+    return null
+  }
   if (actor.role === 'STORE_MANAGER') {
     if (action === 'REASSIGN' || action === 'DELETE') return 'Only the mall admin can reassign or remove staff'
     if (target.role !== 'KITCHEN_STAFF') return 'Store managers can only manage kitchen staff accounts'
@@ -167,7 +177,7 @@ export function staffMutationError(
 /**
  * Can this staff user act on / read the given store?
  * KITCHEN_STAFF & STORE_MANAGER: only their own store.
- * MALL_ADMIN: any store inside their mall. Others: never.
+ * MALL_ADMIN & CINEMA_MANAGER: any store inside their mall. Others: never.
  */
 export function canAccessStore(
   user: StaffUser,
@@ -178,6 +188,7 @@ export function canAccessStore(
     case 'STORE_MANAGER':
       return user.storeId === store.id
     case 'MALL_ADMIN':
+    case 'CINEMA_MANAGER':
       return user.mallId === store.mallId
     default:
       return false

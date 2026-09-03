@@ -32,7 +32,7 @@ const NEXT_ACTION: Record<string, { to: string; label: string }> = {
 
 export default function Kitchen({ storeId, go, onRouteChange }: { storeId?: string; go: (p: string) => void; onRouteChange?: () => void }) {
   return (
-    <StaffGate roles={['KITCHEN_STAFF', 'STORE_MANAGER', 'MALL_ADMIN']} go={go} consoleName="Kitchen console">
+    <StaffGate roles={['KITCHEN_STAFF', 'STORE_MANAGER', 'MALL_ADMIN', 'CINEMA_MANAGER']} go={go} consoleName="Kitchen console">
       {(user) => <KitchenPicker user={user} storeId={storeId} go={go} onRouteChange={onRouteChange} />}
     </StaffGate>
   )
@@ -90,7 +90,7 @@ function KitchenPicker({ user, storeId, go, onRouteChange }: { user: StaffProfil
       </div>
     )
   }
-  return <KitchenDashboard storeSlugOrId={effective} canSwitch={user.role === 'MALL_ADMIN'} go={go} />
+  return <KitchenDashboard storeSlugOrId={effective} canSwitch={user.role === 'MALL_ADMIN' || user.role === 'CINEMA_MANAGER'} go={go} />
 }
 
 function KitchenDashboard({ storeSlugOrId, canSwitch, go }: { storeSlugOrId: string; canSwitch: boolean; go: (p: string) => void }) {

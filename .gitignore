@@ -76,3 +76,4 @@ public/downloads/
 upload/
 git token
 .env.prod-db
+scripts/.cookies-ramesh.txt

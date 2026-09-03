@@ -36,7 +36,7 @@ interface MenuResponse {
 
 export default function MenuManager({ go }: { go: (p: string) => void }) {
   return (
-    <StaffGate roles={['STORE_MANAGER', 'MALL_ADMIN']} go={go} consoleName="Menu manager">
+    <StaffGate roles={['STORE_MANAGER', 'MALL_ADMIN', 'CINEMA_MANAGER']} go={go} consoleName="Menu manager">
       {() => <MenuBoard go={go} />}
     </StaffGate>
   )

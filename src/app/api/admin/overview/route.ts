@@ -1,7 +1,8 @@
 // GET /api/admin/overview — live board + KPIs (rolling 24h window).
 // Phase 2 multi-tenancy: the board is scoped by the session, never by params.
 //   MALL_ADMIN     → everything inside their mall
-//   CINEMA_MANAGER → only orders/placements of their own cinema
+//   CINEMA_MANAGER → orders of their own cinema; stores of their mall
+//                    (delegated mall operator — verifies/feeds mall stores)
 //   STORE_MANAGER  → only orders containing their store's tickets + their store row
 import { db } from '@/lib/db'
 import { ok } from '@/lib/api-helpers'
@@ -14,6 +15,22 @@ export async function GET(request: Request) {
 
   const since = new Date(Date.now() - 24 * 3600_000)
 
+  // resolved mall for the token-gated realtime room (admin:<mallId>); the
+  // CINEMA_MANAGER row carries mallId, but resolve from the cinema as a
+  // fallback for legacy rows — the same mall anchors the store scope below.
+  let realtimeMallId: string | null = null
+  if (user.role === 'MALL_ADMIN' || user.role === 'RUNNER') realtimeMallId = user.mallId
+  else if (user.role === 'CINEMA_MANAGER') {
+    if (user.mallId) realtimeMallId = user.mallId
+    else if (user.cinemaId) {
+      const cinema = await db.cinema.findUnique({ where: { id: user.cinemaId }, select: { mallId: true } })
+      realtimeMallId = cinema?.mallId ?? null
+    }
+  } else if (user.role === 'STORE_MANAGER' && user.storeId) {
+    const store = await db.store.findUnique({ where: { id: user.storeId }, select: { mallId: true } })
+    realtimeMallId = store?.mallId ?? null
+  }
+
   // ── tenant scope ────────────────────────────────────────────────
   const orderScope =
     user.role === 'MALL_ADMIN'
@@ -24,22 +41,19 @@ export async function GET(request: Request) {
   const storeScope =
     user.role === 'MALL_ADMIN'
       ? { mallId: user.mallId ?? '__none__' }
-      : user.role === 'STORE_MANAGER'
-        ? { id: user.storeId ?? '__none__' }
-        : null
-  const scopeLabel = user.role === 'MALL_ADMIN' ? 'Mall-wide' : user.role === 'CINEMA_MANAGER' ? 'Your cinema only' : 'Your store only'
+      : user.role === 'CINEMA_MANAGER'
+        // audit fix: was unfiltered (platform-wide store list) — pin to the
+        // cinema manager's mall so delegation can never see another mall
+        ? { mallId: realtimeMallId ?? '__none__' }
+        : { id: user.storeId ?? '__none__' }
+  const scopeLabel =
+    user.role === 'MALL_ADMIN'
+      ? 'Mall-wide'
+      : user.role === 'CINEMA_MANAGER'
+        ? 'Cinema orders · mall stores'
+        : 'Your store only'
 
-  // resolved mall for the token-gated realtime room (admin:<mallId>);
-  // CINEMA_MANAGER has no mallId column — resolve from their cinema
-  let realtimeMallId: string | null = null
-  if (user.role === 'MALL_ADMIN' || user.role === 'RUNNER') realtimeMallId = user.mallId
-  else if (user.role === 'CINEMA_MANAGER' && user.cinemaId) {
-    const cinema = await db.cinema.findUnique({ where: { id: user.cinemaId }, select: { mallId: true } })
-    realtimeMallId = cinema?.mallId ?? null
-  } else if (user.role === 'STORE_MANAGER' && user.storeId) {
-    const store = await db.store.findUnique({ where: { id: user.storeId }, select: { mallId: true } })
-    realtimeMallId = store?.mallId ?? null
-  }
+  //   (realtime room + mall name resolved above, before the parallel reads)
   const mallName = realtimeMallId ? (await db.mall.findUnique({ where: { id: realtimeMallId }, select: { name: true } }))?.name ?? null : null
 
   const [orders, liveOrders, stores, recentAudit] = await Promise.all([
@@ -54,7 +68,7 @@ export async function GET(request: Request) {
       take: 30,
     }),
     db.store.findMany({
-      where: storeScope ?? undefined,
+      where: storeScope,
       include: { products: { select: { id: true, name: true, isAvailable: true } }, _count: { select: { tickets: true } } },
       orderBy: { name: 'asc' },
     }),

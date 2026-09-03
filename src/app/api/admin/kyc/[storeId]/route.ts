@@ -1,6 +1,7 @@
-// POST /api/admin/kyc/[storeId] — Phase 4: mall admin VERIFIES or REJECTS a
-// store's KYC. VERIFIED stores are payout-eligible (the settlement engine only
-// pays verified merchants); REJECTED sends the store back to fix their details.
+// POST /api/admin/kyc/[storeId] — Phase 4: the mall admin OR the delegated
+// cinema manager (mall operator) VERIFIES or REJECTS a store's KYC. VERIFIED
+// stores are payout-eligible (the settlement engine only pays verified
+// merchants); REJECTED sends the store back to fix their details.
 // Every decision is audited and pushed to the store's realtime room.
 
 import { z } from 'zod'
@@ -16,7 +17,7 @@ const bodySchema = z.object({
 
 export async function POST(request: Request, { params }: { params: Promise<{ storeId: string }> }) {
   const { storeId } = await params
-  const auth = await requireStaff(request, ['MALL_ADMIN'])
+  const auth = await requireStaff(request, ['MALL_ADMIN', 'CINEMA_MANAGER'])
   if ('error' in auth) return auth.error
   const user = auth.user
 

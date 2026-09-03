@@ -1,7 +1,8 @@
 // GET /api/kitchen/tickets?storeId=<id> — paid, live tickets for ONE store only.
 // Phase 2: login required. KITCHEN_STAFF/STORE_MANAGER are hard-locked to their
 // own store (server-side, from the session — client params cannot widen it);
-// MALL_ADMIN may supervise any store inside their mall.
+// MALL_ADMIN and the delegated CINEMA_MANAGER may supervise any store inside
+// their mall.
 import { db } from '@/lib/db'
 import { ok, fail } from '@/lib/api-helpers'
 import { requireStaff } from '@/lib/auth-server'
@@ -10,7 +11,7 @@ import { canAccessStore } from '@/lib/auth'
 const ACTIVE_STATUSES = ['NEW', 'ACCEPTED', 'PREPARING', 'READY_FOR_PICKUP'] as const
 
 export async function GET(request: Request) {
-  const auth = await requireStaff(request, ['KITCHEN_STAFF', 'STORE_MANAGER', 'MALL_ADMIN'])
+  const auth = await requireStaff(request, ['KITCHEN_STAFF', 'STORE_MANAGER', 'MALL_ADMIN', 'CINEMA_MANAGER'])
   if ('error' in auth) return auth.error
   const user = auth.user
 
