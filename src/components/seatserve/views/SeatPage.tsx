@@ -228,7 +228,7 @@ export default function SeatPage({ qrToken, go }: { qrToken: string; go: (p: str
                                 cart.add(p.id)
                                 play('pop')
                               }}
-                              disabled={line.qty >= 20}
+                              disabled={line.qty >= 5}
                               className="flex h-8 w-8 items-center justify-center rounded-full text-amber-700 hover:bg-amber-100 focus-visible:outline-2 focus-visible:outline-amber-500 disabled:opacity-40"
                               aria-label={`Add one ${p.name}`}
                             >

@@ -17,7 +17,9 @@ const bodySchema = z.object({
     .array(
       z.object({
         productId: z.string().min(1),
-        qty: z.number().int().min(1).max(20),
+        // Owner-set limit: max 5 units of any single item per order (kitchen
+        // capacity guard for a counter store; raise here if a store ever asks).
+        qty: z.number().int().min(1).max(5),
         notes: z.string().max(200).optional(),
       }),
     )

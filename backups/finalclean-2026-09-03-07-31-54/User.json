@@ -1,0 +1,28 @@
+[
+ {
+  "id": "cmtgy0yqv00frl8j364j0mlh7",
+  "name": "Asha Rao",
+  "phone": "+91 90000 00001",
+  "email": "asha@seatserve.demo",
+  "role": "MALL_ADMIN",
+  "mallId": "cmtgy0cfj0000l8j3ulqzcand",
+  "cinemaId": null,
+  "storeId": null,
+  "runnerId": null,
+  "passwordHash": "scrypt$16384$8$1$c27dcc8618c93437583c64ddf33c0568$4192111657d1f03eddcc6c8a84d5c490417bd93365378f36e0da0927d662b2dff28ffc827d524b2185338125f5fc6968a1096d5275197ff23c6e42bd5578b809",
+  "isActive": true
+ },
+ {
+  "id": "cmtk16o2e0007i504mw73c1ja",
+  "name": "Bhagya",
+  "phone": "9901271220",
+  "email": "bhagya@gmail.com",
+  "role": "STORE_MANAGER",
+  "mallId": "cmtgy0cfj0000l8j3ulqzcand",
+  "cinemaId": null,
+  "storeId": "cmtk1erje0003l804ax1vkas5",
+  "runnerId": null,
+  "passwordHash": "scrypt$16384$8$1$0a3625df93c19a19a02b4920f1cf4a8c$56a9e56ef82ecf3f935b911e1cabf8f1c188c67ce98f5f318d7f6c77bd783fb8c74d944f5cce919c38d475001bde7c3fd145d81f25724bd3458aa7dc55414538",
+  "isActive": true
+ }
+]

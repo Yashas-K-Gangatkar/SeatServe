@@ -1,0 +1,47 @@
+[
+ {
+  "id": "cmtk1erje0004l80461s9plr8",
+  "storeId": "cmtk1erje0003l804ax1vkas5",
+  "name": "plain milk",
+  "description": null,
+  "category": "Snacks",
+  "pricePaise": 10000,
+  "taxRatePct": 5,
+  "prepEstimateMin": 8,
+  "isVeg": true,
+  "allergens": null,
+  "isAvailable": true,
+  "createdAt": "2026-09-02T11:53:09.867Z",
+  "imageUrl": null
+ },
+ {
+  "id": "cmtk1erje0006l804ln14is7r",
+  "storeId": "cmtk1erje0003l804ax1vkas5",
+  "name": "tea",
+  "description": null,
+  "category": "Snacks",
+  "pricePaise": 20000,
+  "taxRatePct": 5,
+  "prepEstimateMin": 8,
+  "isVeg": false,
+  "allergens": null,
+  "isAvailable": true,
+  "createdAt": "2026-09-02T11:53:09.867Z",
+  "imageUrl": null
+ },
+ {
+  "id": "cmtk1erje0005l8047bz0ic0c",
+  "storeId": "cmtk1erje0003l804ax1vkas5",
+  "name": "coffee",
+  "description": null,
+  "category": "Snacks",
+  "pricePaise": 300,
+  "taxRatePct": 5,
+  "prepEstimateMin": 8,
+  "isVeg": true,
+  "allergens": null,
+  "isAvailable": true,
+  "createdAt": "2026-09-02T11:53:09.867Z",
+  "imageUrl": null
+ }
+]

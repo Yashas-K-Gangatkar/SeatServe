@@ -1,0 +1,18 @@
+[
+ {
+  "id": "cmtk1erje0003l804ax1vkas5",
+  "mallId": "cmtgy0cfj0000l8j3ulqzcand",
+  "name": "milk products",
+  "slug": "milk-products-uxced",
+  "tagline": "MP",
+  "emoji": "🏬",
+  "isOpen": true,
+  "prepBufferMin": 10,
+  "commissionPct": 0,
+  "kycStatus": "VERIFIED",
+  "kycDetail": "{\"gstin\":\"UNREGISTERED\",\"panMasked\":\"XXXXX0000F\",\"bankMasked\":\"UPI-****test\",\"fssai\":\"FAMILY-TEST\",\"submittedAt\":\"2026-09-02T17:17:01.659Z\",\"note\":\"Family money-loop test store — verified by platform owner\"}",
+  "bankRefMasked": null,
+  "rating": 4.5,
+  "createdAt": "2026-09-02T11:53:09.867Z"
+ }
+]

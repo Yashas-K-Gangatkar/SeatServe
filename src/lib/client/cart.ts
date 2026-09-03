@@ -31,7 +31,7 @@ export const useCart = create<CartState>()(
       add: (productId) =>
         set((s) => {
           const line = s.lines[productId] ?? { qty: 0, note: '' }
-          return { lines: { ...s.lines, [productId]: { ...line, qty: Math.min(20, line.qty + 1) } } }
+          return { lines: { ...s.lines, [productId]: { ...line, qty: Math.min(5, line.qty + 1) } } }
         }),
       remove: (productId) =>
         set((s) => {
