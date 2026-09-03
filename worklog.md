@@ -1029,3 +1029,23 @@ Stage Summary:
 - Login system verified healthy end-to-end on live prod; owner given exact credentials + step-by-step + error translation table
 - bhagya is storeless until owner creates the real store (Admin board → New shop) and reassigns her in Team panel
 - Outstanding: asha password rotation (needs Vercel token), cron 23:25→23:00 after final test, RazorpayX activation
+
+---
+Task ID: 32
+Agent: Super Z (main)
+Task: Owner request — "give me access to create new testers → manager verifies/feeds store + creates staff names & passwords" (+ "are you hallucinating" challenge)
+
+Work Log:
+- Mapped the full permission wall before touching code: staff create was MALL_ADMIN-only; KYC submit already existed for STORE_MANAGER (KycCard in StaffPortal, only renders with storeId); MenuManager/Kitchen already manager-capable; /api/admin/overview already supported STORE_MANAGER but the Admin.tsx StaffGate locked them out (dead "Store performance" card — real bug)
+- NEW pure RBAC matrix src/lib/auth.ts → staffMutationError: MALL_ADMIN full mall control except self-mutation (anti-lockout); STORE_MANAGER may SET_PASSWORD/DEACTIVATE/ACTIVATE KITCHEN_STAFF of their OWN store; everyone else nothing. 7 unit tests added (80 total)
+- POST /api/admin/staff: STORE_MANAGER creates KITCHEN_STAFF server-pinned to own store (client role/store ignored, non-KITCHEN role → 403); MALL_ADMIN gains RUNNER creation — auto-creates Runner roster row + requires a DeliveryZone (assign engine matches runners by zone→mall, so zoneless runners would be dead rows); Runner+User in one transaction
+- GET /api/admin/staff: manager-scoped list (own store only); zones returned for the owner's runner picker
+- PATCH /api/admin/staff/[id]: matrix-enforced; audit mallId resolved from target when caller is a storeless-mall manager; DELETE stays MALL_ADMIN-only
+- UI: Admin board opened to STORE_MANAGER (scoped — KYC verify/new-store/commission/settlement stay MALL_ADMIN); TeamPanel managerMode (fixed kitchen role, no store picker, no reassign/remove); AddStaffForm RUNNER option + zone dropdown with empty-state warning; StaffPortal "My team" card
+- Gates: tsc clean, eslint clean, 80/80 tests (was 73), next build clean under CI conditions; CI run on b400869 = success
+- LIVE verified on prod after deploy: asha login 200 → GET staff 200 (2 staff, zones: Zone A Wing A / Zone B Wing B — runner picker will populate); bhagya login 200 → staff/overview 403 "no store scope" (expected until owner creates the real store + reassigns her)
+
+Stage Summary:
+- Access chain now: OWNER (asha) creates testers/managers/runners → MANAGER submits KYC + feeds menu + creates own kitchen logins → KITCHEN runs tickets → RUNNER or owner completes delivery
+- Fixed en route: STORE_MANAGER was hard-blocked from the admin board despite the API supporting them (dead console card)
+- Still pending: asha password rotation (needs Vercel token re-paste), cron 23:25→23:00 after final test
