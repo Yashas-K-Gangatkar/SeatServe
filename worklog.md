@@ -1005,3 +1005,27 @@ Stage Summary:
 - Platform is 100% blank for owner's self-built final test; settlement cron still 23:25 IST until owner says done
 - Razorpay verdicts delivered: "Access denied" on x.razorpay.com = missing X product role (owner must add user via Manage Team or activate X with owner login) — NOT a ban; 120-day tooltip = faster-settlement eligibility only, T+2 free continues unchanged
 - Next: owner builds real store/staff/KYC → final family loop → flip cron 23:25→23:00
+
+---
+Task ID: 31
+Agent: Super Z (main)
+Task: Owner locked out of staff login ("I tried it showed errors") — diagnose, verify live, hand over working credentials
+
+Work Log:
+- Read auth chain end-to-end: login route (scrypt verify + trim + in-memory 5-fails/10-min 429 limiter), StaffLogin.tsx (error mapping: 401 → "Invalid email or password", else ApiError message), StaffPortal/Kitchen (no crash paths found)
+- LIVE LOGIN TESTS on prod (both 200 OK, profiles intact):
+  - asha@seatserve.demo + demo1234 → 200, MALL_ADMIN, mallId present
+  - bhagya@gmail.com + MilkShop22 → 200, STORE_MANAGER, storeId NULL (expected — her milk shop was deleted in the Task 30 final wipe)
+- /staff page live 200 with sign-in CTA; demo-free rewrite intact
+- Root-cause hypotheses for owner's errors (system itself proven healthy):
+  1. Gmail-style address trap (asha@gmail.com → 401; documented earlier in task history as the exact same failure)
+  2. Owner assumed demo1234 died with the demo cleanup (UI demo references were all removed in Task 29) — but the owner account's password is still demo1234
+  3. 429 "Too many failed attempts — try again in 10 minutes" after 5 wrong tries (in-memory limiter)
+  4. Logged in as bhagya → portal looks empty/broken because she has no store attached until owner creates the real shop + reassigns her
+- Password rotation blocked by design + environment: SET_PASSWORD self-change is hard-blocked in /api/admin/staff/[id] (anti-lockout guard), no second MALL_ADMIN can be created (ASSIGNABLE_ROLES lacks it), and sandbox reset wiped .env.prod-db/.env.vercel-token again — direct DB rotation (rotate-staff-password.ts) needs the Vercel token re-pasted
+- Recommendation recorded: rotate asha's password ASAP (demo1234 was public during pilot); needs owner token
+
+Stage Summary:
+- Login system verified healthy end-to-end on live prod; owner given exact credentials + step-by-step + error translation table
+- bhagya is storeless until owner creates the real store (Admin board → New shop) and reassigns her in Team panel
+- Outstanding: asha password rotation (needs Vercel token), cron 23:25→23:00 after final test, RazorpayX activation
