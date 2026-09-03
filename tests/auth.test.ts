@@ -11,6 +11,7 @@ import {
   roleAllowed,
   scopeErrorFor,
   canAccessStore,
+  staffMutationError,
   type StaffUser,
 } from '../src/lib/auth'
 
@@ -127,5 +128,57 @@ describe('tenant scope guards', () => {
     const runner = mkUser({ role: 'RUNNER', storeId: null, runnerId: 'r1' })
     expect(canAccessStore(cm, { id: 'store_snacks', mallId: 'mall1' })).toBe(false)
     expect(canAccessStore(runner, { id: 'store_snacks', mallId: 'mall1' })).toBe(false)
+  })
+})
+
+// ───────── staff management RBAC matrix (Team panel) ─────────
+
+describe('staffMutationError matrix', () => {
+  const admin = mkUser({ id: 'admin', role: 'MALL_ADMIN', mallId: 'mall_1', storeId: null })
+  const managerA = mkUser({ id: 'mgrA', role: 'STORE_MANAGER', mallId: null, storeId: 'store_A' })
+  const managerB = mkUser({ id: 'mgrB', role: 'STORE_MANAGER', mallId: null, storeId: 'store_B' })
+  const chefA = mkUser({ id: 'chefA', role: 'KITCHEN_STAFF', mallId: null, storeId: 'store_A' })
+  const chefB = mkUser({ id: 'chefB', role: 'KITCHEN_STAFF', mallId: null, storeId: 'store_B' })
+  const target = (u: StaffUser) => ({ id: u.id, role: u.role, mallId: u.mallId, storeId: u.storeId, cinemaId: u.cinemaId })
+
+  test('mall admin controls every non-self account in every way', () => {
+    for (const action of ['SET_PASSWORD', 'DEACTIVATE', 'ACTIVATE', 'REASSIGN', 'DELETE'] as const) {
+      expect(staffMutationError(admin, target(chefA), action)).toBeNull()
+      expect(staffMutationError(admin, target(managerA), action)).toBeNull()
+    }
+  })
+
+  test('mall admin can never mutate their own account (single-admin lockout guard)', () => {
+    expect(staffMutationError(admin, target(admin), 'SET_PASSWORD')).toMatch(/separate admin/)
+    expect(staffMutationError(admin, target(admin), 'DEACTIVATE')).toMatch(/own account/)
+    expect(staffMutationError(admin, target(admin), 'REASSIGN')).toMatch(/own account/)
+  })
+
+  test('mall admin accounts cannot be deleted or reassigned by anyone', () => {
+    const admin2 = mkUser({ id: 'admin2', role: 'MALL_ADMIN', mallId: 'mall_1' })
+    expect(staffMutationError(admin, target(admin2), 'DELETE')).toMatch(/cannot be removed/)
+    expect(staffMutationError(admin, target(admin2), 'REASSIGN')).toMatch(/cannot be reassigned/)
+  })
+
+  test('store manager manages ONLY kitchen staff of their own store', () => {
+    expect(staffMutationError(managerA, target(chefA), 'SET_PASSWORD')).toBeNull()
+    expect(staffMutationError(managerA, target(chefA), 'DEACTIVATE')).toBeNull()
+    expect(staffMutationError(managerA, target(chefA), 'ACTIVATE')).toBeNull()
+  })
+
+  test('store manager cannot reach across stores', () => {
+    expect(staffMutationError(managerA, target(chefB), 'SET_PASSWORD')).toMatch(/does not belong to your store/)
+    expect(staffMutationError(managerA, target(chefB), 'DEACTIVATE')).toMatch(/does not belong to your store/)
+  })
+
+  test('store manager cannot manage managers, reassign, or delete', () => {
+    expect(staffMutationError(managerA, target(managerB), 'SET_PASSWORD')).toMatch(/only manage kitchen staff/)
+    expect(staffMutationError(managerA, target(managerB), 'DEACTIVATE')).toMatch(/only manage kitchen staff/)
+    expect(staffMutationError(managerA, target(chefA), 'REASSIGN')).toMatch(/only the mall admin/i)
+    expect(staffMutationError(managerA, target(chefA), 'DELETE')).toMatch(/only the mall admin/i)
+  })
+
+  test('kitchen staff can manage nobody', () => {
+    expect(staffMutationError(chefA, target(chefB), 'SET_PASSWORD')).toMatch(/cannot manage staff/)
   })
 })

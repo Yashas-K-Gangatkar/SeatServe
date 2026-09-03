@@ -28,6 +28,7 @@ interface StaffRow {
 interface TeamData {
   staff: StaffRow[]
   cinemas: { id: string; name: string }[]
+  zones?: { id: string; name: string }[]
 }
 
 const ROLE_LABEL: Record<string, string> = {
@@ -42,6 +43,7 @@ const ROLE_HELP: Record<string, string> = {
   STORE_MANAGER: 'Runs one shop: menu, items, tickets',
   KITCHEN_STAFF: 'Kitchen screen for ONE shop only — nothing else',
   CINEMA_MANAGER: 'Screens, seats and QR sheets for one cinema',
+  RUNNER: 'Delivers ready orders from shops to screens & seats',
 }
 
 /** Unambiguous 12-char password: letters + digits, no 0/O/1/l/I. */
@@ -57,7 +59,14 @@ function generatePassword(): string {
   return chars.join('')
 }
 
-export default function TeamPanel({ stores }: { stores: { id: string; name: string; emoji: string | null }[] }) {
+export default function TeamPanel({
+  stores,
+  managerMode = false,
+}: {
+  stores?: { id: string; name: string; emoji: string | null }[]
+  /** STORE_MANAGER view: fixed to kitchen staff of their own store, server-pinned. */
+  managerMode?: boolean
+}) {
   const [data, setData] = useState<TeamData | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
@@ -141,7 +150,7 @@ export default function TeamPanel({ stores }: { stores: { id: string; name: stri
     <section className="mt-6 space-y-3" aria-label="Team logins">
       <div className="flex items-center justify-between gap-2">
         <h2 className="flex items-center gap-1.5 text-xs font-extrabold uppercase tracking-wider text-muted-foreground">
-          <Users className="h-3.5 w-3.5" aria-hidden /> Team · logins &amp; access
+          <Users className="h-3.5 w-3.5" aria-hidden /> {managerMode ? 'My team · kitchen logins' : 'Team · logins & access'}
         </h2>
         <button
           onClick={() => setShowForm((v) => !v)}
@@ -154,8 +163,10 @@ export default function TeamPanel({ stores }: { stores: { id: string; name: stri
 
       <p className="rounded-xl border border-sky-200 bg-sky-50 px-3 py-2 text-[11px] leading-relaxed text-sky-900">
         Staff sign in with the <b>email + password you give them</b> — never Gmail, never Google. The email is just a work
-        login ID you create here (it does not need to be a real mailbox; nothing is emailed to it). Each account is locked
-        to its own store — a chef can only ever see their shop&apos;s kitchen screen.
+        login ID you create here (it does not need to be a real mailbox; nothing is emailed to it).
+        {managerMode
+          ? ' Accounts you create are locked to YOUR store — they see only this shop’s kitchen screen.'
+          : ' Each account is locked to its own store — a chef can only ever see their shop’s kitchen screen.'}
       </p>
 
       {justCreated && (
@@ -209,8 +220,10 @@ export default function TeamPanel({ stores }: { stores: { id: string; name: stri
 
       {showForm && (
         <AddStaffForm
-          stores={stores}
+          stores={stores ?? []}
           cinemas={data.cinemas}
+          zones={data.zones ?? []}
+          managerMode={managerMode}
           busy={busy}
           setBusy={setBusy}
           onCreated={(email, password) => {
@@ -222,7 +235,10 @@ export default function TeamPanel({ stores }: { stores: { id: string; name: stri
       )}
 
       {data.staff.length === 0 ? (
-        <EmptyState title="No staff accounts yet" hint="Add your first chef or manager with the button above." />
+        <EmptyState
+          title={managerMode ? 'No kitchen logins yet' : 'No staff accounts yet'}
+          hint={managerMode ? 'Add your first kitchen staff member with the button above.' : 'Add your first chef or manager with the button above.'}
+        />
       ) : (
         <ul className="space-y-2">
           {data.staff.map((s) => (
@@ -243,7 +259,7 @@ export default function TeamPanel({ stores }: { stores: { id: string; name: stri
                   </p>
                 </div>
                 <div className="flex shrink-0 items-center gap-1.5">
-                  {s.role !== 'MALL_ADMIN' && (
+                  {s.role !== 'MALL_ADMIN' && !managerMode && (
                     <button
                       onClick={() => {
                         setEditFor({ id: s.id, name: s.name })
@@ -298,10 +314,10 @@ export default function TeamPanel({ stores }: { stores: { id: string; name: stri
                   )}
                 </div>
               </div>
-              {editFor?.id === s.id && (
+              {editFor?.id === s.id && !managerMode && (
                 <EditStaffForm
                   staff={s}
-                  stores={stores}
+                  stores={stores ?? []}
                   cinemas={data.cinemas}
                   busy={busy}
                   setBusy={setBusy}
@@ -485,20 +501,25 @@ function EditStaffForm({
 function AddStaffForm({
   stores,
   cinemas,
+  zones,
+  managerMode = false,
   busy,
   setBusy,
   onCreated,
 }: {
   stores: { id: string; name: string; emoji: string | null }[]
   cinemas: { id: string; name: string }[]
+  zones: { id: string; name: string }[]
+  managerMode?: boolean
   busy: boolean
   setBusy: (v: boolean) => void
   onCreated: (email: string, password: string) => void
 }) {
   const [name, setName] = useState('')
-  const [role, setRole] = useState<'KITCHEN_STAFF' | 'STORE_MANAGER' | 'CINEMA_MANAGER'>('KITCHEN_STAFF')
+  const [role, setRole] = useState<'KITCHEN_STAFF' | 'STORE_MANAGER' | 'CINEMA_MANAGER' | 'RUNNER'>('KITCHEN_STAFF')
   const [storeId, setStoreId] = useState(stores[0]?.id ?? '')
   const [cinemaId, setCinemaId] = useState(cinemas[0]?.id ?? '')
+  const [zoneId, setZoneId] = useState(zones[0]?.id ?? '')
   const [email, setEmail] = useState('')
   const [phone, setPhone] = useState('')
   const [password, setPassword] = useState(generatePassword())
@@ -512,14 +533,19 @@ function AddStaffForm({
     setBusy(true)
     setError(null)
     try {
-      await post('/api/admin/staff', {
-        name,
-        role,
-        email,
-        phone,
-        password,
-        ...(role === 'CINEMA_MANAGER' ? { cinemaId } : { storeId }),
-      })
+      await post(
+        '/api/admin/staff',
+        managerMode
+          ? { name, email, phone, password } // role + store are server-pinned for managers
+          : {
+              name,
+              role,
+              email,
+              phone,
+              password,
+              ...(role === 'CINEMA_MANAGER' ? { cinemaId } : role === 'RUNNER' ? { zoneId } : { storeId }),
+            },
+      )
       onCreated(email.toLowerCase(), password)
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Could not create the account')
@@ -528,26 +554,46 @@ function AddStaffForm({
     }
   }
 
-  const valid = name.trim().length >= 2 && /.+@.+\..+/.test(email) && phone.replace(/[\s-]/g, '').length >= 10 && password.length >= 8
+  const valid =
+    name.trim().length >= 2 &&
+    /.+@.+\..+/.test(email) &&
+    phone.replace(/[\s-]/g, '').length >= 10 &&
+    password.length >= 8 &&
+    (managerMode || role !== 'RUNNER' || zones.length === 0 || zoneId !== '')
 
   return (
     <div className="rounded-2xl border border-border bg-card p-4">
-      <p className="text-xs font-extrabold uppercase tracking-wider text-amber-800">New staff login</p>
+      <p className="text-xs font-extrabold uppercase tracking-wider text-amber-800">
+        {managerMode ? 'New kitchen staff login' : 'New staff login'}
+      </p>
       <div className="mt-3 grid gap-3 sm:grid-cols-2">
         <div>
           <label className={labelCls} htmlFor="staff-name">Full name</label>
           <input id="staff-name" value={name} onChange={(e) => setName(e.target.value)} placeholder="Ramesh K." className={inputCls} />
         </div>
-        <div>
-          <label className={labelCls} htmlFor="staff-role">Role</label>
-          <select id="staff-role" value={role} onChange={(e) => setRole(e.target.value as typeof role)} className={inputCls}>
-            <option value="KITCHEN_STAFF">Kitchen staff (chef)</option>
-            <option value="STORE_MANAGER">Store manager</option>
-            <option value="CINEMA_MANAGER">Cinema manager</option>
-          </select>
-          <p className="mt-1 text-[10px] text-muted-foreground">{ROLE_HELP[role]}</p>
-        </div>
-        {role === 'CINEMA_MANAGER' ? (
+        {managerMode ? (
+          <div>
+            <label className={labelCls} htmlFor="staff-role-fixed">Role</label>
+            <div className="flex items-center gap-2">
+              <select id="staff-role-fixed" disabled className={`${inputCls} opacity-70`}>
+                <option>Kitchen staff (chef) — your store only</option>
+              </select>
+            </div>
+            <p className="mt-1 text-[10px] text-muted-foreground">Pinned to YOUR store — the mall admin can promote or move people.</p>
+          </div>
+        ) : (
+          <div>
+            <label className={labelCls} htmlFor="staff-role">Role</label>
+            <select id="staff-role" value={role} onChange={(e) => setRole(e.target.value as typeof role)} className={inputCls}>
+              <option value="KITCHEN_STAFF">Kitchen staff (chef)</option>
+              <option value="STORE_MANAGER">Store manager</option>
+              <option value="CINEMA_MANAGER">Cinema manager</option>
+              <option value="RUNNER">Delivery runner</option>
+            </select>
+            <p className="mt-1 text-[10px] text-muted-foreground">{ROLE_HELP[role]}</p>
+          </div>
+        )}
+        {!managerMode && role === 'CINEMA_MANAGER' && (
           <div>
             <label className={labelCls} htmlFor="staff-cinema">Cinema</label>
             <select id="staff-cinema" value={cinemaId} onChange={(e) => setCinemaId(e.target.value)} className={inputCls}>
@@ -556,7 +602,25 @@ function AddStaffForm({
               ))}
             </select>
           </div>
-        ) : (
+        )}
+        {!managerMode && role === 'RUNNER' && (
+          <div>
+            <label className={labelCls} htmlFor="staff-zone">Delivery zone</label>
+            {zones.length === 0 ? (
+              <p className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-[11px] font-bold text-amber-800">
+                No delivery zones exist yet in your mall — ask your platform contact to add one before creating runners.
+              </p>
+            ) : (
+              <select id="staff-zone" value={zoneId} onChange={(e) => setZoneId(e.target.value)} className={inputCls}>
+                {zones.map((z) => (
+                  <option key={z.id} value={z.id}>{z.name}</option>
+                ))}
+              </select>
+            )}
+            <p className="mt-1 text-[10px] text-muted-foreground">Runners are matched to ready orders inside their zone&apos;s mall.</p>
+          </div>
+        )}
+        {!managerMode && (role === 'KITCHEN_STAFF' || role === 'STORE_MANAGER') && (
           <div>
             <label className={labelCls} htmlFor="staff-store">Store</label>
             <select id="staff-store" value={storeId} onChange={(e) => setStoreId(e.target.value)} className={inputCls}>

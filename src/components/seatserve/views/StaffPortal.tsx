@@ -5,7 +5,7 @@
 // tenant scope spelled out (mall / cinema / store). Sign-out + demo reset
 // (mall admin only) live here.
 import { useState } from 'react'
-import { ChefHat, Bike, LayoutDashboard, ScanLine, LogOut, RotateCcw, Building2, Store as StoreIcon, Clapperboard, ChevronLeft, UtensilsCrossed } from 'lucide-react'
+import { ChefHat, Bike, LayoutDashboard, ScanLine, LogOut, RotateCcw, Building2, Store as StoreIcon, Clapperboard, ChevronLeft, UtensilsCrossed, Users } from 'lucide-react'
 import { toast } from 'sonner'
 import { post } from '@/lib/client/api'
 import { logout, ROLE_LABELS, useStaffAuth, type StaffProfile } from '@/lib/client/auth'
@@ -39,6 +39,7 @@ function consolesFor(user: StaffProfile): ConsoleCard[] {
         { href: '#/kitchen', icon: ChefHat, title: 'Your store kitchen', sub: 'Tickets, accept → prepare → ready, open/close your store', tint: 'text-violet-600 bg-violet-100' },
         { href: '#/menu', icon: UtensilsCrossed, title: 'Your menu', sub: 'Create new items, set prices, mark items out of stock', tint: 'text-teal-600 bg-teal-100' },
         { href: '#/admin', icon: LayoutDashboard, title: 'Store performance', sub: 'Your store\u2019s live orders and settlement share (mall view, your rows)', tint: 'text-amber-600 bg-amber-100' },
+        { href: '#/admin', icon: Users, title: 'My team', sub: 'Create kitchen staff logins for your store, set their passwords, disable access', tint: 'text-sky-600 bg-sky-100' },
       ]
     case 'KITCHEN_STAFF':
       return [

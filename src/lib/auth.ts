@@ -111,6 +111,59 @@ export function scopeErrorFor(user: StaffUser): string | null {
   }
 }
 
+// ─────────────── staff account management (Team panel) ───────────────
+
+export type StaffMutationAction = 'SET_PASSWORD' | 'DEACTIVATE' | 'ACTIVATE' | 'REASSIGN' | 'DELETE'
+
+export interface StaffMutationTarget {
+  id: string
+  role: Role
+  mallId: string | null
+  storeId: string | null
+  cinemaId: string | null
+}
+
+/**
+ * Who may mutate which staff account, and how? Pure RBAC matrix for the Team
+ * panel — unit-tested in tests/auth.test.ts, consumed by /api/admin/staff/[id].
+ *
+ *   MALL_ADMIN     — full control over every account in their mall (the route
+ *                    re-checks mall membership) except self-mutation: changing
+ *                    your own password/deactivating yourself needs a second
+ *                    admin, by design, so one person can never be locked out
+ *                    of everything by their own hand.
+ *   STORE_MANAGER  — runs their shop's floor team: reset password / disable /
+ *                    re-enable KITCHEN_STAFF of their OWN store. Never other
+ *                    stores, never managers, never reassign/remove (mall-level
+ *                    decisions stay with the mall admin).
+ *   everyone else  — no staff management at all.
+ *
+ * Returns an error message for the denial, or null when allowed.
+ */
+export function staffMutationError(
+  actor: StaffUser,
+  target: StaffMutationTarget,
+  action: StaffMutationAction,
+): string | null {
+  if (actor.id === target.id) {
+    return action === 'SET_PASSWORD'
+      ? 'Use a separate admin account to change your own password'
+      : 'You cannot change your own account here'
+  }
+  if (actor.role === 'MALL_ADMIN') {
+    if (action === 'DELETE' && target.role === 'MALL_ADMIN') return 'Mall admin accounts cannot be removed here'
+    if (action === 'REASSIGN' && target.role === 'MALL_ADMIN') return 'Mall admin accounts cannot be reassigned here'
+    return null
+  }
+  if (actor.role === 'STORE_MANAGER') {
+    if (action === 'REASSIGN' || action === 'DELETE') return 'Only the mall admin can reassign or remove staff'
+    if (target.role !== 'KITCHEN_STAFF') return 'Store managers can only manage kitchen staff accounts'
+    if (target.storeId !== actor.storeId) return 'This kitchen staff account does not belong to your store'
+    return null
+  }
+  return 'Your role cannot manage staff accounts'
+}
+
 /**
  * Can this staff user act on / read the given store?
  * KITCHEN_STAFF & STORE_MANAGER: only their own store.

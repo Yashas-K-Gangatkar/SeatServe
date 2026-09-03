@@ -20,13 +20,13 @@ const BENEFICIARY_LABEL: Record<string, string> = {
 
 export default function Admin({ go }: { go: (p: string) => void }) {
   return (
-    <StaffGate roles={['MALL_ADMIN', 'CINEMA_MANAGER']} go={go} consoleName="Admin board">
+    <StaffGate roles={['MALL_ADMIN', 'CINEMA_MANAGER', 'STORE_MANAGER']} go={go} consoleName="Admin board">
       {(user) => <AdminBoard go={go} scopeRole={user.role} />}
     </StaffGate>
   )
 }
 
-function AdminBoard({ go, scopeRole }: { go: (p: string) => void; scopeRole: 'MALL_ADMIN' | 'CINEMA_MANAGER' }) {
+function AdminBoard({ go, scopeRole }: { go: (p: string) => void; scopeRole: 'MALL_ADMIN' | 'CINEMA_MANAGER' | 'STORE_MANAGER' }) {
   const [data, setData] = useState<AdminOverview | null>(null)
   const [showNewStore, setShowNewStore] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -310,6 +310,7 @@ function AdminBoard({ go, scopeRole }: { go: (p: string) => void; scopeRole: 'MA
       {scopeRole === 'MALL_ADMIN' && (
         <TeamPanel stores={data.stores.map((s) => ({ id: s.id, name: s.name, emoji: s.emoji }))} />
       )}
+      {scopeRole === 'STORE_MANAGER' && <TeamPanel managerMode />}
 
       {/* anti-scam: trace which orders came from a seat QR */}
       <SeatTrace />

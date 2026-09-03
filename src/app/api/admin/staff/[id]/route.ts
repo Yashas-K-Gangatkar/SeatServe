@@ -1,4 +1,4 @@
-// PATCH  /api/admin/staff/[id] — manage one staff account (MALL_ADMIN only):
+// PATCH  /api/admin/staff/[id] — manage one staff account:
 //   SET_PASSWORD — set a new login password (kicks the person out of all devices)
 //   DEACTIVATE   — they quit / were let go: login blocked, sessions revoked
 //   ACTIVATE     — re-enable a deactivated account
@@ -6,14 +6,17 @@
 //                  manager, or move them to another shop). Signs them out.
 // DELETE /api/admin/staff/[id] — permanently remove a DEACTIVATED account from
 //                  the team list (never a mall admin). Sessions cascade.
-// The target account must belong to the caller's mall — checked by scope
-// columns, never by what the client sends.
+// Who may do what (pure matrix in src/lib/auth.ts → staffMutationError):
+//   MALL_ADMIN    — everything above for their whole mall (except on itself)
+//   STORE_MANAGER — SET_PASSWORD / DEACTIVATE / ACTIVATE on KITCHEN_STAFF of
+//                   their OWN store only
+// The target's membership is checked by scope columns, never client input.
 
 import { z } from 'zod'
 import { db } from '@/lib/db'
 import { ok, fail, parseBody } from '@/lib/api-helpers'
 import { requireStaff } from '@/lib/auth-server'
-import { hashPassword } from '@/lib/auth'
+import { hashPassword, staffMutationError, type Role } from '@/lib/auth'
 import { audit } from '@/lib/audit'
 import { emitToRooms } from '@/lib/realtime'
 
@@ -35,10 +38,9 @@ const bodySchema = z.object({
 })
 
 export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
-  const auth = await requireStaff(request, ['MALL_ADMIN'])
+  const auth = await requireStaff(request, ['MALL_ADMIN', 'STORE_MANAGER'])
   if ('error' in auth) return auth.error
   const admin = auth.user
-  if (!admin.mallId) return fail('Your admin account is not tied to a mall', 403)
   const { id } = await params
 
   const parsed = await parseBody(request, bodySchema)
@@ -53,13 +55,23 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
 
   // scope guard: the account must live inside the caller's mall
   const inMall =
-    target.mallId === admin.mallId || target.store?.mallId === admin.mallId || target.cinema?.mallId === admin.mallId
+    (admin.mallId &&
+      (target.mallId === admin.mallId || target.store?.mallId === admin.mallId || target.cinema?.mallId === admin.mallId)) ??
+    false
   if (!inMall) return fail('This account is not part of your mall', 403)
 
+  // RBAC matrix: who may run this action on this target (pure, unit-tested)
+  const denial = staffMutationError(
+    admin,
+    { id: target.id, role: target.role as Role, mallId: target.mallId, storeId: target.storeId, cinemaId: target.cinemaId },
+    action,
+  )
+  if (denial) return fail(denial, admin.id === target.id ? 400 : 403)
+  // Audit rows want a mall anchor; a STORE_MANAGER has none on their own row —
+  // resolve from the target's scope instead.
+  const auditMallId = admin.mallId ?? target.store?.mallId ?? target.mallId
+
   if (action === 'SET_PASSWORD') {
-    if (target.role === 'MALL_ADMIN' && target.id === admin.id) {
-      return fail('Use a separate admin account to change your own password', 400)
-    }
     if (!password) return fail('New password is required', 422)
     await db.$transaction([
       db.user.update({ where: { id: target.id }, data: { passwordHash: await hashPassword(password) } }),
@@ -71,14 +83,13 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
       action: 'STAFF_PASSWORD_RESET',
       entityType: 'User',
       entityId: target.id,
-      mallId: admin.mallId,
+      mallId: auditMallId,
       meta: { email: target.email, storeName: target.store?.name ?? null },
     })
     return ok({ action, message: `Password updated for ${target.name} — all their devices were signed out` })
   }
 
   if (action === 'DEACTIVATE') {
-    if (target.id === admin.id) return fail('You cannot deactivate your own account', 400)
     if (!target.isActive) return fail('This account is already deactivated', 409)
     await db.$transaction([
       db.user.update({ where: { id: target.id }, data: { isActive: false } }),
@@ -90,7 +101,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
       action: 'STAFF_DEACTIVATED',
       entityType: 'User',
       entityId: target.id,
-      mallId: admin.mallId,
+      mallId: auditMallId,
       meta: { email: target.email, storeName: target.store?.name ?? null },
     })
     return ok({ action, message: `${target.name} can no longer sign in` })
@@ -136,7 +147,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
       action: 'STAFF_REASSIGNED',
       entityType: 'User',
       entityId: target.id,
-      mallId: admin.mallId,
+      mallId: auditMallId,
       meta: { email: target.email, previousRole: target.role, newRole: role, previousScope: previous, newScope: scopeName },
     })
     await emitToRooms({ rooms: [`admin:${admin.mallId}`], event: 'staff:update', data: { userId: target.id } })
@@ -152,7 +163,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
     action: 'STAFF_ACTIVATED',
     entityType: 'User',
     entityId: target.id,
-    mallId: admin.mallId,
+    mallId: auditMallId,
     meta: { email: target.email, storeName: target.store?.name ?? null },
   })
   return ok({ action, message: `${target.name} can sign in again` })
