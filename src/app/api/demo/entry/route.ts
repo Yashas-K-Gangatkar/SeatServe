@@ -3,10 +3,13 @@
 // guessable token let anyone order to / read another seat). This endpoint
 // gives the landing page, README verification and CI scripts the CURRENT
 // demo tokens after every reseed, so nothing needs predictable tokens.
+// PRODUCTION: hard-404 — handing out valid seat capability tokens on the live
+// platform would let anyone order to a seat without scanning the physical QR.
 import { db } from '@/lib/db'
-import { ok } from '@/lib/api-helpers'
+import { ok, fail } from '@/lib/api-helpers'
 
 export async function GET() {
+  if (process.env.NODE_ENV === 'production') return fail('Not found', 404)
   const heroSeat = await db.seat.findFirst({
     where: { screen: { name: 'Screen 3' }, code: 'A-1' },
     select: { qrToken: true, code: true, screen: { select: { name: true, cinema: { select: { mall: { select: { name: true } } } } } } },

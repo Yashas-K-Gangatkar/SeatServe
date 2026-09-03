@@ -30,29 +30,32 @@ function useDemoEntry(): DemoEntry | null {
   return entry
 }
 
-const DEMO_STEPS = [
-  'Open “Customer · demo seat” (or scan a QR from the generator page).',
-  'Add items from 2–3 different stores to ONE cart, then pay by UPI or card.',
-  'You land on live tracking — each store has its own status ticket. Changed your mind? Cancel with automatic money-back until the kitchen accepts.',
-  'Sign in to the staff portal as a cook (e.g. kitchen@pizza-corner.demo) — only their tickets appear.',
-  'Advance to “Ready”, deliver as the runner (ravi@runner.demo), watch tracking update in realtime.',
+const HOW_STEPS = [
+  'Scan the QR at your seat — the menu opens with the stores inside your mall.',
+  'Add items from different stores to ONE cart, then pay by UPI or card.',
+  'Track live — each store has its own status ticket. Cancel with automatic money-back until the kitchen accepts.',
+  'Staff run scoped consoles — a kitchen sees only its tickets, runners their own runs, the mall admin the whole venue.',
 ]
 
 export default function SeatLanding({ go }: { go: (path: string) => void }) {
   const entry = useDemoEntry()
   const seatToken = entry?.aurora?.qrToken ?? null
-  const seatLabel = entry?.aurora ? `Seat ${entry.aurora.seat}` : 'Demo seat'
+  const seatLabel = entry?.aurora ? `Seat ${entry.aurora.seat}` : 'your seat'
   const nexoraToken = entry?.nexora?.qrToken ?? null
 
   const consoles = [
-    {
-      href: seatToken ? `#/seat/${seatToken}` : null,
-      icon: QrCode,
-      title: `Customer · ${seatLabel}`,
-      sub: 'Scan-to-order menu, one cart across stores, UPI or card payment, live tracking',
-      tint: 'text-orange-500 bg-orange-100',
-      tag: 'START HERE',
-    },
+    ...(seatToken
+      ? [
+          {
+            href: `#/seat/${seatToken}`,
+            icon: QrCode,
+            title: `Customer · ${seatLabel}`,
+            sub: 'Scan-to-order menu, one cart across stores, UPI or card payment, live tracking',
+            tint: 'text-orange-500 bg-orange-100',
+            tag: 'START HERE',
+          },
+        ]
+      : []),
     ...(nexoraToken
       ? [
           {
@@ -100,13 +103,14 @@ export default function SeatLanding({ go }: { go: (path: string) => void }) {
           store accepts your order.
         </p>
         <div className="mt-6 flex flex-wrap items-center gap-3">
-          <button
-            onClick={() => seatToken && go(`#/seat/${seatToken}`)}
-            disabled={!seatToken}
-            className="inline-flex items-center gap-2 rounded-full bg-gradient-to-b from-amber-500 to-orange-500 px-5 py-3 text-sm font-extrabold text-white shadow-lg shadow-orange-500/30 transition hover:from-amber-600 hover:to-orange-600 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-orange-500 disabled:opacity-50"
-          >
-            <QrCode className="h-4 w-4" aria-hidden /> Open {seatLabel}
-          </button>
+          {seatToken && (
+            <button
+              onClick={() => go(`#/seat/${seatToken}`)}
+              className="inline-flex items-center gap-2 rounded-full bg-gradient-to-b from-amber-500 to-orange-500 px-5 py-3 text-sm font-extrabold text-white shadow-lg shadow-orange-500/30 transition hover:from-amber-600 hover:to-orange-600 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-orange-500"
+            >
+              <QrCode className="h-4 w-4" aria-hidden /> Open {seatLabel}
+            </button>
+          )}
           <button
             onClick={() => go('#/staff/login')}
             className="inline-flex items-center gap-2 rounded-full border border-stone-300 bg-white/70 px-5 py-3 text-sm font-bold text-stone-800 shadow-sm transition hover:border-stone-400 hover:bg-white"
@@ -142,14 +146,14 @@ export default function SeatLanding({ go }: { go: (path: string) => void }) {
         </div>
       </section>
 
-      {/* guided demo */}
-      <section className="mt-10 rounded-2xl border border-border bg-card p-5 sm:p-6" aria-label="Guided demo">
+      {/* how it works */}
+      <section className="mt-10 rounded-2xl border border-border bg-card p-5 sm:p-6" aria-label="How it works">
         <div className="flex items-center gap-2">
           <Clapperboard className="h-5 w-5 text-orange-500" aria-hidden />
-          <h2 className="font-bold">60-second guided demo</h2>
+          <h2 className="font-bold">How it works</h2>
         </div>
         <ol className="mt-4 grid gap-3 sm:grid-cols-2">
-          {DEMO_STEPS.map((step, i) => (
+          {HOW_STEPS.map((step, i) => (
             <li key={i} className="flex gap-3 text-sm text-stone-600">
               <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-amber-100 text-xs font-extrabold text-amber-700">
                 {i + 1}

@@ -1,9 +1,10 @@
 'use client'
 
-// SeatServe Phase 2 — staff portal login (#/staff/login).
+// SeatServe — staff portal login (#/staff/login).
 // A deliberately separate experience from the customer app: work identity,
-// scoped access, demo chips for one-tap sign-in during the sandbox demo.
-import { useState } from 'react'
+// scoped access. Accounts are issued by the venue administrator — no demo
+// shortcuts are shown on a live platform.
+import { useEffect, useState } from 'react'
 import { ChevronLeft, LockKeyhole, LogIn, ShieldCheck } from 'lucide-react'
 import { toast } from 'sonner'
 import { ApiError } from '@/lib/client/api'
@@ -11,25 +12,36 @@ import { login, ROLE_LABELS, type StaffProfile } from '@/lib/client/auth'
 import { Spinner } from '../ui-bits'
 import { WarmBackdrop } from '../WarmBackdrop'
 
-const DEMO_ACCOUNTS: { email: string; role: StaffProfile['role']; who: string }[] = [
-  { email: 'asha@seatserve.demo', role: 'MALL_ADMIN', who: 'Aurora Mall · oversees all 4 stores' },
-  { email: 'vikram@aurora.demo', role: 'CINEMA_MANAGER', who: 'Aurora Cineplex Wing A · own cinema only' },
-  { email: 'kitchen@cinema-snacks.demo', role: 'KITCHEN_STAFF', who: 'Cinema Snacks counter' },
-  { email: 'kitchen@pizza-corner.demo', role: 'KITCHEN_STAFF', who: 'Pizza Corner kitchen' },
-  { email: 'kitchen@wrap-house.demo', role: 'KITCHEN_STAFF', who: 'Wrap House kitchen' },
-  { email: 'kitchen@mithai-more.demo', role: 'KITCHEN_STAFF', who: 'Mithai & More counter' },
-  { email: 'manager@cinema-snacks.demo', role: 'STORE_MANAGER', who: 'Cinema Snacks · store controls' },
-  { email: 'ravi@runner.demo', role: 'RUNNER', who: 'Ravi · Wing A zone' },
-  { email: 'sana@runner.demo', role: 'RUNNER', who: 'Sana · Wing B zone' },
-]
-const DEMO_PASSWORD = 'demo1234'
-
 export default function StaffLogin({ go }: { go: (p: string) => void }) {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState<string | null>(null)
   const [checking, setChecking] = useState(false)
+
+  // An already-signed-in staff member landing here goes straight to the portal.
+  useEffect(() => {
+    let alive = true
+    void (async () => {
+      try {
+        const res = await fetch('/api/auth/me', { cache: 'no-store' })
+        const json = (await res.json()) as { ok: boolean; data?: StaffProfile }
+        if (alive && json.ok && json.data) {
+          toast.success(`Welcome back, ${json.data.name}`, {
+            description: `${ROLE_LABELS[json.data.role]} · scoped console`,
+          })
+          go('#/staff')
+        }
+      } catch {
+        /* not signed in — show the form */
+      } finally {
+        if (alive) setChecking(false)
+      }
+    })()
+    return () => {
+      alive = false
+    }
+  }, [go])
 
   const submit = async (e?: React.FormEvent) => {
     e?.preventDefault()
@@ -40,13 +52,10 @@ export default function StaffLogin({ go }: { go: (p: string) => void }) {
       toast.success(`Welcome back, ${me.name}`, { description: `${ROLE_LABELS[me.role]} · scoped console` })
       go('#/staff')
     } catch (error) {
-      // the #1 real-world login failure: typing a gmail-style address — the
-      // demo emails are @seatserve.demo / @aurora.demo etc. Make the recovery
-      // obvious instead of a bare 401.
       const status = error instanceof ApiError ? error.status : 0
       setErr(
         status === 401
-          ? 'Invalid email or password. Demo tip: these are NOT Gmail addresses — tap a role chip below to fill the exact email, then sign in (password: demo1234).'
+          ? 'Invalid email or password. Check with your venue administrator if you are unsure.'
           : error instanceof ApiError
             ? error.message
             : 'Sign-in failed — try again',
@@ -54,12 +63,6 @@ export default function StaffLogin({ go }: { go: (p: string) => void }) {
     } finally {
       setBusy(false)
     }
-  }
-
-  const fill = (demoEmail: string) => {
-    setEmail(demoEmail)
-    setPassword(DEMO_PASSWORD)
-    setErr(null)
   }
 
   return (
@@ -96,7 +99,7 @@ export default function StaffLogin({ go }: { go: (p: string) => void }) {
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="you@yourstore.demo"
+                placeholder="you@yourvenue.in"
                 className="w-full rounded-xl border border-stone-300 bg-stone-50 px-3.5 py-2.5 text-sm outline-none transition focus:border-orange-400 focus:bg-white focus:ring-2 focus:ring-orange-200"
               />
             </div>
@@ -130,35 +133,13 @@ export default function StaffLogin({ go }: { go: (p: string) => void }) {
             </button>
           </form>
         )}
-
-        {/* demo chips */}
-        <div className="mt-6 border-t border-stone-200 pt-5">
-          <p className="text-[11px] font-bold uppercase tracking-wider text-stone-500">Demo accounts · tap to fill</p>
-          <p className="mt-1 text-[11px] text-stone-500">Password for every demo account: <code className="rounded bg-stone-100 px-1.5 py-0.5 font-bold text-stone-700">demo1234</code></p>
-          <div className="mt-3 grid max-h-72 gap-2 overflow-y-auto pr-1">
-            {DEMO_ACCOUNTS.map((a) => (
-              <button
-                key={a.email}
-                type="button"
-                onClick={() => fill(a.email)}
-                className="flex items-center justify-between gap-3 rounded-xl border border-stone-200 bg-stone-50 px-3 py-2 text-left transition hover:border-orange-300 hover:bg-orange-50"
-              >
-                <span>
-                  <span className="block text-xs font-bold text-stone-800">{ROLE_LABELS[a.role]}</span>
-                  <span className="block text-[11px] text-stone-500">{a.who}</span>
-                </span>
-                <span className="shrink-0 rounded-full bg-white px-2 py-0.5 text-[10px] font-semibold text-stone-500 ring-1 ring-stone-200">{a.email}</span>
-              </button>
-            ))}
-          </div>
-        </div>
       </div>
 
-      {/* lawyer-hat disclosure */}
       <p className="mt-5 flex items-start gap-2 text-[11px] leading-relaxed text-stone-500">
         <ShieldCheck className="mt-0.5 h-3.5 w-3.5 shrink-0 text-emerald-600" aria-hidden />
-        Sandbox demo: sessions are httpOnly cookies; passwords are scrypt-hashed. Never enter real personal or payment
-        credentials — payments remain mocked until Phase 3 provider integration.
+        Sessions are encrypted httpOnly cookies; passwords are never stored in
+        plain text; every sign-in is rate-limited and audited. No account yet?
+        Your venue administrator creates one in the Admin → Team panel.
       </p>
     </div>
   )

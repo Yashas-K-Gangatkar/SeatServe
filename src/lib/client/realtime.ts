@@ -122,7 +122,11 @@ export function useRealtime(rooms: string[], onEvent?: (event: string, data: unk
   return { connected, reconnecting }
 }
 
-/** Polling fallback — always-on so a socket hiccup never blinds a dashboard. */
+/** Polling fallback — always-on so a socket hiccup never blinds a dashboard.
+ *  Edge-request guard: ticks are SKIPPED while the tab is hidden, and a fresh
+ *  refresh fires the moment the tab becomes visible again. An open-but-
+ *  backgrounded tab (the thing that burned 832K Vercel edge requests in a
+ *  month) no longer polls at all; visible tabs keep the snappy interval. */
 export function usePolling(callback: () => void, ms: number, enabled = true) {
   const cbRef = useRef(callback)
   useEffect(() => {
@@ -130,8 +134,18 @@ export function usePolling(callback: () => void, ms: number, enabled = true) {
   })
   useEffect(() => {
     if (!enabled) return
-    const id = setInterval(() => cbRef.current(), ms)
-    return () => clearInterval(id)
+    const tick = () => {
+      if (document.visibilityState === 'visible') cbRef.current()
+    }
+    const id = setInterval(tick, ms)
+    const onVisibility = () => {
+      if (document.visibilityState === 'visible') cbRef.current()
+    }
+    document.addEventListener('visibilitychange', onVisibility)
+    return () => {
+      clearInterval(id)
+      document.removeEventListener('visibilitychange', onVisibility)
+    }
   }, [ms, enabled])
 }
 
