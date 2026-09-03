@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>NotiFetch — Seat-to-Seat Food Delivery (B2B Pitch Sheet)</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;800;900&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --c-bg:#f5f6f7;      /* cascade XL page_bg */
+    --c-deep:#1c1e1f;    /* cascade text_primary */
+    --c-navy:#2a6888;    /* cascade XS accent */
+    --c-header:#4b6471;  /* cascade M header_fill */
+    --c-muted:#777d80;   /* cascade text_muted */
+    --c-border:#c4ced4;  /* cascade S border */
+    --c-card:#e6e9eb;    /* cascade L card_bg */
+  }
+  html,body{margin:0;padding:0;background:var(--c-bg);}
+  *{box-sizing:border-box;}
+  body{font-family:'Inter',sans-serif;color:var(--c-deep);
+       -webkit-font-smoothing:antialiased;line-break:strict;word-break:normal;overflow-wrap:break-word;}
+  .poster{width:794px;position:relative;background:var(--c-bg);}
+  .inner{padding:42px 56px 40px 56px;}
+
+  /* one geometric anchor, contained, single hue, strokes only */
+  .deco{position:absolute;top:24px;right:30px;width:150px;height:150px;opacity:.9;}
+
+  /* ---------- top bar ---------- */
+  .topbar{display:flex;justify-content:space-between;align-items:flex-start;}
+  .wordmark{font-size:27px;font-weight:900;letter-spacing:5px;color:var(--c-deep);}
+  .wordmark span{color:var(--c-navy);}
+  .tagline{font-size:12.5px;letter-spacing:1.6px;color:var(--c-muted);margin-top:5px;font-weight:500;}
+  .topmeta{text-align:right;font-size:12px;letter-spacing:2px;color:var(--c-muted);line-height:1.7;font-weight:500;}
+  .rule{border:none;border-top:1px solid var(--c-border);margin:24px 0 0 0;}
+
+  /* ---------- hero ---------- */
+  .kicker{margin-top:44px;font-size:13px;font-weight:800;letter-spacing:3.2px;color:var(--c-navy);}
+  h1{margin:14px 0 0 0;}
+  .h1a{font-size:37px;font-weight:900;line-height:1.16;letter-spacing:-.5px;color:var(--c-deep);}
+  .h1b{font-size:55px;font-weight:900;line-height:1.08;letter-spacing:-1px;color:var(--c-navy);}
+  .lead{margin-top:20px;font-size:16.5px;line-height:1.58;color:var(--c-deep);opacity:.85;max-width:660px;text-align:left;}
+  .lead b{font-weight:700;}
+
+  /* ---------- stat strip ---------- */
+  .stats{display:flex;flex-wrap:wrap;gap:0;margin-top:38px;max-width:100%;}
+  .stat{flex:1 1 auto;min-width:150px;max-width:100%;padding:2px 18px;}
+  .stat + .stat{border-left:1px solid var(--c-border);}
+  .stat:first-child{padding-left:0;}
+  .num{font-size:50px;font-weight:900;color:var(--c-navy);line-height:1;letter-spacing:-1px;}
+  .num small{font-size:24px;font-weight:800;letter-spacing:0;}
+  .lbl{margin-top:9px;font-size:12px;font-weight:700;letter-spacing:1.6px;color:var(--c-header);line-height:1.5;}
+  .foot-note{margin-top:16px;font-size:12.5px;color:var(--c-muted);font-style:italic;}
+
+  .rule2{border:none;border-top:1px solid var(--c-border);margin:32px 0 0 0;}
+
+  /* ---------- sections ---------- */
+  .sec-title{margin-top:34px;font-size:24px;font-weight:800;letter-spacing:-.2px;color:var(--c-deep);}
+  .sec-title em{font-style:normal;color:var(--c-navy);}
+
+  .fixrow{display:flex;gap:26px;padding:16px 0 15px 0;border-bottom:1px solid var(--c-border);max-width:100%;}
+  .fixrow:last-child{border-bottom:none;padding-bottom:2px;}
+  .fixrow .fail{flex:0 1 42%;min-width:150px;}
+  .fixrow .fix{flex:1 1 56%;min-width:220px;}
+  .lab{font-size:11.5px;font-weight:800;letter-spacing:2px;color:var(--c-muted);}
+  .lab.navy{color:var(--c-navy);}
+  .fail-txt{margin-top:6px;font-size:16px;font-weight:700;line-height:1.42;}
+  .fix-txt{margin-top:6px;font-size:15.5px;line-height:1.5;text-align:left;}
+  .fix-txt b{color:var(--c-navy);font-weight:700;}
+
+  /* ---------- how it works ---------- */
+  .steps{display:flex;flex-wrap:wrap;margin-top:16px;max-width:100%;}
+  .step{flex:1 1 auto;min-width:150px;max-width:100%;padding-right:14px;}
+  .step + .step{padding-left:14px;}
+  .step + .step::before{content:'\2192';float:left;color:var(--c-border);font-size:20px;font-weight:800;
+                        margin:2px 12px 0 0;flex-shrink:0;}
+  .stepnum{font-size:22px;font-weight:900;color:var(--c-navy);}
+  .steptxt{margin-top:5px;font-size:15.5px;font-weight:700;line-height:1.4;}
+  .stepsub{margin-top:3px;font-size:12.5px;color:var(--c-muted);line-height:1.45;}
+
+  /* ---------- venue gets ---------- */
+  .gets{display:flex;flex-wrap:wrap;margin-top:14px;max-width:100%;}
+  .get{flex:1 1 42%;min-width:260px;max-width:100%;border-left:2px solid var(--c-navy);padding:2px 0 2px 14px;margin:0 22px 16px 0;}
+  .get-t{font-size:15.5px;font-weight:700;line-height:1.4;}
+  .get-d{margin-top:3px;font-size:14.5px;line-height:1.48;color:var(--c-deep);opacity:.75;text-align:left;}
+
+  /* ---------- demo strip ---------- */
+  .demo{display:flex;align-items:center;gap:28px;background:var(--c-card);padding:24px 28px;margin-top:14px;max-width:100%;}
+  .demo-l{flex:1 1 auto;min-width:220px;}
+  .demo-t{font-size:20px;font-weight:800;letter-spacing:.4px;color:var(--c-deep);}
+  .demo-d{margin-top:8px;font-size:15.5px;line-height:1.52;text-align:left;}
+  .demo-d b{color:var(--c-navy);}
+  .qr-wrap{flex:0 0 auto;text-align:center;background:#ffffff;padding:12px 12px 8px 12px;}
+  .qr-wrap img{display:block;width:126px;height:126px;max-width:100%;}
+  .qr-cap{margin-top:6px;font-size:12px;font-weight:700;letter-spacing:1.2px;color:var(--c-header);}
+
+  /* ---------- footer ---------- */
+  .foot{border-top:1px solid var(--c-border);margin-top:34px;padding-top:16px;display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:8px;}
+  .foot-l{font-size:15px;font-weight:800;color:var(--c-deep);}
+  .foot-l span{color:var(--c-navy);}
+  .foot-r{font-size:12.5px;color:var(--c-muted);font-weight:500;letter-spacing:.4px;}
+  .foot-note2{margin-top:10px;font-size:12px;color:var(--c-muted);}
+
+  /* browser preview auto-scale (print unaffected) */
+  @media screen{
+    html{height:auto;display:flex;justify-content:center;background:#f5f6f7;}
+    body{transform-origin:top center;scale:min(1,calc(100vw / 794));margin:0 auto;}
+  }
+</style>
+</head>
+<body>
+<div class="poster">
+  <!-- single geometric anchor: offset-stacked circles, one hue, strokes only -->
+  <svg class="deco" viewBox="0 0 150 150" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <circle cx="70" cy="70" r="52" stroke="#2a6888" stroke-width="0.6" opacity="0.15"/>
+    <circle cx="82" cy="76" r="52" stroke="#2a6888" stroke-width="0.6" opacity="0.25"/>
+    <circle cx="94" cy="82" r="52" stroke="#2a6888" stroke-width="0.6" opacity="0.4"/>
+  </svg>
+
+  <div class="inner">
+    <!-- top bar -->
+    <div class="topbar">
+      <div>
+        <div class="wordmark">NOTI<span>FETCH</span></div>
+        <div class="tagline">SEAT-TO-SEAT FOOD DELIVERY FOR CINEMAS &amp; MALLS</div>
+      </div>
+      <div class="topmeta">B2B PROPOSAL<br>BENGALURU &middot; 2026</div>
+    </div>
+    <hr class="rule">
+
+    <!-- hero -->
+    <div class="kicker">THE GAP SWIGGY LEFT OPEN</div>
+    <h1>
+      <div class="h1a">Swiggy delivers the cinema&rsquo;s own popcorn.</div>
+      <div class="h1b">NotiFetch delivers your entire food court.</div>
+    </h1>
+    <p class="lead">Swiggy&rsquo;s new Order-in-Cinemas serves exactly one kitchen: the theatre&rsquo;s own counter.
+      <b>NotiFetch is the multi-vendor platform</b> &mdash; every food-court stall gets its own live menu,
+      kitchen console and settlements, while your venue earns a commission on every single order.</p>
+
+    <!-- stats -->
+    <div class="stats">
+      <div class="stat"><div class="num">&#8377;0</div><div class="lbl">SETUP COST<br>FOR THE VENUE</div></div>
+      <div class="stat"><div class="num">6&ndash;10<small>%</small></div><div class="lbl">PLATFORM COMMISSION<br>LAUNCH RATE</div></div>
+      <div class="stat"><div class="num">7<small> days</small></div><div class="lbl">FROM YES TO<br>FIRST LIVE ORDER</div></div>
+      <div class="stat"><div class="num">0</div><div class="lbl">NEW HARDWARE<br>ANY PHONE WORKS</div></div>
+    </div>
+    <div class="foot-note">Swiggy and Zomato charge their food partners 25&ndash;30% commission on delivery. We built our rate to undercut that on purpose.</div>
+
+    <hr class="rule2">
+
+    <!-- why attempts failed -->
+    <div class="sec-title">Why earlier attempts failed &mdash; <em>and how we fix it</em></div>
+    <div class="fixrow" style="border-top:none;">
+      <div class="fail"><div class="lab">THE FAILURE</div><div class="fail-txt">Cinemas never authorised outside runners.</div></div>
+      <div class="fix"><div class="lab navy">THE NOTIFETCH FIX</div><div class="fix-txt">The venue earns a commission on every order and formally authorises NotiFetch runners past ticket check. <b>We arrive as your revenue partner</b> &mdash; not a stranger carrying food.</div></div>
+    </div>
+    <div class="fixrow">
+      <div class="fail"><div class="lab">THE FAILURE</div><div class="fail-txt">Messy food in dark auditoriums.</div></div>
+      <div class="fix"><div class="lab navy">THE NOTIFETCH FIX</div><div class="fix-txt">Menus are restricted per venue: <b>dry, theatre-safe items only</b>, packed in sealed spill-proof boxes. Housekeeping rules are built into the product, not promised afterwards.</div></div>
+    </div>
+    <div class="fixrow">
+      <div class="fail"><div class="lab">THE FAILURE</div><div class="fail-txt">Stalls had no technology to take orders.</div></div>
+      <div class="fix"><div class="lab navy">THE NOTIFETCH FIX</div><div class="fix-txt">Each stall gets <b>its own kitchen console</b> &mdash; live ticket board, accept-to-ready flow &mdash; plus weekly settlements and a per-stall earnings dashboard. They say yes because it is their menu and their money.</div></div>
+    </div>
+
+    <!-- how it works -->
+    <div class="sec-title">How it works</div>
+    <div class="steps">
+      <div class="step"><div class="stepnum">1</div><div class="steptxt">Scan the seat QR</div><div class="stepsub">Printed QR at every seat, zero app install.</div></div>
+      <div class="step"><div class="stepnum">2</div><div class="steptxt">Order from any stall</div><div class="stepsub">One cart across the whole food court.</div></div>
+      <div class="step"><div class="stepnum">3</div><div class="steptxt">Pay online</div><div class="stepsub">Razorpay checkout, UPI or card.</div></div>
+      <div class="step"><div class="stepnum">4</div><div class="steptxt">Runner brings it</div><div class="stepsub">Delivered to the seat, timed to the show.</div></div>
+    </div>
+
+    <!-- what the venue gets -->
+    <div class="sec-title">What your venue gets</div>
+    <div class="gets">
+      <div class="get"><div class="get-t">A new revenue stream on food you never cooked</div><div class="get-d">Commission on every order, with zero investment and zero staff burden on your team.</div></div>
+      <div class="get"><div class="get-t">Full visibility, honest settlements</div><div class="get-d">Live dashboard: every order, every stall, every rupee &mdash; with scheduled per-stall payouts.</div></div>
+      <div class="get"><div class="get-t">Cinepolis-level seat service, without the crores</div><div class="get-d">The luxury experience big chains spend millions building &mdash; live at your venue in 7 days.</div></div>
+      <div class="get"><div class="get-t">The first-mover window is open now</div><div class="get-d">Swiggy only covers the biggest chains. Your venue gets the same experience first, with the whole food court attached.</div></div>
+    </div>
+
+    <!-- live demo -->
+    <div class="demo">
+      <div class="demo-l">
+        <div class="demo-t">See it live right now</div>
+        <div class="demo-d">Scan the code &mdash; or open <b>notifetch.in</b> on any phone. Order the <b>&#8377;2 chai at seat A-1</b> and watch the ticket land in the kitchen console in real time. The demo is a fully working venue: menu, payments, runners, settlements.</div>
+      </div>
+      <div class="qr-wrap">
+        <img src="data:image/png;base64,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" alt="Live demo QR">
+        <div class="qr-cap">LIVE DEMO</div>
+      </div>
+    </div>
+
+    <!-- footer -->
+    <div class="foot">
+      <div class="foot-l">Yashas K Gangatkar &middot; <span>Founder, NotiFetch</span></div>
+      <div class="foot-r">notifetch.in &nbsp;&middot;&nbsp; +91 XXXXX XXXXX &nbsp;&middot;&nbsp; Bengaluru</div>
+    </div>
+    <div class="foot-note2">Non-binding proposal. Commission rate and pilot terms are finalised per venue in the definitive agreement.</div>
+  </div>
+</div>
+</body>
+</html>
