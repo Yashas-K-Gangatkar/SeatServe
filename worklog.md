@@ -970,3 +970,20 @@ Task 28 (cont.) — README rewrite:
 - Owner asked "did you write readme.md" — old README still described Phase 2 sandbox (mock payments, 35 tests, demo-credentials table for accounts deleted in Task 27 cleanup)
 - Rewrote (commit 85d86d9): live status (notifetch.in, real Razorpay rupees end-to-end), money model + settlement engine/KYC gate, 6-role permission table, CI/CD quality gate, security posture (HSTS, replay window, session purge), Vercel/Neon ops + crons + backup tooling, accurate env-var table, next-step roadmap (RazorpayX auto-payout first)
 - Pushed; CI run #2 triggered on the commit (README-only, gate expected green)
+
+---
+Task ID: 29
+Agent: Super Z (main)
+Task: Edge-request spike diagnosis + "remove all test subjects" round 3 (UI demo leakage) + 570-page package cross-check
+
+Work Log:
+- Edge spike root cause: usePolling ran setInterval every 4-6s in EVERY open tab 24/7 (tracking 4s, kitchen/runner 5s, admin 6s); on Vercel serverless sockets never connect so polling is the only liveness → forgotten background tabs burned 832K/1M edge requests. FIX: visibility-gated polling (skip ticks while document.hidden, instant refresh on visible) — background tabs now cost zero; commit 30ee938
+- Demo-subject leakage found in UI (owner screenshot proof): /staff page exposed a "pilot account directory" (9 fake accounts + shared demo1234 code, client-side gate only) and StaffLogin showed demo chips + "payments remain mocked" text. FIXED: /staff rewritten to a clean sign-in page; StaffLogin de-demoed (no chips/password hints/disclosure); landing demo walkthrough replaced with real "How it works"; demo-seat CTA hidden when no seat resolves
+- SECURITY: /api/demo/entry was NOT gated (comment claimed sandbox-only) — handed live seat QR capability tokens to anyone on prod. Now hard-404s when NODE_ENV=production. Verified live: entry 404, staff page zero demo refs, health OK
+- 570-page package cross-check (13 issues): ALREADY DONE/MOOT = #1 Postgres (prod is Neon — package's AWS RDS migration would be a harmful redo), #3 legal, #4 FSSAI, #5 Razorpay (live, beyond sandbox), #6 CI/CD, #7 settlement cron, #13 store approval (KYC submit→verify flow exists). GENUINE REMAINING = #2 alerting (Sentry/uptime — Vercel not AWS), #8 durable rate limiter (Upstash), #9 SMS (needs Twilio+DLT), #10 2FA, #11 Playwright, #12 GST invoices (needs owner GSTIN)
+- scripts/final-clean.mjs written (backup-first wipe: milk products store + products, leftover commerce, ALL sessions + audit history; keeps Aurora subtree + asha + bhagya detached) — NOT RUN: sandbox reset wiped .env.prod-db + .env.vercel-token again; owner must re-paste Vercel token
+- Gates green (tsc/eslint/73/build), CI run #5 success, deployed + verified
+
+Stage Summary:
+- Edge burn fixed at the mechanism level; real traffic can now be judged honestly (Pro upgrade = only when real customers justify it)
+- Platform UI is now demo-free for the owner's final self-built test; DB wipe script armed pending token
