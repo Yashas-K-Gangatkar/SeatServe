@@ -1088,3 +1088,24 @@ Stage Summary:
 - Delivered: download/NotiFetch-Pitch-Sheet.pdf (+.png, .html source), download/NotiFetch-Brand-LOI.pdf, download/NotiFetch-Bengaluru-Targets.pdf
 - Live demo state: Wraphouse Kitchen Masala Chai = ₹2 (200 paise) at seat QR GVTHGD4Q6F; revert PATCH /api/products/{id} {"pricePaise": 2000} when owner says done
 - Pending: chai revert (owner test), asha password rotation (Vercel token), cron restore after tests, RazorpayX activation
+
+---
+Task ID: 35
+Agent: Super Z (main)
+Task: Scheduled delivery feature ("order now, eat at the break") + campus beachhead strategy + Bengaluru mall/cinema QR intel
+
+Work Log:
+- FEATURE (committed b296b6a, NOT pushed — prod DB needs the column first): Order.scheduledFor DateTime? on both schemas; new src/lib/scheduling.ts (quantize to 15-min clock marks, upcomingSlots, validateScheduledFor 15min-9h server authority, dueForPrep 10-min fire window, slotLabel)
+- POST /api/orders: optional scheduledFor, 400 on invalid; response echoes it. Kitchen tickets + runner queue/myRuns + order tracking APIs expose scheduledFor
+- CheckoutSheet: "Deliver ASAP ~Xmin" vs "Schedule for a break" toggle + 16 slot chips; stale-slot guard client + server
+- Kitchen board: FOR <time> badge (orange=fire now, sky=future), cook-now-first sort, scheduled NEW note "fire ~10 min before slot", header count "N scheduled ahead"
+- Tracking page sky banner "Scheduled for X — kitchen starts ~10 min before"; Runner queue SLOT badge
+- Gates: tsc clean, eslint clean, bun test 93/93 (+11 scheduling tests), next build clean
+- REGRESSION GUARD: push to main held — Neon prod lacks the column; new Prisma client INSERTs it and would 500 every live order. Ship = ALTER TABLE "Order" ADD COLUMN "scheduledFor" TIMESTAMP(3); then push (needs Vercel token to restore .env.prod-db, or owner runs SQL in Neon console)
+- Intel (11 web searches): ZERO Bengaluru malls run mall-level multi-stall QR ordering (Phoenix=COVID-era per-restaurant QR, VR Bengaluru FoodBox dead since 2021, Quest Mall Kolkata "Q_Court" Sep-2025 = proof + pitch line). Miraj Cinemas HAS own in-seat QR → demoted from target list; Swiggy Order-in-Cinemas now covers Cinepolis + Asian Cinemas. Gopalan confirmed 4 venues + contacts (support@gopalancinemas.com, 080 2659 9900). Clean targets: Gopalan, MovieTime, Rajhans(verify), single screens Pallavi/Nataraj/Navarang. Urvashi confirmed dying
+- Anthropic/Bedrock use-case form text delivered (391 chars); AWS "not authorized" error triaged (new-account/region/management-account causes)
+
+Stage Summary:
+- Scheduled delivery = campus killer feature AND cinema interval-delivery pitch ("order at movie start, hot samosa at interval")
+- College beachhead plan: admin permission → canteen contractor buy-in → 1 block/10 classrooms/1 break → 2 student runners → real numbers → Gopalan pitch upgrade
+- Awaiting: Vercel token (ships feature + unblocks asha rotation), owner "test done" for chai revert
