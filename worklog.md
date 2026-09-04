@@ -1109,3 +1109,30 @@ Stage Summary:
 - Scheduled delivery = campus killer feature AND cinema interval-delivery pitch ("order at movie start, hot samosa at interval")
 - College beachhead plan: admin permission → canteen contractor buy-in → 1 block/10 classrooms/1 break → 2 student runners → real numbers → Gopalan pitch upgrade
 - Awaiting: Vercel token (ships feature + unblocks asha rotation), owner "test done" for chai revert
+---
+Task ID: 36
+Agent: Super Z (main)
+Task: Diagnose + fix the 950k/day Vercel request flood on notifetch.in ("why is this happening even though I am only one using")
+
+Work Log:
+- Read the Vercel Observability screenshot (upload/Screenshot 2026-09-05 at 02.37.27.png): 2,737,315 requests / ~950k per day starting ~Sep 1, vs near-zero all of August
+- Audited ALL client loops: usePolling call sites (Kitchen 5s, Runner 5s, Admin 6s, MyOrders 10s, Tracking 4s/8s) all bounded + hidden-tab guarded; CheckoutSheet pollUntilPaid has deadline; Hero/FlowDemo are UI-only timers — nothing in-app can make 11 req/sec
+- Deploy timeline via Vercel API (token supplied by owner, valid: clash.2.yashas@gmail.com): NO deploy on Sep 1 when the spike began → external traffic, not a code regression
+- Confirmed notifetch.in + www → Vercel project ct_shop (prj_r9FRGMhgZYcnkD3G3asUqlEK3X2a); "notifetch" and "my-project" are separate projects
+- Vercel observability/logs/firewall endpoints 404 for this token → built our OWN instrumentation:
+  - prisma HitAudit model (day x uaClass x path bucket, hits, approx ips) in schema.prisma; postgres schema regenerated; pushed to Neon (12.5s sync)
+  - src/lib/hit-audit.ts (edge-safe): UA classifier (bytespider/gptbot/seo-tools/curl-wget/...), path bucketizer (cuid->:id), narrow scanner-junk regex, ipHash
+  - src/middleware.ts: fail-open edge middleware — counts every non-static request, instant 403 for scanner probes (wp-*/.env/phpmyadmin/xmlrpc/...), flush every 64 req or 15s to /api/internal/hit-audit/flush; matcher excludes _next/static|_next/image|favicon|robots.txt|api/internal/hit-audit (prevents flush recursion)
+  - /api/internal/hit-audit/flush (AUDIT_KEY-guarded upserts) + /read (day totals, per-class share, top paths)
+  - src/lib/client/realtime.ts: REALTIME_ENABLED gate — no socket.io attempts on notifetch.in (old code burned ~20 wasted requests per dashboard load: websocket reject + polling retries against homepage HTML); polling fallback stays the designed behavior
+  - public/robots.txt (disallow /api /staff /scan /health + AI scrapers out) + X-Robots-Tag noindex on /api/* (next.config.ts)
+  - lint fix: scripts/shot-pitch-sheet.js require -> import (pre-existing eslint error)
+- Gates: tsc 0, eslint 0, bun test 93/93, next build OK (middleware registered); local smoke: 403s + audit rows verified via standalone server
+- Committed 65be78a as Yashas (also ships b296b6a scheduled-delivery, unblocked by the same schema push); pushed main -> Vercel deploy READY 21:33 UTC
+- Live verify: /.env + /wp-login.php = 403, /faq = 200, robots.txt up, x-robots-tag on API, audit read returns data — first minutes already caught bot:curl-wget at 99.6% share (single IP polling / + /api/orders/:code every ~4s)
+
+Stage Summary:
+- Root cause (working): external bot/scanner flood + long-open dashboard tabs polling a dead socket endpoint; app code itself was clean. Exact breakdown lands in HitAudit over 24h; compare Vercel graph vs audit totals (gap = static-chunk traffic)
+- Owner actions handed over: (1) Vercel Firewall -> Attack Challenge Mode / rate-limit rule = the flood-stopper, (2) rotate the Vercel token he pasted in chat
+- Blockers cleared: .env.prod-db RESTORED from Vercel env API (asha password rotation unblocked); Order.scheduledFor column live on Neon (scheduled delivery deployed)
+- Still pending: chai revert to ₹20 (PATCH pricePaise 2000) when owner says test done; vercel.json cron restore
