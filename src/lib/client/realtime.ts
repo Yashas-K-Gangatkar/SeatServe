@@ -7,7 +7,20 @@ import { io, type Socket } from 'socket.io-client'
 
 let socket: Socket | null = null
 
+// Production (Vercel) does not run the socket mini-service — every connect
+// attempt there burned ~20 wasted edge requests per dashboard load (websocket
+// reject + polling retries against the homepage HTML). On the prod domain we
+// skip sockets entirely; dashboards run on the always-on polling fallback,
+// which is the designed behavior on serverless anyway.
+const REALTIME_ENABLED =
+  typeof location === 'undefined' || !/(^|\.)notifetch\.in$/.test(location.hostname)
+
 export function getSocket(): Socket {
+  if (!REALTIME_ENABLED) {
+    // unreachable when callers gate on REALTIME_ENABLED — kept as a guard
+    socket = io('/', { autoConnect: false, reconnection: false })
+    return socket
+  }
   if (!socket) {
     // path '/' + XTransformPort — the sandbox gateway forwards to the realtime mini-service
     socket = io('/?XTransformPort=3003', {
@@ -70,6 +83,16 @@ export function useRealtime(rooms: string[], onEvent?: (event: string, data: unk
   const roomsKey = rooms.join(',')
 
   useEffect(() => {
+    // Polling-only mode (prod): no socket attempts at all. "connected" flips
+    // true (deferred out of the effect body — hydration-safe) so the banner
+    // reflects reality: polling keeps the view fresh every few seconds.
+    if (!REALTIME_ENABLED) {
+      const t = setTimeout(() => {
+        setConnected(true)
+        setReconnecting(false)
+      }, 0)
+      return () => clearTimeout(t)
+    }
     let cancelled = false
     const s = getSocket()
     const joined = new Set<string>()

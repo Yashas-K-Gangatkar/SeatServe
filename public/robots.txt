@@ -1,5 +1,40 @@
+# NotiFetch is an ordering app, not a content site — there is nothing to crawl.
 User-agent: *
-Allow: /
 Disallow: /api/
+Disallow: /staff
+Disallow: /scan
+Disallow: /health
 
-Sitemap: https://notifetch.in/sitemap.xml
+# AI scrapers: the site has no content worth training or indexing.
+User-agent: GPTBot
+Disallow: /
+
+User-agent: OAI-SearchBot
+Disallow: /
+
+User-agent: ChatGPT-User
+Disallow: /
+
+User-agent: CCBot
+Disallow: /
+
+User-agent: ClaudeBot
+Disallow: /
+
+User-agent: anthropic-ai
+Disallow: /
+
+User-agent: Bytespider
+Disallow: /
+
+User-agent: Google-Extended
+Disallow: /
+
+User-agent: meta-externalagent
+Disallow: /
+
+User-agent: Amazonbot
+Disallow: /
+
+User-agent: Applebot-Extended
+Disallow: /

@@ -30,7 +30,15 @@ const nextConfig: NextConfig = {
   },
   reactStrictMode: false,
   async headers() {
-    return [{ source: "/(.*)", headers: securityHeaders }];
+    return [
+      { source: "/(.*)", headers: securityHeaders },
+      {
+        // APIs must never be indexed — bots that find /api/* links in HTML
+        // should drop them instead of crawling deeper.
+        source: "/api/:path*",
+        headers: [{ key: "X-Robots-Tag", value: "noindex, nofollow" }],
+      },
+    ];
   },
 };
 

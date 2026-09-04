@@ -1,5 +1,5 @@
 // Screenshot the pitch sheet HTML to PNG preview (full page, 2x for crispness)
-const { chromium } = require('playwright');
+import { chromium } from 'playwright';
 (async () => {
   const browser = await chromium.launch();
   const page = await browser.newPage({

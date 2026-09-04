@@ -379,3 +379,19 @@ model AppSetting {
   value     String // JSON
   updatedAt DateTime @updatedAt
 }
+
+// Hit-audit: the edge middleware aggregates every incoming request into
+// (UTC day × UA class × path bucket) rows, so the owner can answer "WHO is
+// hammering notifetch.in?" from our own API instead of paying for Vercel log
+// access. Diagnostics only — rows can be truncated any time.
+model HitAudit {
+  id        String   @id @default(cuid())
+  day       String // 'YYYY-MM-DD' (UTC)
+  uaClass   String // browser | bot:bytespider | bot:curl-wget | junk-path | ...
+  path      String // bucketed path (/api/orders/:code, /, /staff, ...)
+  hits      Int      @default(0)
+  ips       Int      @default(0) // approx distinct client-IP hashes (first-isolate estimate)
+  updatedAt DateTime @updatedAt
+  @@unique([day, uaClass, path])
+  @@index([day, hits])
+}
