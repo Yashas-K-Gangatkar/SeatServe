@@ -179,6 +179,7 @@ model Order {
   customerName     String?
   customerPhone    String?
   placedAt         DateTime      @default(now())
+  scheduledFor     DateTime? // customer-requested FUTURE delivery slot (class break at 11:00, movie interval); null = deliver ASAP
   completedAt      DateTime?
   items            OrderItem[]
   tickets          StoreTicket[]

@@ -5,7 +5,7 @@
 // status flow NEW → ACCEPTED → PREPARING → READY_FOR_PICKUP, allergy highlights,
 // busy-mode overload control, open/close store.
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { Bell, BellOff, ChevronLeft, Flame, Store as StoreIcon, Volume2 } from 'lucide-react'
+import { Bell, BellOff, ChevronLeft, Clock, Flame, Store as StoreIcon, Volume2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { get, post, patch, ApiError } from '@/lib/client/api'
 import { useRealtime, usePolling, useOnline, armAudio, playChime } from '@/lib/client/realtime'
@@ -13,6 +13,7 @@ import type { KitchenResponse, KitchenTicket } from '@/lib/client/types'
 import type { StaffProfile } from '@/lib/client/auth'
 import StaffGate from '../StaffGate'
 import { rupees, timeHM, minAgo, StatusPill, LiveDot, Spinner, LoadError, EmptyState } from '../ui-bits'
+import { dueForPrep, slotLabel } from '@/lib/scheduling'
 
 interface StoreLite {
   id: string
@@ -175,7 +176,19 @@ function KitchenDashboard({ storeSlugOrId, canSwitch, go }: { storeSlugOrId: str
     )
   if (!data) return null
 
-  const active = data.tickets.filter((t) => ['NEW', 'ACCEPTED', 'PREPARING', 'READY_FOR_PICKUP'].includes(t.status))
+  const now = new Date()
+  // cook-now pile first (ASAP + scheduled slots within fire window), then
+  // future slots in slot order — the board reads top-down as a work plan
+  const active = data.tickets
+    .filter((t) => ['NEW', 'ACCEPTED', 'PREPARING', 'READY_FOR_PICKUP'].includes(t.status))
+    .sort((a, b) => {
+      const aDue = dueForPrep(a.scheduledFor, now)
+      const bDue = dueForPrep(b.scheduledFor, now)
+      if (aDue !== bDue) return aDue ? -1 : 1
+      if (a.scheduledFor && b.scheduledFor) return new Date(a.scheduledFor).getTime() - new Date(b.scheduledFor).getTime()
+      return new Date(a.placedAt).getTime() - new Date(b.placedAt).getTime()
+    })
+  const scheduledAhead = active.filter((t) => t.scheduledFor && !dueForPrep(t.scheduledFor, now)).length
   const done = data.tickets.filter((t) => ['PICKED_UP', 'DELIVERED'].includes(t.status)).slice(-6).reverse()
 
   return (
@@ -232,7 +245,9 @@ function KitchenDashboard({ storeSlugOrId, canSwitch, go }: { storeSlugOrId: str
 
       {/* active tickets */}
       <section className="mt-4" aria-label="Active tickets">
-        <h2 className="mb-2 text-xs font-extrabold uppercase tracking-wider text-muted-foreground">Active tickets ({active.length})</h2>
+        <h2 className="mb-2 text-xs font-extrabold uppercase tracking-wider text-muted-foreground">
+          Active tickets ({active.length}){scheduledAhead > 0 ? ` · ${scheduledAhead} scheduled ahead` : ''}
+        </h2>
         {active.length === 0 ? (
           <EmptyState
             icon={<BellOff className="h-6 w-6" aria-hidden />}
@@ -253,8 +268,13 @@ function KitchenDashboard({ storeSlugOrId, canSwitch, go }: { storeSlugOrId: str
                 >
                   <div className="flex items-start justify-between gap-2">
                     <div>
-                      <p className="text-sm font-black">
+                      <p className="flex flex-wrap items-center gap-1.5 text-sm font-black">
                         {t.ticketCode} · Seat {t.seat}
+                        {t.scheduledFor && (
+                          <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-black ${dueForPrep(t.scheduledFor, now) ? 'bg-orange-100 text-orange-700' : 'bg-sky-100 text-sky-700'}`}>
+                            <Clock className="h-3 w-3" aria-hidden /> FOR {slotLabel(t.scheduledFor)}
+                          </span>
+                        )}
                       </p>
                       <p className="text-[11px] text-muted-foreground">
                         {t.screen} · {t.cinema} · {t.movieTitle ?? 'walk-in'} · placed {minAgo(t.placedAt)}
@@ -295,7 +315,9 @@ function KitchenDashboard({ storeSlugOrId, canSwitch, go }: { storeSlugOrId: str
 
                   {t.status === 'NEW' && (
                     <p className="mt-2 rounded-lg bg-amber-100/70 px-3 py-2 text-[11px] font-bold text-amber-800" role="note">
-                      Accept fast — the customer can still cancel until you accept. Accepting locks the order.
+                      {t.scheduledFor && !dueForPrep(t.scheduledFor, now)
+                        ? `Scheduled order — customer already paid. Fire it ~10 min before ${slotLabel(t.scheduledFor)} so it lands hot at the slot.`
+                        : 'Accept fast — the customer can still cancel until you accept. Accepting locks the order.'}
                     </p>
                   )}
                 </li>

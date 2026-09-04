@@ -63,6 +63,7 @@ export async function GET(request: Request) {
         ticketCode: t.ticketCode,
         status: t.status,
         placedAt: t.order.placedAt,
+        scheduledFor: t.order.scheduledFor,
         acceptedAt: t.acceptedAt,
         preparingAt: t.preparingAt,
         readyAt: t.readyAt,

@@ -7,11 +7,12 @@
 // SIGNED WEBHOOK — never the client — is the source of truth for money state.
 // No card/UPI secrets are ever sent to our server.
 import { useMemo, useRef, useState, useEffect } from 'react'
-import { Loader2, Lock, ShieldCheck, TriangleAlert, Timer, Store as StoreIcon, ChevronDown, CheckCircle2, Copy } from 'lucide-react'
+import { Loader2, Lock, ShieldCheck, TriangleAlert, Timer, Store as StoreIcon, ChevronDown, CheckCircle2, Copy, Clock } from 'lucide-react'
 import { toast } from 'sonner'
 import { get, post, ApiError } from '@/lib/client/api'
 import { useSound } from '@/lib/sound/SoundProvider'
 import { platformFeePaise } from '@/lib/pricing'
+import { upcomingSlots, slotLabel } from '@/lib/scheduling'
 import { useCart } from '@/lib/client/cart'
 import { rememberOrder } from '@/lib/client/orderMemory'
 import { rupees } from '../ui-bits'
@@ -99,7 +100,11 @@ export function CheckoutSheet({
   const [placing, setPlacing] = useState(false)
   const [name, setName] = useState('')
   const [phone, setPhone] = useState('')
+  const [slotIso, setSlotIso] = useState<string | null>(null)
   const [placedOrder, setPlacedOrder] = useState<OrderCreateResponse | null>(null)
+
+  // selectable future slots (order now, eat at the break / interval)
+  const slots = useMemo(() => (open ? upcomingSlots(new Date(), 16) : []), [open])
 
   const selection = useMemo(() => {
     const rows: { storeId: string; storeName: string; emoji: string | null; items: { id: string; name: string; qty: number; pricePaise: number; note: string }[] }[] = []
@@ -145,6 +150,12 @@ export function CheckoutSheet({
     }
     setPlacing(true)
     try {
+      if (slotIso && new Date(slotIso).getTime() < Date.now() + 14 * 60_000) {
+        toast.error('That slot passed — pick a new time')
+        setSlotIso(null)
+        setPlacing(false)
+        return
+      }
       const items = selection.flatMap((r) =>
         r.items.map((i) => ({ productId: i.id, qty: i.qty, ...(i.note.trim() ? { notes: i.note.trim() } : {}) })),
       )
@@ -153,6 +164,7 @@ export function CheckoutSheet({
         items,
         customerName: name.trim() || undefined,
         customerPhone: phone.trim() || undefined,
+        ...(slotIso ? { scheduledFor: slotIso } : {}),
       })
       // keep the checkout mounted; the payment sheet opens on top.
       // Navigation happens when the payment sheet closes (paid or "pay later").
@@ -219,6 +231,57 @@ export function CheckoutSheet({
               <p className="mt-1 text-[10px] text-muted-foreground">Final bill is computed server-side at placement.</p>
               <p className="mt-2 flex items-center gap-1.5 text-[11px] text-muted-foreground">
                 <Timer className="h-3 w-3" aria-hidden /> Est. delivery ~{estDeliveryMin} min · ordering closes {ctx.showtime ? new Date(ctx.showtime.cutoff.cutoffAt).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }) : '—'}
+              </p>
+            </div>
+
+            {/* delivery time — ASAP or scheduled slot (break / interval) */}
+            <div className="mt-4 rounded-2xl border border-border bg-card p-4" aria-label="Delivery time">
+              <h3 className="mb-2 text-xs font-extrabold uppercase tracking-wider text-muted-foreground">Deliver</h3>
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={() => setSlotIso(null)}
+                  aria-pressed={slotIso === null}
+                  className={`rounded-xl border px-3 py-2.5 text-left transition ${slotIso === null ? 'border-orange-400 bg-orange-50 ring-1 ring-orange-300' : 'border-border bg-background hover:bg-muted/40'}`}
+                >
+                  <span className="block text-xs font-extrabold">As soon as possible</span>
+                  <span className="block text-[10px] text-muted-foreground">~{estDeliveryMin} min</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSlotIso((s) => s ?? slots[0]?.toISOString() ?? null)}
+                  aria-pressed={slotIso !== null}
+                  className={`rounded-xl border px-3 py-2.5 text-left transition ${slotIso !== null ? 'border-orange-400 bg-orange-50 ring-1 ring-orange-300' : 'border-border bg-background hover:bg-muted/40'}`}
+                >
+                  <span className="flex items-center gap-1 text-xs font-extrabold">
+                    <Clock className="h-3 w-3" aria-hidden /> Schedule for a break
+                  </span>
+                  <span className="block text-[10px] text-muted-foreground">{slotIso ? `arrives ${slotLabel(slotIso)}` : 'order now, eat later'}</span>
+                </button>
+              </div>
+              {slotIso && (
+                <div className="kitchen-scroll mt-2.5 flex gap-1.5 overflow-x-auto pb-1" role="listbox" aria-label="Delivery slots">
+                  {slots.map((s) => {
+                    const iso = s.toISOString()
+                    const active = iso === slotIso
+                    return (
+                      <button
+                        key={iso}
+                        role="option"
+                        aria-selected={active}
+                        onClick={() => setSlotIso(iso)}
+                        className={`shrink-0 rounded-full border px-3 py-1.5 text-[11px] font-extrabold tabular ${active ? 'border-orange-500 bg-orange-500 text-white' : 'border-border bg-background text-foreground hover:bg-muted/40'}`}
+                      >
+                        {slotLabel(s)}
+                      </button>
+                    )
+                  })}
+                </div>
+              )}
+              <p className="mt-2 text-[10px] text-muted-foreground">
+                {slotIso
+                  ? `We hold your order and the kitchen starts ~10 min before ${slotLabel(slotIso)} — food lands as the break begins.`
+                  : 'Free now but busy at the break? Schedule it — pay today, eat on your time.'}
               </p>
             </div>
 

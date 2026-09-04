@@ -42,6 +42,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ cod
     status: order.status,
     paymentStatus: order.paymentStatus,
     placedAt: order.placedAt,
+    scheduledFor: order.scheduledFor,
     completedAt: order.completedAt,
     location: {
       mall: order.seat.screen.cinema.mall.name,

@@ -3,13 +3,14 @@
 // SeatServe — runner console (#/runner[/<runnerId>])
 // Ready pickups → claim → Pick up → Deliver. Zones & drop labels shown per run.
 import { useCallback, useEffect, useState } from 'react'
-import { Bike, ChevronLeft, MapPin, PackageCheck, ShoppingBag, Zap } from 'lucide-react'
+import { Bike, ChevronLeft, Clock, MapPin, PackageCheck, ShoppingBag, Zap } from 'lucide-react'
 import { toast } from 'sonner'
 import { get, post, ApiError } from '@/lib/client/api'
 import { useRealtime, usePolling, useOnline } from '@/lib/client/realtime'
 import type { RunnerResponse } from '@/lib/client/types'
 import StaffGate from '../StaffGate'
 import { timeHM, minAgo, StatusPill, LiveDot, Spinner, LoadError, EmptyState } from '../ui-bits'
+import { slotLabel } from '@/lib/scheduling'
 
 export default function Runner({ runnerId, go, onRouteChange }: { runnerId?: string; go: (p: string) => void; onRouteChange?: () => void }) {
   return (
@@ -143,8 +144,13 @@ function RunnerConsole({ role, runnerId, go, onRouteChange }: { role: string; ru
                 <li key={t.ticketId} className="rounded-2xl border border-border bg-card p-4">
                   <div className="flex items-start justify-between gap-2">
                     <div>
-                      <p className="text-sm font-black">
+                      <p className="flex flex-wrap items-center gap-1.5 text-sm font-black">
                         <span aria-hidden>{t.emoji}</span> {t.storeName} → Seat {t.seat}
+                        {t.scheduledFor && (
+                          <span className="inline-flex items-center gap-1 rounded-full bg-sky-100 px-2 py-0.5 text-[10px] font-black text-sky-700">
+                            <Clock className="h-3 w-3" aria-hidden /> SLOT {slotLabel(t.scheduledFor)}
+                          </span>
+                        )}
                       </p>
                       <p className="text-[11px] text-muted-foreground">
                         {t.orderCode} · {t.screen} · {t.cinema} · ready {minAgo(t.readyAt ?? '')}

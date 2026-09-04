@@ -9,13 +9,14 @@
 // automatically inside that window; after acceptance the store owns the
 // order and resolves issues at the counter.
 import { useCallback, useEffect, useState } from 'react'
-import { Check, ChefHat, Bike, PackageCheck, CircleHelp, ChevronLeft, MapPin, CreditCard, ReceiptText, Copy, Lock, Undo2 } from 'lucide-react'
+import { Check, ChefHat, Bike, PackageCheck, CircleHelp, ChevronLeft, MapPin, CreditCard, ReceiptText, Copy, Lock, Undo2, Clock } from 'lucide-react'
 import { toast } from 'sonner'
 import { get, post, ApiError } from '@/lib/client/api'
 import { useRealtime, usePolling } from '@/lib/client/realtime'
 import { useSound } from '@/lib/sound/SoundProvider'
 import type { TrackingResponse } from '@/lib/client/types'
 import { rupees, timeHM, StatusPill, RUN_STATUS_LABEL, Spinner, LoadError, EmptyState } from '../ui-bits'
+import { slotLabel } from '@/lib/scheduling'
 import { WarmBackdrop } from '../WarmBackdrop'
 import { PaymentSheet } from './CheckoutSheet'
 
@@ -204,6 +205,11 @@ function TrackingInner({ code, go }: { code: string; go: (p: string) => void }) 
           {order.location.screen} · {order.location.seat} · {order.location.cinema}
         </p>
         {order.show && <p className="mt-1 text-xs text-muted-foreground">{order.show.movieTitle} · starts {timeHM(order.show.startsAt)}</p>}
+        {order.scheduledFor && (
+          <p className="mt-2 flex items-center gap-1.5 rounded-lg bg-sky-50 px-2.5 py-1.5 text-xs font-bold text-sky-800 ring-1 ring-sky-200">
+            <Clock className="h-3.5 w-3.5 shrink-0" aria-hidden /> Scheduled for {slotLabel(order.scheduledFor)} — the kitchen starts ~10 minutes before so food lands right on time
+          </p>
+        )}
       </header>
 
       {/* payment state */}

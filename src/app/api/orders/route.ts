@@ -10,6 +10,7 @@ import { generateOrderCode, generateTicketCode } from '@/lib/ids'
 import { audit } from '@/lib/audit'
 import { emitToRooms } from '@/lib/realtime'
 import { rollStaleShowtimes } from '@/lib/demo-roll'
+import { validateScheduledFor } from '@/lib/scheduling'
 
 const bodySchema = z.object({
   qrToken: z.string().min(4),
@@ -26,12 +27,20 @@ const bodySchema = z.object({
     .min(1, 'Add at least one item'),
   customerName: z.string().max(80).optional(),
   customerPhone: z.string().max(20).optional(),
+  // ISO timestamp of a FUTURE delivery slot (class break / movie interval).
+  // Absent = deliver ASAP. Range-checked server-side in validateScheduledFor.
+  scheduledFor: z.string().max(40).optional(),
 })
 
 export async function POST(request: Request) {
   const parsed = await parseBody(request, bodySchema)
   if ('error' in parsed) return parsed.error
   const { qrToken, items, customerName, customerPhone } = parsed.data
+
+  // scheduled delivery: order now, eat at the break. Money is taken now; the
+  // kitchen board holds the ticket until ~10 min before the slot.
+  const schedule = validateScheduledFor(parsed.data.scheduledFor, new Date())
+  if (!schedule.ok) return fail(schedule.error, 400)
 
   const seat = await db.seat.findUnique({
     where: { qrToken },
@@ -116,6 +125,7 @@ export async function POST(request: Request) {
       totalPaise: bill.totalPaise,
       customerName: customerName ?? null,
       customerPhone: customerPhone ?? null,
+      scheduledFor: schedule.at,
       items: {
         create: [...groupsMap.values()].flatMap((list) =>
           list.map((x) => ({
@@ -173,6 +183,7 @@ export async function POST(request: Request) {
       code: order.code,
       status: order.status,
       paymentStatus: order.paymentStatus,
+      scheduledFor: order.scheduledFor,
       breakdown: bill,
       itemCount: items.reduce((s, i) => s + i.qty, 0),
       seat: { code: seat.code, screen: seat.screen.name, cinema: seat.screen.cinema.name },

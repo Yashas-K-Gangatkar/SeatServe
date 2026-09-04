@@ -66,6 +66,7 @@ export interface OrderCreateResponse {
   code: string
   status: string
   paymentStatus: string
+  scheduledFor: string | null
   breakdown: BillBreakdown
   itemCount: number
   seat: { code: string; screen: string; cinema: string }
@@ -107,6 +108,7 @@ export interface TrackingResponse {
   status: string
   paymentStatus: string
   placedAt: string
+  scheduledFor: string | null
   completedAt: string | null
   location: { mall: string; cinema: string; screen: string; seat: string }
   show: { movieTitle: string; startsAt: string; cutoffMinutesUntil: number | null } | null
@@ -122,6 +124,7 @@ export interface KitchenTicket {
   ticketCode: string
   status: string
   placedAt: string
+  scheduledFor: string | null
   acceptedAt: string | null
   preparingAt: string | null
   readyAt: string | null
@@ -157,6 +160,7 @@ export interface RunnerQueueItem {
   seat: string
   movieTitle: string | null
   readyAt: string | null
+  scheduledFor: string | null
   assignedTo: string | null
   assignedToId: string | null
 }
@@ -178,6 +182,7 @@ export interface RunnerResponse {
     cinema: string
     seat: string
     movieTitle: string | null
+    scheduledFor: string | null
     pickupLabel: string
     dropLabel: string
     assignedAt: string
