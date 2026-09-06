@@ -80,6 +80,15 @@ export async function GET(request: Request) {
     return loginWith('not_staff')
   }
 
+  // The Google profile just proved ownership of this exact email — keep the
+  // display name truthful by syncing it. A placeholder name entered at staff
+  // creation is replaced by the real Google account name on first Google
+  // sign-in, so two team members never greet themselves with the same name.
+  if (profile.profile.name && profile.profile.name !== user.name) {
+    await db.user.update({ where: { id: user.id }, data: { name: profile.profile.name } })
+    user.name = profile.profile.name
+  }
+
   const token = newSessionToken()
   await db.session.create({
     data: {
