@@ -1251,3 +1251,17 @@ Work Log:
 
 Stage Summary:
 - Attack Challenge Mode ON (step 1a done); rate-limit rule pending owner click-through; then leaked-token rotation, then DNS restore
+
+---
+Task ID: 43
+Agent: Super Z (main)
+Task: Owner worried DNS restore won't fix notifetch.in — pre-flight proof + restore steps handed over
+
+Work Log:
+- .env.vercel-token gone (sandbox reset) — old token still valid on Vercel side, rotation still required; owner to delete + re-issue + paste
+- Pre-flight WITHOUT token: curl --resolve notifetch.in:443:216.198.79.1 (and via CNAME target 64.29.17.1) → HTTP 429 challenge page = domain still ATTACHED to ct_shop project, protections enforcing on notifetch.in host too; NOT DEPLOYMENT_NOT_FOUND
+- Conclusion delivered: DNS restore is the only missing piece; post-restore curl will get 429 (curl can't pass JS challenge) — real-browser phone test + ₹15 chai order = the smoke test
+- Restore plan: (1) delete old token + create new + paste; (2) Hostinger DNS: A @ → 216.198.79.1, CNAME www → 9d35e98ecec3c678.vercel-dns-017.com; (3) I verify dig + routing; (4) owner phone test + chai order on kitchen board; (5) record demo video
+
+Stage Summary:
+- All pre-flight checks green; waiting on owner for token rotation + 2 DNS records; smoke test script ready (chai order → kitchen ticket)
