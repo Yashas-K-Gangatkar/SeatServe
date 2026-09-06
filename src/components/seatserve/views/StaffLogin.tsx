@@ -12,12 +12,27 @@ import { login, ROLE_LABELS, type StaffProfile } from '@/lib/client/auth'
 import { Spinner } from '../ui-bits'
 import { WarmBackdrop } from '../WarmBackdrop'
 
+// Human copy for the failure slugs /api/auth/google* bounces back with
+// (?gerr=… on the hash). Everything maps to guidance, never a raw code.
+const GOOGLE_ERRORS: Record<string, string> = {
+  no_account: 'This Google account is not registered as staff. Ask your manager to add this exact Gmail in the Team panel.',
+  deactivated: 'This account is deactivated — contact your campus admin.',
+  not_staff: 'This account is not a staff account.',
+  state_mismatch: 'Sign-in link expired — start again.',
+  exchange_failed: 'Google sign-in failed — try again, or use email and password.',
+  profile_failed: 'Could not read your Google profile — try again.',
+  email_unverified: 'Your Google email is not verified — verify it in Gmail settings first.',
+  email_missing: 'Your Google account has no email — use email and password.',
+  not_configured: 'Google sign-in is not configured yet — use email and password.',
+}
+
 export default function StaffLogin({ go }: { go: (p: string) => void }) {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState<string | null>(null)
   const [checking, setChecking] = useState(false)
+  const [googleReady, setGoogleReady] = useState(false)
 
   // An already-signed-in staff member landing here goes straight to the portal.
   useEffect(() => {
@@ -42,6 +57,30 @@ export default function StaffLogin({ go }: { go: (p: string) => void }) {
       alive = false
     }
   }, [go])
+
+  useEffect(() => {
+    // Does this deployment have Google sign-in configured? Hide the button
+    // entirely when not — never show a dead door.
+    void (async () => {
+      try {
+        const res = await fetch('/api/auth/providers', { cache: 'no-store' })
+        const json = (await res.json()) as { ok: boolean; data?: { google?: boolean } }
+        if (json.ok && json.data?.google) setGoogleReady(true)
+      } catch {
+        /* password form still works */
+      }
+    })()
+    // OAuth callback bounces land on #/staff/login?gerr=<slug>
+    const hash = window.location.hash
+    const slug = new URLSearchParams(hash.split('?')[1] ?? '').get('gerr')
+    if (slug) {
+      setErr(GOOGLE_ERRORS[slug] ?? 'Google sign-in failed — use email and password.')
+      if (history.replaceState) {
+        const clean = hash.split('?')[0]
+        history.replaceState(null, '', `${window.location.pathname}${clean}`)
+      }
+    }
+  }, [])
 
   const submit = async (e?: React.FormEvent) => {
     e?.preventDefault()
@@ -131,6 +170,27 @@ export default function StaffLogin({ go }: { go: (p: string) => void }) {
             >
               <LogIn className="h-4 w-4" aria-hidden /> {busy ? 'Signing in…' : 'Sign in'}
             </button>
+            {googleReady && (
+              <>
+                <div className="flex items-center gap-3 pt-1" aria-hidden>
+                  <span className="h-px flex-1 bg-stone-200" />
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-stone-400">or</span>
+                  <span className="h-px flex-1 bg-stone-200" />
+                </div>
+                <a
+                  href="/api/auth/google"
+                  className="inline-flex items-center justify-center gap-2.5 rounded-xl border border-stone-300 bg-white px-4 py-3 text-sm font-bold text-stone-700 shadow-sm transition hover:border-stone-400 hover:bg-stone-50"
+                >
+                  <svg className="h-4 w-4" viewBox="0 0 24 24" aria-hidden>
+                    <path fill="#4285F4" d="M23.5 12.3c0-.9-.1-1.5-.3-2.2H12v4.1h6.5c-.1 1.1-.8 2.7-2.4 3.8l3.7 2.9c2.3-2.1 3.7-5.2 3.7-8.6z" />
+                    <path fill="#34A853" d="M12 24c3.2 0 5.9-1.1 7.9-2.9l-3.7-2.9c-1 .7-2.4 1.2-4.2 1.2-3.1 0-5.8-2.1-6.8-5l-3.8 3C3.3 21.3 7.3 24 12 24z" />
+                    <path fill="#FBBC05" d="M5.2 14.4c-.2-.7-.4-1.5-.4-2.4s.1-1.7.4-2.4l-3.9-3C.5 8.2 0 10 0 12s.5 3.8 1.3 5.4l3.9-3z" />
+                    <path fill="#EA4335" d="M12 4.7c2.2 0 3.7.9 4.5 1.7l3.3-3.2C17.9 1.2 15.2 0 12 0 7.3 0 3.3 2.7 1.3 6.6l3.9 3c1-2.9 3.7-4.9 6.8-4.9z" />
+                  </svg>
+                  Sign in with Google
+                </a>
+              </>
+            )}
           </form>
         )}
       </div>

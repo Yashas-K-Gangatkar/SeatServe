@@ -77,3 +77,4 @@ upload/
 git token
 .env.prod-db
 scripts/.cookies-ramesh.txt
+.env.google-oauth
