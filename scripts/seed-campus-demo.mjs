@@ -7,7 +7,7 @@
 // Idempotent: scripts/campus-demo.json remembers the first run.
 import { writeFileSync, existsSync, readFileSync } from 'node:fs'
 
-const BASE = 'https://notifetch.in'
+const BASE = process.env.SEED_BASE ?? 'https://notifetch.in'
 const STATE_FILE = new URL('./campus-demo.json', import.meta.url)
 
 const MENU = [

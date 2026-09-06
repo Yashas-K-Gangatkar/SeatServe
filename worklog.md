@@ -1219,3 +1219,21 @@ Work Log:
 Stage Summary:
 - Owner now has the exact 3-flow walkthrough (login → /staff; orders → #/kitchen polling board; menu → #/menu add/reprice/86/delete) + corrected playbook guidance
 - Everything still gated on Vercel appeal submission (still unconfirmed by owner)
+
+---
+Task ID: 41
+Agent: Super Z (main)
+Task: Owner discovered ctshop-git-main-noti-fetch.vercel.app serves 200 while notifetch.in is down — explain why + act on the discovery
+
+Work Log:
+- Verified from sandbox: vercel.app URL serves HTTP 200 with the NEW campus landing (Nova Degree/classroom/NotiFetch, zero Aurora words); notifetch.in authoritative DNS still empty (kill switch intact); /api/health healthy (17ms Neon latency); POST /api/onboard/campus returns 422 validation (not 402) → VERCEL FAIR-USE BLOCK IS LIFTED (appeal or early auto-release)
+- Why the two URLs differ (explained to owner): notifetch.in = road we cut at Hostinger on purpose; vercel.app = Vercel's own road, can't be cut, bot only knows notifetch.in
+- Seeded the college demo EARLY via the vercel.app URL (was gated on deploy): patched seed-campus-demo.mjs BASE to accept SEED_BASE env override (default unchanged) → ran against vercel.app: onboard 201 (Nova Degree College · Science Block · 10 rooms, blockId cmtpwdjao0006i904a6qilpdq), manager login 200 (manager@nova.demo / campus-demo123), 6 menu items ensured; state saved scripts/campus-demo.json (idempotent re-runs)
+- Sanity: student order page /?qr=N5U85GD6N9 = 200, sticker sheet /onboard/print = 200, /staff = 200 — full student+staff surfaces live on prod build
+- Delivery order enforced with owner: firewall (Attack Challenge + >30 req/min → Block 24h) FIRST, then rotate leaked token, THEN DNS restore (A @ → 216.198.79.1, CNAME www → 9d35e98ecec3c678.vercel-dns-017.com); warned: do not share vercel.app link anywhere until firewall is on
+- Commit + push (deploy may fire; content unchanged visually)
+
+Stage Summary:
+- Vercel block LIFTED; college demo LIVE on the vercel.app URL (student order + kitchen + manager + stickers all 200)
+- notifetch.in still dark by design — single DNS restore away, firewall must go first
+- Demo video for college walk-ins can now be recorded from the vercel.app link right after firewall is on

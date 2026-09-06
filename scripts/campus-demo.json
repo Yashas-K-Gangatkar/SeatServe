@@ -1,0 +1,77 @@
+{
+  "campusId": "cmtpwdjal0005i90416rfl80i",
+  "campusName": "Nova Degree College",
+  "blockId": "cmtpwdjao0006i904a6qilpdq",
+  "blockName": "Science Block",
+  "storeId": "cmtpwdjaw00ahi9048cn5pg7g",
+  "manager": {
+    "login": "manager@nova.demo",
+    "name": "Prof. Rao",
+    "role": "BLOCK_MANAGER"
+  },
+  "classrooms": [
+    {
+      "id": "cmtpwdjaq0007i904ky6ulw5x",
+      "name": "Room S-101",
+      "doorQrToken": "N5U85GD6N9",
+      "seats": 36
+    },
+    {
+      "id": "cmtpwdjar0018i904v0cl6znb",
+      "name": "Room S-102",
+      "doorQrToken": "C697F2C3R5",
+      "seats": 36
+    },
+    {
+      "id": "cmtpwdjar0029i904dy9ojkbf",
+      "name": "Room S-103",
+      "doorQrToken": "GTYZMAK49Q",
+      "seats": 36
+    },
+    {
+      "id": "cmtpwdjas003ai904rwrhwkoa",
+      "name": "Room S-104",
+      "doorQrToken": "P9BFBSLW6F",
+      "seats": 36
+    },
+    {
+      "id": "cmtpwdjas004bi9048zd7j8gt",
+      "name": "Room S-105",
+      "doorQrToken": "NW6TNM7HJV",
+      "seats": 36
+    },
+    {
+      "id": "cmtpwdjat005ci904jwj4lhlv",
+      "name": "Room S-106",
+      "doorQrToken": "9NTQR6SUXH",
+      "seats": 36
+    },
+    {
+      "id": "cmtpwdjat006di904a0d1lb86",
+      "name": "Room S-107",
+      "doorQrToken": "6KNXF7ZPHQ",
+      "seats": 36
+    },
+    {
+      "id": "cmtpwdjau007ei904ihzlpxks",
+      "name": "Room S-108",
+      "doorQrToken": "VRMP4D3L32",
+      "seats": 36
+    },
+    {
+      "id": "cmtpwdjau008fi904033oo4va",
+      "name": "Room S-109",
+      "doorQrToken": "KGYBEMJC8R",
+      "seats": 36
+    },
+    {
+      "id": "cmtpwdjav009gi904bx6gr2lt",
+      "name": "Room S-110",
+      "doorQrToken": "VGQMM3CCZX",
+      "seats": 36
+    }
+  ],
+  "orderUrl": "https://notifetch.in/?qr=N5U85GD6N9",
+  "managerEmail": "manager@nova.demo",
+  "managerPassword": "campus-demo123"
+}
