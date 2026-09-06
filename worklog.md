@@ -1405,3 +1405,25 @@ Work Log:
 Stage Summary:
 - Owner wakes to: answers in chat, sheet-sync live but dormant, dry-run ready; one paste away from autonomous staff management
 - Owner rows now scope-valid (console APIs will load, not 403)
+
+---
+Task ID: 52
+Agent: Super Z (main)
+Task: Owner asked to drive staff provisioning from his Microsoft 365 account (Excel sheet in OneDrive) — server pulls and acts
+
+Work Log:
+- Extended the Task-51 sheet-sync engine from Google-CSV-only to multi-format:
+  - src/lib/xlsx-read.ts: dependency-free .xlsx reader (central-directory ZIP, STORE+DEFLATE via node:zlib, shared/inline strings, cell-reference placement for sparse sheets, booleans, E-notation normalization, rels-driven first-sheet selection with sheet1.xml fallback)
+  - src/lib/sheet-link.ts: link classifier + candidate builder (1drv.ms/onedrive → shares-API u!base64url then download=1; *.sharepoint.com → download=1 then shares-API; docs.google.com edit links auto-converted to export?format=csv preserving gid; direct files as-is) + byte sniffing (PK magic beats content-type; HTML/JSON rejected)
+  - src/lib/sheet-fetch.ts: ordered candidate downloader, 5 MB cap, 15 s timeout, injectable fetch; actionable error names the exact Share-setting fix
+  - sheet-sync.ts: extracted mapGrid so xlsx grids and CSV rows share identical validation; route reports source (xlsx|csv) + fetchedVia
+  - FIXED pre-existing audit-spam bug: Password column used to re-hash on EVERY cron tick; now only rewrites when verifyPassword proves the value differs (fallbackPassword path unchanged)
+- Tests: tests/sheet-formats.test.ts with in-test ZIP writer (no binary fixtures, no deps) — 23 new tests; suite 144/144; tsc 0; eslint 0
+- E2E on dev server with a real served .xlsx: dry-run → create (roles+Wrap House scope resolved, off-row created inactive) → idempotent re-run all-unchanged → password change + reactivation detected, hashes verified → CSV parity → HTML-page link returned the actionable 502; test users/audit rows cleaned, .env.local removed, fixture server killed
+- Shipped b7dc2ca → Vercel READY (dpl_8NiBiG55exKutinfmMsFsVHEcJ26); env check via API: CRON_SECRET present, SHEET_SYNC_URL absent (dormant by design), GOOGLE_* intact
+- docs/SHEET-SYNC.md rewritten: M365 as Option A (Share → "Anyone with the link" + Can view → copy link), privacy + phone-without-plus notes; .env.example updated
+
+Stage Summary:
+- Owner's answer: YES — his Microsoft 365 Excel sheet is now a supported control panel, zero add-ins; Google Sheets still works; everything dormant until SHEET_SYNC_URL is set
+- Owner's 3 activation steps: make sheet (Name/Email/Role/Store/Password/Active) → Share "Anyone with the link (Can view)" → give me the link (or paste SHEET_SYNC_URL himself); 5-min pinger per docs §4 already documented (cron-job.org with CRON_SECRET header)
+- Sheet can never delete, never guess scope, never leak passwords; unshared link = clean error report
