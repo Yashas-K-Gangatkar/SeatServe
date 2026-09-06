@@ -1385,3 +1385,23 @@ Stage Summary:
 - All 3 owner Gmails now valid staff logins: yashask2006@, clash.2.yashas@, clash.3.yashas@ (all CAMPUS_ADMIN, active)
 - Rule proven consistent end-to-end by audit trail: registered email → in; unregistered → bounce. Nothing hardcoded; every attempt (success or rejection) is permanently audited
 - Name-sync deployed: next Google logins greet with the real Google display names
+
+---
+Task ID: 51
+Agent: Super Z (main)
+Task: Owner Q&A (own-accounts model / new-user behavior / autonomous sheet→server sync) + build sheet-sync overnight
+
+Work Log:
+- Answered: (1) own-accounts model = already the default (Team panel issues name/email/role/password; Google is optional add-on); (2) unknown Google login → consent passes → server denies with red 'not registered as staff' message, audited; wrong password → 401 + rate-limit; (3) sheet→server autonomous sync = YES, built it
+- Discovered + FIXED scope bug: my 3 owner rows had campusId(mallId)=NULL → scopeErrorFor would 403 every staff API; set mallId=Aurora Mall (cmtgy0cfj0000l8j3ulqzcand) on all 3, matching asha's working row
+- Built sheet-sync (deploy 9c0fa33, READY):
+  - src/lib/sheet-sync.ts: RFC4180-lite CSV parser, forgiving header aliases, row validation w/ skip reasons, deterministic pseudo-phone (phone NOT NULL+UNIQUE)
+  - src/app/api/cron/sheet-sync/route.ts: CRON_SECRET-guarded, dormant until SHEET_SYNC_URL, ?dry=1 no-write mode, row-by-row create/update/deactivate (never delete), store/block/zone resolved by exact name, role changes with scope resolution, password column hashed (never logged/audited), per-row try/catch, MAX 500 rows, full audit trail actorRef sheet-sync
+  - tests/sheet-sync.test.ts: 14 tests; full suite 121/121; tsc 0; eslint 0
+  - docs/SHEET-SYNC.md: owner morning guide (sheet template, publish-to-web CSV, activation, cron-job.org 5-min pinger with CRON_SECRET header, dry-run first, guarantees)
+  - .env.example: SHEET_SYNC_URL documented
+- Activation remaining (owner action): create sheet → publish CSV → paste link → set SHEET_SYNC_URL (I can do it via token) → set up 5-min pinger
+
+Stage Summary:
+- Owner wakes to: answers in chat, sheet-sync live but dormant, dry-run ready; one paste away from autonomous staff management
+- Owner rows now scope-valid (console APIs will load, not 403)
