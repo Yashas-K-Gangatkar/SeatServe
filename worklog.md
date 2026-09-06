@@ -1278,3 +1278,24 @@ Work Log:
 
 Stage Summary:
 - Google login = approved direction, blocked on owner's 2 Google Cloud keys; existing email+password proven and untouched; college walk-ins not gated on this
+
+---
+Task ID: 45
+Agent: Super Z (main)
+Task: Owner delivered Google OAuth Client ID + Secret — build staff "Sign in with Google" as add-on; answer wizard/password-reset/college-add questions
+
+Work Log:
+- Owner keys stored in .env.google-oauth (gitignored, verified); secret never enters repo
+- BUILT (commit 85b2ae6, pushed, deploy fires):
+  - src/lib/oauth-google.ts: authorize-URL builder, state token (SHA-256 cookie compare, 10-min single-use), code exchange + userinfo fetch (injectable fetch for tests), exact-email normalize, slug error map, googleEnabled() gate
+  - GET /api/auth/google → 302 to Google consent (prompt=select_account); state cookie ss_oauth httpOnly 600s
+  - GET /api/auth/google/callback → state verify → code exchange → verified email → link EXISTING active staff User by exact lowercase email → SAME session cookie as password login → audit LOGIN_GOOGLE (rejected attempts audited too) → redirect #/staff; no self-registration path
+  - GET /api/auth/providers → {google:boolean} so the button only renders when configured (never a dead door)
+  - StaffLogin: Google button (official 4-color G svg) + "or" divider + gerr slug → human error copy; password form untouched as backup
+  - redirectUri(): GOOGLE_REDIRECT_URI env override so flow always lands on the ONE URI registered in Google Cloud even if initiated from a vercel.app alias
+- Gates: tsc 0, eslint 0, bun test 107/107 (14 new oauth tests, fetch mocked), next build clean
+- ACTIVATION PENDING (owner): GOOGLE_CLIENT_ID + GOOGLE_CLIENT_SECRET (+GOOGLE_REDIRECT_URI) as Vercel env vars → either owner pastes fresh API token (rotation still owed) and I set them + redeploy, or dashboard manual entry; then create a real User row for owner's Gmail to smoke-test consent end-to-end
+
+Stage Summary:
+- Google sign-in code LIVE on main; dormant until env vars set; password login unchanged as backup wheel
+- Owner questions answered: wizard how-to, password reset paths (manager resets staff; owner via DB for managers; Google removes the problem), college add = one more /onboard run
