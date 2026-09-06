@@ -11,7 +11,7 @@ import { AuxPage } from '@/components/landing/AuxChrome'
 const FAQS = [
   {
     q: 'How do I scan the QR code?',
-    a: 'Your seat has a small QR sticker on the armrest or seat back. Open seatserve on your phone, tap Scan, point the camera — the menu opens by itself. No app to install.',
+    a: 'Your classroom has a QR sticker on the door (and every canteen counter has one too). Scan it with your phone camera — the canteen menu opens by itself. No app to install.',
   },
   {
     q: 'Can I order for my friends too?',
@@ -23,11 +23,11 @@ const FAQS = [
   },
   {
     q: 'Is this actually free to try?',
-    a: 'There is no fee to use the service — you pay only for your order, once, at checkout (UPI, card or netbanking). No booking charge, no subscription, and the payment classroom always shows the exact amount before you confirm.',
+    a: 'There is no fee to use the service — you pay only for your order, once, at checkout (UPI, card or netbanking). No booking charge, no subscription, and the payment screen always shows the exact amount before you confirm.',
   },
   {
     q: 'Which stores can I order from?',
-    a: 'Every food outlet inside the venue that has joined the platform — at Aurora Campus that is Block Snacks, Pizza Corner, Dosa Junction, Mithai & More and Wrap House, all in one cart.',
+    a: 'Every food counter inside the campus that has joined the platform — in the demo that is the Campus Canteen: samosas, momos, chai, coffee, fries and cold coffee, all in one cart.',
   },
   {
     q: 'How do I pay?',
@@ -137,10 +137,10 @@ export default function FaqPage() {
             <p className="mt-0.5 text-sm text-stone-400">
               Open in-app support with your order code, or email{' '}
               <a
-                href="mailto:grievance@seatserve.in"
+                href="mailto:grievance@notifetch.in"
                 className="underline underline-offset-2 hover:text-white"
               >
-                grievance@seatserve.in
+                grievance@notifetch.in
               </a>
               .
             </p>

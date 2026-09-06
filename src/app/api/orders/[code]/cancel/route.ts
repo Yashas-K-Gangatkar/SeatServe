@@ -1,7 +1,7 @@
 // POST /api/orders/[code]/cancel — customer cancel BEFORE any store accepts.
 //
 // OWNER RULE (the refund window): from payment until the store taps
-// "Accept ticket" the customer may cancel from the tracking classroom and the
+// "Accept ticket" the customer may cancel from the tracking page and the
 // money returns to source automatically. The moment ANY store leg is
 // accepted, the order is LOCKED — this endpoint refuses with 409 and the
 // customer UI hides the button. Stores are instructed to accept fast,

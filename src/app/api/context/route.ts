@@ -1,7 +1,7 @@
 // GET /api/context?qr=<seatToken | classroomDoorToken>
 // The QR endpoint: resolves a printed QR to everything the customer page
 // needs. Two scan types since the campus pivot:
-//   • seat QR (cinema-style) → mode: 'seat'
+//   • seat QR (seat-sticker style) → mode: 'seat'
 //   • classroom DOOR QR (campus-style, one sticker per room) → mode: 'door'
 //     (seat: null — the student types their seat/roll label at checkout)
 import { db } from '@/lib/db'

@@ -3,7 +3,7 @@
 // NotiFetch — PaperReceipt: the post-payment bill printed like a thermal
 // receipt sliding out of a POS slot. Just the slot + the paper (no machine
 // body, no hands — owner's brief). Warm hardware tones, white thermal paper,
-// monospace ink, torn zigzag bottom, scannable QR to the tracking classroom.
+// monospace ink, torn zigzag bottom, scannable QR to the tracking page.
 
 import { useEffect, useState } from 'react'
 import QRCode from 'qrcode'
@@ -11,9 +11,9 @@ import { rupees } from '../ui-bits'
 
 export interface ReceiptData {
   seatCode?: string
-  screenName?: string
-  cinemaName?: string
-  movie?: string
+  roomName?: string
+  blockName?: string
+  subject?: string
   groups: { storeName: string; emoji?: string | null; items: { name: string; qty: number; lineTotalPaise: number }[] }[]
   subtotalPaise: number
   platformFeePaise: number
@@ -43,7 +43,7 @@ export default function PaperReceipt({
 }) {
   const [qr, setQr] = useState<string | null>(null)
 
-  // scannable QR → tracking classroom (matches the reference bill's QR)
+  // scannable QR → tracking page (matches the reference bill's QR)
   useEffect(() => {
     let cancelled = false
     const url = typeof window !== 'undefined' ? `${window.location.origin}/#/track/${orderCode}` : orderCode
@@ -66,7 +66,7 @@ export default function PaperReceipt({
         <span className="slot-led h-1.5 w-1.5 shrink-0 rounded-full bg-amber-300 shadow-[0_0_6px_2px_rgba(252,211,77,0.7)]" aria-hidden />
         <span className="mx-auto h-2 w-[74%] rounded-full bg-stone-950/80 shadow-[inset_0_1.5px_3px_rgba(0,0,0,0.8)]" aria-hidden />
         <span className="text-[7px] font-black tracking-[0.22em] text-stone-300/90" aria-hidden>
-          SEATSERVE
+          NOTIFETCH
         </span>
       </div>
 
@@ -75,12 +75,12 @@ export default function PaperReceipt({
         <article className="receipt-anim receipt-paper receipt-zigzag relative mx-auto w-full max-w-[300px] rounded-b-sm px-5 pb-7 pt-5 font-mono text-[12px] leading-relaxed text-stone-800" aria-live="polite">
           {/* printed header */}
           <div className="text-center">
-            <p className="text-[15px] font-black tracking-[0.28em] text-stone-900">SEATSERVE</p>
+            <p className="text-[15px] font-black tracking-[0.28em] text-stone-900">NOTIFETCH</p>
             <p className="mt-0.5 text-[10px] font-semibold tracking-[0.14em] text-stone-500">
-              {[data.cinemaName, data.screenName].filter(Boolean).join(' · ').toUpperCase()}
+              {[data.blockName, data.roomName].filter(Boolean).join(' · ').toUpperCase()}
             </p>
             <p className="text-[10px] font-semibold tracking-[0.14em] text-stone-500">
-              {data.seatCode ? `SEAT ${data.seatCode}` : ''} {data.movie ? `· ${data.movie.toUpperCase()}` : ''}
+              {data.seatCode ? `SEAT ${data.seatCode}` : ''} {data.subject ? `· ${data.subject.toUpperCase()}` : ''}
             </p>
           </div>
 

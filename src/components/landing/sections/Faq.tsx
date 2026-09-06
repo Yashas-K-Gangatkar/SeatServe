@@ -25,7 +25,7 @@ const FAQS = [
   },
   {
     q: 'Is this actually free to try?',
-    a: 'There is no fee to use the service — you pay only for your order, once, at checkout (UPI, card or netbanking). No booking charge, no subscription, and the payment classroom always shows the exact amount before you confirm.',
+    a: 'There is no fee to use the service — you pay only for your order, once, at checkout (UPI, card or netbanking). No booking charge, no subscription, and the payment screen always shows the exact amount before you confirm.',
   },
 ]
 

@@ -402,9 +402,9 @@ function TrackingInner({ code, go }: { code: string; go: (p: string) => void }) 
           order={{ code: order.code, totalPaise: order.totals.totalPaise }}
           receipt={{
             seatCode: order.location.seat,
-            screenName: order.location.classroom,
-            cinemaName: order.location.block,
-            movie: order.show?.subject,
+            roomName: order.location.classroom,
+            blockName: order.location.block,
+            subject: order.show?.subject,
             groups: order.stores
               .filter((s) => s.status !== 'CANCELLED')
               .map((s) => ({

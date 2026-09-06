@@ -43,7 +43,7 @@
   --radius-xl: calc(var(--radius) + 4px);
 }
 
-/* ── SeatServe "Warm Ivory Cinema" light theme ──────────────────── */
+/* ── NotiFetch "Warm Ivory Campus" light theme ───────────────────── */
 :root {
   --radius: 0.75rem;
   --background: #fbf7ef;

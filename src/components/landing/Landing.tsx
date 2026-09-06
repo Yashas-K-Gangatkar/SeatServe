@@ -22,7 +22,6 @@ import { WhySeatServe } from './sections/WhySeatServe'
 import { CtaBand } from './sections/CtaBand'
 import { MenuShowcase } from './sections/MenuShowcase'
 import { TrustStats } from './sections/TrustStats'
-import { Testimonials } from './sections/Testimonials'
 import { Faq } from './sections/Faq'
 import { SiteFooter } from './sections/SiteFooter'
 
@@ -64,7 +63,6 @@ function LandingBody() {
         <CtaBand demoSeatHref={demoSeatHref} />
         <MenuShowcase />
         <TrustStats />
-        <Testimonials />
         <Faq />
         {/* classroom-reader live region — mirrors the live deployment */}
         <section aria-label="Notifications" aria-live="polite" aria-relevant="additions text" aria-atomic="false" className="sr-only" tabIndex={-1} />

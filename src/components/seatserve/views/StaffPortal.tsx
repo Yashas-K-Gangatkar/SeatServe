@@ -123,7 +123,7 @@ export default function StaffPortal({ go }: { go: (p: string) => void }) {
       </div>
 
       <header className="rounded-3xl border border-stone-200 bg-white p-6 shadow-xl shadow-orange-500/5">
-        <p className="text-[11px] font-extrabold tracking-[0.18em] text-orange-600">SEATSERVE STAFF PORTAL</p>
+        <p className="text-[11px] font-extrabold tracking-[0.18em] text-orange-600">NOTIFETCH STAFF PORTAL</p>
         <h1 className="mt-1 text-2xl font-black tracking-tight text-stone-900">{user.name}</h1>
         <p className="mt-0.5 text-sm text-stone-500">
           {ROLE_LABELS[user.role]} · <span className="font-semibold text-stone-700">{user.email}</span>

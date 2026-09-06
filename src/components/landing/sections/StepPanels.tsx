@@ -12,13 +12,13 @@ import { QrGrid } from '../QrGrid'
 
 export const HERO_STEPS = [
   {
-    caption: '1 · Scan your seat QR',
-    chip: '📍 Seat B7 found',
+    caption: '1 · Scan the door QR',
+    chip: '📍 Room A-101 found',
     label: 'Scan',
   },
   {
     caption: '2 · Browse every menu',
-    chip: '🛒 3 items · 2 stores',
+    chip: '🛒 3 items · 1 counter',
     label: 'Browse',
   },
   {
@@ -32,16 +32,16 @@ export const HERO_STEPS = [
     label: 'Track',
   },
   {
-    caption: '5 · Enjoy the show',
-    chip: '🍕 Delivered · 8 min',
+    caption: '5 · Enjoy the break',
+    chip: '🥟 Delivered · 8 min',
     label: 'Arrived',
   },
 ] as const
 
 const MENU_ROWS = [
-  { emoji: '🍕', name: 'Margherita (10")', price: '₹250' },
-  { emoji: '🍿', name: 'Butter Popcorn (L)', price: '₹220' },
-  { emoji: '🌯', name: 'Paneer Tikka Wrap', price: '₹210' },
+  { emoji: '🥟', name: 'Samosa (2 pcs)', price: '₹20' },
+  { emoji: '🥟', name: 'Veg Momo (6 pcs)', price: '₹40' },
+  { emoji: '☕', name: 'Masala Chai', price: '₹15' },
 ] as const
 
 function ScanPanel() {
@@ -55,7 +55,7 @@ function ScanPanel() {
         <span className="absolute bottom-0 left-0 h-4 w-4 border-b-2 border-l-2 border-[#D4AF37]" />
         <span className="absolute bottom-0 right-0 h-4 w-4 border-b-2 border-r-2 border-[#D4AF37]" />
       </div>
-      <p className="text-[10px] font-bold text-white">Classroom 3 · Seat B7</p>
+      <p className="text-[10px] font-bold text-white">Classroom A-101 · Seat B7</p>
       <p className="text-[8px] text-stone-400">Nova Degree College · Science Wing A</p>
     </div>
   )

@@ -123,10 +123,10 @@ function AdminBoard({ go, scopeRole }: { go: (p: string) => void; scopeRole: 'CA
         <div>
           <p className="text-[10px] font-extrabold tracking-[0.18em] text-amber-600">
             {data.scope.role === 'CAMPUS_ADMIN'
-              ? `MALL ADMIN · ${(data.scope.mallName ?? 'MALL').toUpperCase()}`
+              ? `CAMPUS ADMIN · ${(data.scope.mallName ?? 'CAMPUS').toUpperCase()}`
               : data.scope.role === 'BLOCK_MANAGER'
-                ? `CINEMA MANAGER · ${(data.scope.mallName ?? 'MALL').toUpperCase()}`
-                : `STORE MANAGER · ${(data.scope.mallName ?? 'MALL').toUpperCase()}`}
+                ? `BLOCK MANAGER · ${(data.scope.mallName ?? 'CAMPUS').toUpperCase()}`
+                : `STORE MANAGER · ${(data.scope.mallName ?? 'CAMPUS').toUpperCase()}`}
           </p>
           <h1 className="mt-1 text-2xl font-black tracking-tight sm:text-3xl">Operations board</h1>
           <p className="text-xs text-muted-foreground">Rolling window: {data.window.label}</p>

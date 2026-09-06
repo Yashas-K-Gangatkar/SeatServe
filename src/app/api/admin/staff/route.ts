@@ -126,7 +126,7 @@ function toRow(u: {
     storeId: u.store?.id ?? null,
     storeName: u.store?.name ?? null,
     blockId: u.block?.id ?? null,
-    cinemaName: u.block?.name ?? null,
+    blockName: u.block?.name ?? null,
   }
 }
 
@@ -142,7 +142,7 @@ export async function POST(request: Request) {
   // ── resolve role + scope from the CALLER's role, never from client trust ──
   let role: 'STORE_MANAGER' | 'KITCHEN_STAFF' | 'BLOCK_MANAGER' | 'RUNNER'
   let resolvedStoreId: string | null = null
-  let resolvedCinemaId: string | null = null
+  let resolvedBlockId: string | null = null
   let resolvedRunnerId: string | null = null
   let campusId: string
   let scopeName: string | null
@@ -170,7 +170,7 @@ export async function POST(request: Request) {
       if (!parsed.data.blockId) return fail('Pick the block this person belongs to', 422)
       const block = await db.block.findUnique({ where: { id: parsed.data.blockId } })
       if (!block || block.campusId !== campusId) return fail('That block is not in your campus', 400)
-      resolvedCinemaId = block.id
+      resolvedBlockId = block.id
       scopeName = block.name
     } else if (role === 'RUNNER') {
       // Delivery runner: a login + a Runner roster row. A zone is REQUIRED —
@@ -217,7 +217,7 @@ export async function POST(request: Request) {
         role,
         campusId,
         storeId: resolvedStoreId,
-        blockId: resolvedCinemaId,
+        blockId: resolvedBlockId,
         runnerId: resolvedRunnerId,
         passwordHash,
         isActive: true,

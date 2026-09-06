@@ -27,7 +27,7 @@ const bodySchema = z.object({
     .min(1, 'Add at least one item'),
   customerName: z.string().max(80).optional(),
   customerPhone: z.string().max(20).optional(),
-  // ISO timestamp of a FUTURE delivery slot (class break / movie interval).
+  // ISO timestamp of a FUTURE delivery slot (the 10:45 class break).
   // Absent = deliver ASAP. Range-checked server-side in validateScheduledFor.
   scheduledFor: z.string().max(40).optional(),
   // campus door-QR flow: the student's seat / roll label ("A-12", "23") typed
@@ -46,7 +46,7 @@ export async function POST(request: Request) {
   if (!schedule.ok) return fail(schedule.error, 400)
 
   // CAMPUS PIVOT — the QR can now be either:
-  //   • a per-seat QR (cinema-style, the printed sticker on the seat), or
+  //   • a per-seat QR (the printed sticker on the seat itself), or
   //   • the classroom DOOR QR sticker (campus-style — one per room; the
   //     student types their seat/roll label at checkout, delivery is at the
   //     classroom door).

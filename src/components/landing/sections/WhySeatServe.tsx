@@ -59,13 +59,13 @@ export function WhySeatServe() {
               <h3 className="text-base font-bold">Faster than the line</h3>
             </div>
             <p className="mt-1 text-sm leading-[1.6] text-[#6F6F6F]">
-              Food in ~8 minutes, not 20
+              Hot food in ~8 minutes, not a 20-minute queue
             </p>
           </div>
 
           <div className="benefit-card rounded-2xl bg-white p-6 shadow-[0_4px_12px_rgba(0,0,0,0.08)] transition-shadow hover:shadow-[0_10px_28px_rgba(0,0,0,0.12)]">
             <span className="text-[26px] font-black tracking-tight text-[#D4AF37]">
-              5 stores
+              6 items
             </span>
             <span className="mt-2 flex items-center gap-1.5" aria-hidden="true">
               {STORE_DOTS.map((color) => (
@@ -76,15 +76,15 @@ export function WhySeatServe() {
                 />
               ))}
               <span className="ml-1 text-[11px] font-bold uppercase tracking-wider text-[#8B8B8B]">
-                Aurora pilot
+                Campus canteen
               </span>
             </span>
             <div className="mt-3 flex items-center gap-2">
               <Target className="h-5 w-5 text-[#8a6d1f]" aria-hidden />
-              <h3 className="text-base font-bold">Order from any store</h3>
+              <h3 className="text-base font-bold">One cart, one counter</h3>
             </div>
             <p className="mt-1 text-sm leading-[1.6] text-[#6F6F6F]">
-              Pizza, popcorn &amp; chai in one order
+              Samosa, momos &amp; chai in one order
             </p>
           </div>
 

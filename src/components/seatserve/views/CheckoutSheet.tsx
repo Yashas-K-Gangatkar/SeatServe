@@ -327,7 +327,7 @@ export function CheckoutSheet({
               {placing ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : <Lock className="h-4 w-4" aria-hidden />}
               Continue to pay ~{rupees(estimatedTotal)}
             </button>
-            <p className="mt-2 text-center text-[11px] text-muted-foreground">One tap to pay — UPI, card or netbanking. The payment classroom always shows the exact amount before you confirm.</p>
+            <p className="mt-2 text-center text-[11px] text-muted-foreground">One tap to pay — UPI, card or netbanking. The payment screen always shows the exact amount before you confirm.</p>
           </div>
         </SheetContent>
       </Sheet>
@@ -337,9 +337,9 @@ export function CheckoutSheet({
         customer={{ name: name.trim() || undefined, phone: phone.trim() || undefined }}
         receipt={{
           seatCode: ctx.seat?.code ?? seatLabel ?? 'door',
-          screenName: ctx.classroom.name,
-          cinemaName: ctx.block.name,
-          movie: ctx.lecture?.subject,
+          roomName: ctx.classroom.name,
+          blockName: ctx.block.name,
+          subject: ctx.lecture?.subject,
           groups: selection.map((r) => ({
             storeName: r.storeName,
             emoji: r.emoji,

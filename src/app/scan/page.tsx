@@ -8,7 +8,7 @@
  * app (#/seat/<token>), matching the printed stickers' ?qr= flow.
  */
 import { useEffect, useRef, useState } from 'react'
-import { Keyboard, Popcorn, ScanLine } from 'lucide-react'
+import { Coffee, Keyboard, ScanLine } from 'lucide-react'
 import { get } from '@/lib/client/api'
 
 interface DemoEntry {
@@ -125,16 +125,16 @@ export default function ScanPage() {
           className="flex items-center gap-1.5 text-[17px] font-extrabold"
           aria-label="NotiFetch home"
         >
-          <Popcorn className="h-5 w-5 text-[#D4AF37]" aria-hidden />
+          <Coffee className="h-5 w-5 text-[#D4AF37]" aria-hidden />
           NotiFetch
         </a>
 
         <div>
           <h1 className="text-[32px] font-bold leading-tight tracking-tight">
-            Scan your seat QR
+            Scan the classroom door QR
           </h1>
           <p className="mt-2 text-[15px] leading-[1.6] text-stone-400">
-            Point your camera at the QR sticker on the seat back or armrest.
+            Point your camera at the QR sticker on your classroom door.
             The menu opens by itself.
           </p>
         </div>

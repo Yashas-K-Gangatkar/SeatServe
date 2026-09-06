@@ -21,7 +21,7 @@ export const LANDING_FAQ: FaqItem[] = [
   },
   {
     q: 'Is there a fee to use this?',
-    a: 'There is no fee to use the service — you pay only for your order, once, at checkout (UPI, card or netbanking). The payment classroom always shows the exact amount before you confirm.'
+    a: 'There is no fee to use the service — you pay only for your order, once, at checkout (UPI, card or netbanking). The payment screen always shows the exact amount before you confirm.'
   },
 ]
 
@@ -29,7 +29,7 @@ export const ALL_FAQ: FaqItem[] = [
   ...LANDING_FAQ,
   {
     q: 'Which stores can I order from?',
-    a: 'Every food outlet inside the venue that has joined the platform — in the demo that is Block Snacks, Pizza Corner, Dosa Junction, Mithai & More and Wrap House, all in one cart.',
+    a: 'Every food counter inside the campus that has joined the platform — in the demo that is the Campus Canteen: samosas, momos, chai, coffee, fries and cold coffee, all in one cart.',
   },
   {
     q: 'How do I pay?',

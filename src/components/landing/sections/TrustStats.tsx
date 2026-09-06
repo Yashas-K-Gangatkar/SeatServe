@@ -1,10 +1,11 @@
 'use client'
 
 /**
- * TrustStats — 500+ / 8 min / 100% count up once when they enter view.
+ * TrustStats — 10 / 6 / 15 min count up once when they enter view.
  * The count-up is the "live data" feel with a purpose: these ARE the
- * pilot's numbers. Tabular figures keep the layout rock-steady while the
- * digits roll. A single quiet connect-cue marks completion (sound on only).
+ * pilot's configuration numbers (honest, verifiable in the demo — no
+ * invented user counts). Tabular figures keep the layout rock-steady while
+ * the digits roll. A single quiet connect-cue marks completion (sound on only).
  * Trust badges below stay static — the contrast keeps the stat moment special.
  */
 import { useEffect, useRef, useState } from 'react'
@@ -17,27 +18,27 @@ type Stat = { value: number; suffix: string; label: string; blurb: string }
 
 const STATS: Stat[] = [
   {
-    value: 500,
-    suffix: '+',
-    label: 'Orders Delivered',
-    blurb: 'Served across the Aurora pilot',
+    value: 10,
+    suffix: '',
+    label: 'Classrooms Wired',
+    blurb: 'Demo block · door-QR sticker on every room',
   },
   {
-    value: 8,
+    value: 6,
+    suffix: '',
+    label: 'Live Menu Items',
+    blurb: 'Real canteen menu, real photos',
+  },
+  {
+    value: 15,
     suffix: ' min',
-    label: 'Average Delivery',
-    blurb: 'From kitchen fire to seat B-row',
-  },
-  {
-    value: 100,
-    suffix: '%',
-    label: 'Secure & Verified',
-    blurb: 'Bank-grade gateway · demo never charges',
+    label: 'Break Delivery',
+    blurb: 'Order during class, food lands at the bell',
   },
 ]
 
 const TRUST = [
-  'Real block pilot at Aurora Campus, Mumbai — not a mockup.',
+  'Working campus demo — scan a classroom door QR and order in under a minute.',
   'Zero setup — no app, no sign-up. Scan and go.',
   'Card details never touch our servers — Razorpay handles payments.',
 ]

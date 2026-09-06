@@ -16,9 +16,9 @@ const geistMono = Geist_Mono({
 });
 
 const SITE_URL = "https://notifetch.in";
-const SITE_TITLE = "NotiFetch — order food to your block seat";
+const SITE_TITLE = "NotiFetch — order food to your classroom";
 const SITE_DESCRIPTION =
-  "NotiFetch turns your block seat into a food counter. Scan the seat QR, order from multiple outlets, pay by UPI or card, and get snacks delivered to your Classroom & Seat. Payments by Razorpay.";
+  "NotiFetch turns your classroom into a food counter. Scan the door QR, order from the campus canteen, pay by UPI or card, and get snacks delivered at the break — to your classroom door. Payments by Razorpay.";
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
@@ -33,10 +33,10 @@ export const metadata: Metadata = {
     description: SITE_DESCRIPTION,
     images: [
       {
-        url: "/menu/popcorn-salted.jpg",
+        url: "/menu/samosa.jpg",
         width: 1024,
         height: 1024,
-        alt: "Fresh popcorn — ordered from your seat with NotiFetch",
+        alt: "Samosa and chai — ordered from your classroom with NotiFetch",
       },
     ],
   },
@@ -44,10 +44,10 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: SITE_TITLE,
     description: SITE_DESCRIPTION,
-    images: ["/menu/popcorn-salted.jpg"],
+    images: ["/menu/samosa.jpg"],
   },
   icons: {
-    icon: "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍿</text></svg>",
+    icon: "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🥟</text></svg>",
   },
 };
 

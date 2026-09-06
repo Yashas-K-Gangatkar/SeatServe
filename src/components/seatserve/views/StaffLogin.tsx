@@ -76,7 +76,7 @@ export default function StaffLogin({ go }: { go: (p: string) => void }) {
         <span className="inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-amber-500 to-orange-500 text-white shadow-lg shadow-orange-500/25">
           <LockKeyhole className="h-7 w-7" aria-hidden />
         </span>
-        <p className="mt-4 text-[11px] font-extrabold tracking-[0.18em] text-orange-600">SEATSERVE STAFF PORTAL</p>
+        <p className="mt-4 text-[11px] font-extrabold tracking-[0.18em] text-orange-600">NOTIFETCH STAFF PORTAL</p>
         <h1 className="mt-1 text-2xl font-black tracking-tight text-stone-900">Sign in to your console</h1>
         <p className="mt-2 text-sm leading-relaxed text-stone-600">
           One platform, scoped views. Kitchen staff see only their store&apos;s tickets; runners their own runs; block

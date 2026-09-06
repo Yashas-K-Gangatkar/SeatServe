@@ -117,14 +117,14 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
     const role = parsed.data.role
 
     let resolvedStoreId: string | null = null
-    let resolvedCinemaId: string | null = null
+    let resolvedBlockId: string | null = null
     let scopeName: string | null = null
 
     if (role === 'BLOCK_MANAGER') {
       if (!parsed.data.blockId) return fail('Pick the block this person belongs to', 422)
       const block = await db.block.findUnique({ where: { id: parsed.data.blockId } })
       if (!block || block.campusId !== admin.campusId) return fail('That block is not in your campus', 400)
-      resolvedCinemaId = block.id
+      resolvedBlockId = block.id
       scopeName = block.name
     } else {
       if (!parsed.data.storeId) return fail('Pick the store this person belongs to', 422)
@@ -138,7 +138,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
     await db.$transaction([
       db.user.update({
         where: { id: target.id },
-        data: { role, storeId: resolvedStoreId, blockId: resolvedCinemaId },
+        data: { role, storeId: resolvedStoreId, blockId: resolvedBlockId },
       }),
       // role changes move the security boundary — sign them out everywhere
       db.session.deleteMany({ where: { userId: target.id } }),

@@ -22,7 +22,7 @@ interface StaffRow {
   storeId: string | null
   storeName: string | null
   blockId: string | null
-  cinemaName: string | null
+  blockName: string | null
 }
 
 interface TeamData {
@@ -255,7 +255,7 @@ export default function TeamPanel({
                     )}
                   </p>
                   <p className="truncate text-[11px] text-muted-foreground">
-                    {s.email ?? 'no login'} · {s.storeName ?? s.cinemaName ?? 'campus-wide'}
+                    {s.email ?? 'no login'} · {s.storeName ?? s.blockName ?? 'campus-wide'}
                   </p>
                 </div>
                 <div className="flex shrink-0 items-center gap-1.5">
@@ -417,7 +417,7 @@ function EditStaffForm({
 }) {
   const [role, setRole] = useState(staff.role as 'KITCHEN_STAFF' | 'STORE_MANAGER' | 'BLOCK_MANAGER')
   const [storeId, setStoreId] = useState(staff.storeId ?? stores[0]?.id ?? '')
-  const [blockId, setCinemaId] = useState(staff.blockId ?? blocks[0]?.id ?? '')
+  const [blockId, setBlockId] = useState(staff.blockId ?? blocks[0]?.id ?? '')
   const [error, setError] = useState<string | null>(null)
 
   const inputCls =
@@ -458,7 +458,7 @@ function EditStaffForm({
         {role === 'BLOCK_MANAGER' ? (
           <div>
             <label className={labelCls} htmlFor={`edit-block-${staff.id}`}>Block</label>
-            <select id={`edit-block-${staff.id}`} value={blockId} onChange={(e) => setCinemaId(e.target.value)} className={inputCls}>
+            <select id={`edit-block-${staff.id}`} value={blockId} onChange={(e) => setBlockId(e.target.value)} className={inputCls}>
               {blocks.map((c) => (
                 <option key={c.id} value={c.id}>{c.name}</option>
               ))}
@@ -518,7 +518,7 @@ function AddStaffForm({
   const [name, setName] = useState('')
   const [role, setRole] = useState<'KITCHEN_STAFF' | 'STORE_MANAGER' | 'BLOCK_MANAGER' | 'RUNNER'>('KITCHEN_STAFF')
   const [storeId, setStoreId] = useState(stores[0]?.id ?? '')
-  const [blockId, setCinemaId] = useState(blocks[0]?.id ?? '')
+  const [blockId, setBlockId] = useState(blocks[0]?.id ?? '')
   const [zoneId, setZoneId] = useState(zones[0]?.id ?? '')
   const [email, setEmail] = useState('')
   const [phone, setPhone] = useState('')
@@ -596,7 +596,7 @@ function AddStaffForm({
         {!managerMode && role === 'BLOCK_MANAGER' && (
           <div>
             <label className={labelCls} htmlFor="staff-block">Block</label>
-            <select id="staff-block" value={blockId} onChange={(e) => setCinemaId(e.target.value)} className={inputCls}>
+            <select id="staff-block" value={blockId} onChange={(e) => setBlockId(e.target.value)} className={inputCls}>
               {blocks.map((c) => (
                 <option key={c.id} value={c.id}>{c.name}</option>
               ))}

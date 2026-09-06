@@ -43,9 +43,9 @@ function FakeQr() {
 }
 
 const MENU_ROWS = [
-  { img: '/landing/pizza.png', name: 'Margherita', price: '₹249' },
-  { img: '/landing/popcorn.png', name: 'Butter Popcorn', price: '₹180' },
-  { img: '/landing/chai.png', name: 'Masala Chai', price: '₹60' },
+  { img: '/landing/samosa.png', name: 'Samosa (2 pcs)', price: '₹20' },
+  { img: '/landing/fries.png', name: 'Peri Peri Fries', price: '₹35' },
+  { img: '/landing/chai.png', name: 'Masala Chai', price: '₹15' },
 ]
 
 function Scene({ index }: { index: number }) {
@@ -59,7 +59,7 @@ function Scene({ index }: { index: number }) {
           <span className="absolute bottom-0 left-0 h-4 w-4 border-b-2 border-l-2 border-[#D4AF37]" />
           <span className="absolute bottom-0 right-0 h-4 w-4 border-b-2 border-r-2 border-[#D4AF37]" />
         </div>
-        <p className="text-[10px] font-bold text-white">Classroom 3 · Seat B7</p>
+        <p className="text-[10px] font-bold text-white">Classroom A-101 · Seat B7</p>
         <p className="text-[8px] text-stone-400">Nova Degree College · Science Wing A</p>
       </div>
     )

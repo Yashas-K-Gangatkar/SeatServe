@@ -31,16 +31,16 @@ export async function GET(request: Request) {
   // report is the campus report intersected with their orders:
   const report = await reconcileOrders(scopeMallId)
   if (user.role === 'BLOCK_MANAGER') {
-    const cinemaOrders = new Set(
+    const blockOrders = new Set(
       (await db.order.findMany({ where: orderWhere, select: { code: true } })).map((o) => o.code),
     )
-    const cinemaIssues = report.issues.filter((i) => cinemaOrders.has(i.orderCode))
+    const blockIssues = report.issues.filter((i) => blockOrders.has(i.orderCode))
     return ok({
       ...report,
       scope: { ...report.scope, mallName: report.scope.mallName ? `${report.scope.mallName} (your block's orders)` : null },
-      issues: cinemaIssues,
-      healthy: cinemaIssues.length === 0,
-      ordersChecked: cinemaOrders.size,
+      issues: blockIssues,
+      healthy: blockIssues.length === 0,
+      ordersChecked: blockOrders.size,
     })
   }
 

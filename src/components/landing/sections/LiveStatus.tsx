@@ -11,7 +11,7 @@
  * invisible and the scene never snaps.
  *
  * Sound: a quiet notification ping locks to the CSS loop's `animationiteration`
- * event — a cue per real loop turn, only while the section is on classroom and
+ * event — a cue per real loop turn, only while the section is on screen and
  * the tab is visible. No timers, no React re-renders.
  */
 import { useEffect, useRef } from 'react'
@@ -22,8 +22,8 @@ import { useSound } from '@/lib/sound/SoundProvider'
 const FEED = [
   {
     id: 'confirmed',
-    emoji: '🍕',
-    app: 'Pizza Corner',
+    emoji: '🥟',
+    app: 'Campus Canteen',
     title: 'Order confirmed',
     body: 'Placing your order with the kitchen…',
     chip: 'just now',
@@ -33,8 +33,8 @@ const FEED = [
   {
     id: 'cooking',
     emoji: '👨‍🍳',
-    app: 'Pizza Corner',
-    title: 'Your pizza is in the oven',
+    app: 'Campus Canteen',
+    title: 'Your momos are steaming',
     body: 'Tracking started · about 8 minutes',
     chip: 'on schedule',
     chipClass: 'bg-sky-100 text-sky-700',
@@ -43,9 +43,9 @@ const FEED = [
   {
     id: 'running',
     emoji: '🛵',
-    app: 'Block Snacks',
-    title: 'Popcorn ready — runner on the way',
-    body: 'Seat B7 · two stops away',
+    app: 'Campus Canteen',
+    title: 'Samosa ready — runner on the way',
+    body: 'Room A-101 · two stops away',
     chip: '⚡ on time',
     chipClass: 'bg-emerald-100 text-emerald-700',
     delay: '-3.67s',
@@ -68,7 +68,7 @@ export function LiveStatus() {
   const phoneDrift = useTransform(scrollYProgress, [0, 1], [10, -10])
   const copyDrift = useTransform(scrollYProgress, [0, 1], [-6, 6])
 
-  // the feed only cues while it is actually on classroom
+  // the feed only cues while it is actually on screen
   useEffect(() => {
     const el = stackRef.current
     if (!el) return

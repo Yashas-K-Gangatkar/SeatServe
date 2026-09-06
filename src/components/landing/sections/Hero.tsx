@@ -15,7 +15,7 @@
  *
  * Performance: the conveyor advances with low-frequency state (3.4s), all
  * movement is transform/opacity, the breathing zoom is a pure-CSS infinite
- * loop, and the whole carousel pauses off-classroom and in hidden tabs.
+ * loop, and the whole carousel pauses off-screen and in hidden tabs.
  */
 import { useCallback, useEffect, useRef, useState } from 'react'
 import {
@@ -88,7 +88,7 @@ export function Hero({ demoSeatHref }: { demoSeatHref: string | null }) {
     [play],
   )
 
-  // conveyor clock — paused off-classroom / hidden tab / reduced-motion keeps
+  // conveyor clock — paused off-screen / hidden tab / reduced-motion keeps
   // the cadence but the transitions degrade to opacity-only via variants
   useEffect(() => {
     if (!liveSystemOn) return
@@ -142,7 +142,7 @@ export function Hero({ demoSeatHref }: { demoSeatHref: string | null }) {
         className="mx-auto inline-flex items-center gap-1.5 rounded-full border border-[#D4AF37]/70 bg-[#FAF8F5] px-4 py-2 text-[13px] font-bold shadow-[0_4px_12px_rgba(0,0,0,0.08)] transition-all hover:-translate-y-0.5 hover:shadow-[0_8px_20px_rgba(0,0,0,0.12)]"
       >
         <MapPin className="h-4 w-4 text-[#8a6d1f]" aria-hidden />
-        Aurora Campus, Mumbai
+        Nova Degree College · Bengaluru
       </motion.p>
 
       {/* phase 2 — the promise (single high-impact blur entrance) */}
@@ -226,8 +226,8 @@ export function Hero({ demoSeatHref }: { demoSeatHref: string | null }) {
         <div className="nf-breathe">
           <div className="relative aspect-square w-full overflow-hidden rounded-[2rem] shadow-[0_24px_60px_rgba(0,0,0,0.18)] sm:aspect-[16/10]">
             <img
-              alt="Block auditorium with warm lighting"
-              src="/landing/block.png"
+              alt="Campus canteen counter at morning break"
+              src="/landing/campus.png"
               loading="eager"
               decoding="async"
               className="absolute inset-0 h-full w-full object-cover"

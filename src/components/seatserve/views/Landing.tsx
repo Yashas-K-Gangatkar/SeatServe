@@ -5,7 +5,7 @@
 // Seat QR tokens are RANDOM capabilities now (audit fix #15), so the demo
 // entry seat is resolved from /api/demo/entry instead of a hardcoded token.
 import { useEffect, useState } from 'react'
-import { Clapperboard, LockKeyhole, QrCode, Search, Info } from 'lucide-react'
+import { GraduationCap, LockKeyhole, QrCode, Search, Info } from 'lucide-react'
 import { get } from '@/lib/client/api'
 
 interface DemoEntry {
@@ -31,7 +31,7 @@ function useDemoEntry(): DemoEntry | null {
 }
 
 const HOW_STEPS = [
-  'Scan the QR at your seat — the menu opens with the stores inside your campus.',
+  'Scan the QR on your classroom door — the menu opens with the canteen inside your campus.',
   'Add items from different stores to ONE cart, then pay by UPI or card.',
   'Track live — each store has its own status ticket. Cancel with automatic money-back until the kitchen accepts.',
   'Staff run scoped consoles — a kitchen sees only its tickets, runners their own runs, the campus admin the whole venue.',
@@ -40,7 +40,7 @@ const HOW_STEPS = [
 export default function SeatLanding({ go }: { go: (path: string) => void }) {
   const entry = useDemoEntry()
   const seatToken = entry?.aurora?.qrToken ?? null
-  const seatLabel = entry?.aurora ? `Seat ${entry.aurora.seat}` : 'your seat'
+  const seatLabel = entry?.aurora ? `Room ${entry.aurora.classroom}` : 'your classroom'
   const nexoraToken = entry?.nexora?.qrToken ?? null
 
   const consoles = [
@@ -62,7 +62,7 @@ export default function SeatLanding({ go }: { go: (path: string) => void }) {
             href: `#/seat/${nexoraToken}` as string | null,
             icon: QrCode,
             title: `Customer · ${entry?.nexora?.campus} ${entry?.nexora?.seat}`,
-            sub: 'SECOND MALL — same platform, isolated stores, proves multi-tenancy',
+            sub: 'SECOND CAMPUS — same platform, isolated stores, proves multi-tenancy',
             tint: 'text-sky-600 bg-sky-100',
             tag: 'ISOLATION',
           },
@@ -90,11 +90,11 @@ export default function SeatLanding({ go }: { go: (path: string) => void }) {
     <div className="mx-auto w-full max-w-5xl px-4 pb-16 pt-10 sm:px-6">
       {/* hero */}
       <header className="mb-10">
-        <p className="mb-2 text-xs font-extrabold tracking-[0.18em] text-orange-600">AURORA MALL · MULTI-STORE IN-SEAT ORDERING</p>
+        <p className="mb-2 text-xs font-extrabold tracking-[0.18em] text-orange-600">CAMPUS CANTEEN · CLASSROOM DOOR ORDERING</p>
         <h1 className="max-w-2xl text-4xl font-black leading-[1.05] tracking-tight text-stone-900 sm:text-6xl">
-          Snacks, pizza &amp; chai —{' '}
+          Snacks, chai &amp; momos —{' '}
           <span className="bg-gradient-to-r from-amber-500 via-orange-500 to-rose-500 bg-clip-text text-transparent">
-            delivered to your seat.
+            delivered to your classroom.
           </span>
         </h1>
         <p className="mt-4 max-w-xl text-sm leading-relaxed text-stone-600 sm:text-base">
@@ -149,7 +149,7 @@ export default function SeatLanding({ go }: { go: (path: string) => void }) {
       {/* how it works */}
       <section className="mt-10 rounded-2xl border border-border bg-card p-5 sm:p-6" aria-label="How it works">
         <div className="flex items-center gap-2">
-          <Clapperboard className="h-5 w-5 text-orange-500" aria-hidden />
+          <GraduationCap className="h-5 w-5 text-orange-500" aria-hidden />
           <h2 className="font-bold">How it works</h2>
         </div>
         <ol className="mt-4 grid gap-3 sm:grid-cols-2">
@@ -180,7 +180,7 @@ export default function SeatLanding({ go }: { go: (path: string) => void }) {
           {[
             { p: 'Payments', t: 'Real UPI & cards', d: 'Razorpay checkout — pay once and every store is routed its share automatically.' },
             { p: 'Cancel window', t: 'Change of mind?', d: 'Cancel with automatic money-back until a kitchen taps Accept — then it locks.' },
-            { p: 'Tracking', t: 'Live per-store status', d: 'Accepted → preparing → ready → runner picks up → at your seat, in realtime.' },
+            { p: 'Tracking', t: 'Live per-store status', d: 'Accepted → preparing → ready → runner picks up → at your classroom door, in realtime.' },
             { p: 'Staff', t: 'Scoped consoles', d: 'Kitchen, runner, block and campus roles each see only their own work.' },
           ].map((ph) => (
             <div key={ph.p} className="rounded-2xl border border-stone-200 bg-white p-4">

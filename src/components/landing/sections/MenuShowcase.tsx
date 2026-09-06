@@ -20,15 +20,15 @@ type MenuItem = {
   emoji: string
 }
 
+// Mirrors the LIVE demo canteen menu (same items + photos the Campus Canteen
+// store serves — scripts/seed-campus-demo.mjs). One counter, real prices.
 const MENU: MenuItem[] = [
-  { name: 'Margherita (10")', price: 250, img: 'pizza', store: 'Pizza Corner', emoji: '🍕' },
-  { name: 'Butter Popcorn (L)', price: 220, img: 'popcorn', store: 'Block Snacks', emoji: '🍿' },
-  { name: 'Nachos with Cheese', price: 240, img: 'nachos', store: 'Block Snacks', emoji: '🍿' },
-  { name: 'Cold Coffee', price: 140, img: 'coffee', store: 'Block Snacks', emoji: '🍿' },
-  { name: 'Paneer Tikka Wrap', price: 210, img: 'wrap', store: 'Wrap House', emoji: '🌯' },
-  { name: 'Peri Peri Fries', price: 110, img: 'fries', store: 'Wrap House', emoji: '🌯' },
-  { name: 'Masala Dosa', price: 120, img: 'dosa', store: 'Dosa Junction', emoji: '🥘' },
-  { name: 'Gulab Jamun (2 pc)', price: 80, img: 'jamun', store: 'Mithai', emoji: '🍮' },
+  { name: 'Samosa (2 pcs)', price: 20, img: '/menu/samosa.jpg', store: 'Campus Canteen', emoji: '🥟' },
+  { name: 'Masala Chai', price: 15, img: '/menu/masala-chai.jpg', store: 'Campus Canteen', emoji: '☕' },
+  { name: 'Filter Coffee', price: 20, img: '/menu/filter-coffee.jpg', store: 'Campus Canteen', emoji: '☕' },
+  { name: 'Veg Momo (6 pcs)', price: 40, img: '/menu/momo.jpg', store: 'Campus Canteen', emoji: '🥟' },
+  { name: 'Peri Peri Fries', price: 35, img: '/menu/peri-peri-fries.jpg', store: 'Campus Canteen', emoji: '🍟' },
+  { name: 'Cold Coffee', price: 30, img: '/menu/cold-coffee.jpg', store: 'Campus Canteen', emoji: '🥤' },
 ]
 
 export function MenuShowcase() {
@@ -55,7 +55,7 @@ export function MenuShowcase() {
           variants={fadeUp}
           className="mt-3 text-center text-base text-[#6F6F6F]"
         >
-          Real items from the stores at Aurora Campus — swipe through, tap add to
+          Real items from the campus canteen — swipe through, tap add to
           open the live demo.
         </motion.p>
       </motion.div>
@@ -78,7 +78,7 @@ export function MenuShowcase() {
           >
             <div className="relative aspect-video w-full overflow-hidden">
               <img
-                src={`/landing/${item.img}.png`}
+                src={item.img}
                 alt={item.name}
                 loading="lazy"
                 decoding="async"
@@ -124,7 +124,7 @@ export function MenuShowcase() {
             See Full Menu →
           </span>
           <span className="mt-1 text-xs text-[#8B8B8B]">
-            Every store · live demo
+            Full canteen menu · live demo
           </span>
         </motion.a>
       </motion.div>
