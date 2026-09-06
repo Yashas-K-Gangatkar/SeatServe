@@ -1136,3 +1136,25 @@ Stage Summary:
 - Owner actions handed over: (1) Vercel Firewall -> Attack Challenge Mode / rate-limit rule = the flood-stopper, (2) rotate the Vercel token he pasted in chat
 - Blockers cleared: .env.prod-db RESTORED from Vercel env API (asha password rotation unblocked); Order.scheduledFor column live on Neon (scheduled delivery deployed)
 - Still pending: chai revert to ₹20 (PATCH pricePaise 2000) when owner says test done; vercel.json cron restore
+---
+Task ID: 37
+Agent: Super Z (main)
+Task: "Remove all the theatre thing from backend and frontend, add all new university thing — how will university get into our web and how will clg class students make order (use ultra logic)"
+
+Work Log:
+- Read all commits + worklog + full schema first; designed the pivot as a compiler-driven rename with ZERO database loss
+- Bulk rename (scripts/rename-theatre-to-campus.py, 139 files): Mall→Campus, Cinema→Block, Screen→Classroom, Showtime→Lecture, movieTitle→subject, MALL_ADMIN→CAMPUS_ADMIN, CINEMA_MANAGER→BLOCK_MANAGER, SeatServe→NotiFetch labels; emails + @media screen masked
+- SCHEMA SAFETY: @@map("Mall")/@@map("Cinema")/@@map("Screen")/@@map("Showtime") + @map on every FK (mallId/cinemaId/screenId/showtimeId/movieTitle) — prisma db push reports ONLY additive changes; prod Neon push verified (doorQrToken col, seatLabel col, seatId nullable). First push attempt dropped local sandbox tables (missing @@map) — caught, fixed via git restore of db/custom.db + remap, zero prod impact
+- Roles: normalizeRole() legacy bridge (MALL_ADMIN/CINEMA_MANAGER strings still work) + Neon UPDATE executed (asha→CAMPUS_ADMIN, ramesh→BLOCK_MANAGER; roles table verified)
+- Door-QR student flow: Classroom.doorQrToken (new), /api/context + POST /api/orders accept seat OR door token (mode 'seat'|'door'), Order.seatId now optional + seatLabel, seat-null fallbacks across kitchen/runner/overview/tracking, SeatPage door-mode seat/roll input, CheckoutSheet passes seatLabel + ULTRA lecture pre-select (checkout opens pre-picked to the ⚡ next lecture slot = food lands at the bell)
+- University onboarding: POST /api/onboard/campus (public, rate-limited 5/h, hard caps: 40 rooms/100 seats) creates Campus+Block+N classrooms+door QRs+seats+canteen (KYC PENDING)+BLOCK_MANAGER (email login)+zone+runner+rolling 'Break' lecture per room (orderable minute-one, auto-rolls till real timetable); GET /api/onboard/qr + /onboard/print = printable door sticker sheet; /onboard wizard page with email login field
+- Campus demo seed ready: scripts/seed-campus-demo.mjs (Nova Degree College · Science Block · 10 rooms · 6-item canteen menu from /menu photos · manager@nova.demo) — dogfoods the public onboarding API; waits for deploy
+- Copy polish: FlowDemo/StepPanels 'Nova Degree College · Science Wing A', FAQ armrest→classroom door, WhySeatServe pain-points campus-ified; landing has zero cinema words
+- Gates: tsc 0, eslint 0, bun test 93/93, build OK (middleware + /onboard routes registered). Committed def6144 as Yashas, pushed to origin/main
+- DEPLOY BLOCKED: Vercel GitHub webhook silent since Sep 4 AND manual API trigger returns resource_creation_blocked — 'Your Team exceeded our fair use limits and has been blocked'. notifetch.in now serves HTTP 402 (site SUSPENDED). Sandbox reset also wiped .env.prod-db — restored from Vercel env API again
+- FLOOD EVIDENCE captured by Task 36 hit-audit (pulled from Neon): Sep 5 = 179,080 requests bot:curl-wget vs 2 browser (human) + 2 googlebot + 1 bingbot — 99.99% one scripted bot. This is the appeal exhibit + the rate-limit rule target
+
+Stage Summary:
+- Campus pivot COMPLETE and green on GitHub main; deploy + college-demo seeding fire the moment the Vercel fair-use block is lifted (owner must resolve in dashboard: appeal w/ bot evidence or upgrade; then Firewall → Attack Challenge Mode + >30 req/min per-IP block rule FIRST, else the bot re-burns the account)
+- notifetch.in DOWN (HTTP 402) until then; mall demo data + ramesh login + live orders intact in Neon
+- Pending: chai revert ₹2→₹20 (owner test), campus demo seed after deploy, HitAudit 24h read for the Vercel graph comparison
