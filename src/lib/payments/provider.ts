@@ -134,9 +134,12 @@ export function cashfreeSplits(input: SplitInstructionInput) {
 
 const mockAdapter: PaymentProviderAdapter = {
   id: 'SANDBOX_MOCK',
-  signatureHeaders: ['x-seatserve-signature'],
+  // Campus pivot renamed the wire header (seatserve → notifetch). The new name
+  // is canonical; the cinema-era header is still accepted so older scripts and
+  // saved integrations keep working.
+  signatureHeaders: ['x-notifetch-signature', 'x-seatserve-signature'],
   verifyAndNormalize(headers, rawBody) {
-    const signature = headers.get('x-seatserve-signature') ?? ''
+    const signature = headers.get('x-notifetch-signature') ?? headers.get('x-seatserve-signature') ?? ''
     if (!verifySignature(rawBody, signature, webhookSecret())) {
       return { ok: false, status: 401, error: 'Invalid webhook signature' }
     }

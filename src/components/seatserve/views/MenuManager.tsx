@@ -4,9 +4,9 @@
 // Owners create menu items and mark items out of stock (86'd) in one place.
 // STORE_MANAGER: their own store. CAMPUS_ADMIN: pick any store in the campus.
 import { useCallback, useEffect, useState } from 'react'
-import { ChevronLeft, Plus, UtensilsCrossed, PackageX, PackageCheck, Loader2, ImageOff, Pencil } from 'lucide-react'
+import { ChevronLeft, Plus, UtensilsCrossed, PackageX, PackageCheck, Loader2, ImageOff, Pencil, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
-import { get, post, patch, ApiError } from '@/lib/client/api'
+import { get, post, patch, del, ApiError } from '@/lib/client/api'
 import { MENU_IMAGES } from '@/lib/menu-images'
 import StaffGate from '../StaffGate'
 import { Spinner, LoadError, EmptyState, VegMark, rupees } from '../ui-bits'
@@ -51,6 +51,9 @@ function MenuBoard({ go }: { go: (p: string) => void }) {
   const [busyId, setBusyId] = useState<string | null>(null)
   const [editPriceId, setEditPriceId] = useState<string | null>(null)
   const [priceDraft, setPriceDraft] = useState('')
+  // two-step delete: first tap arms the button ("Sure?"), second tap removes.
+  // Auto-disarms after 4s so a stray tap can never silently kill an item.
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null)
 
   const load = useCallback(
     async (id?: string | null) => {
@@ -79,6 +82,28 @@ function MenuBoard({ go }: { go: (p: string) => void }) {
       void load(storeId)
     } catch (err) {
       toast.error(err instanceof ApiError ? err.message : 'Could not update the item')
+    } finally {
+      setBusyId(null)
+    }
+  }
+
+  const armDelete = (item: MenuItem) => {
+    setConfirmDeleteId((cur) => {
+      if (cur === item.id) return cur
+      window.setTimeout(() => setConfirmDeleteId((c) => (c === item.id ? null : c)), 4000)
+      return item.id
+    })
+  }
+
+  const deleteItem = async (item: MenuItem) => {
+    setBusyId(item.id)
+    try {
+      await del(`/api/products/${item.id}`)
+      toast.success(`${item.name} removed from the menu`)
+      setConfirmDeleteId(null)
+      void load(storeId)
+    } catch (err) {
+      toast.error(err instanceof ApiError ? err.message : 'Could not remove the item')
     } finally {
       setBusyId(null)
     }
@@ -216,6 +241,21 @@ function MenuBoard({ go }: { go: (p: string) => void }) {
                         <span className="truncate">allergens: {item.allergens}</span>
                       </>
                     ) : null}
+                    <span aria-hidden>·</span>
+                    <button
+                      onClick={() => (confirmDeleteId === item.id ? void deleteItem(item) : armDelete(item))}
+                      disabled={busyId === item.id}
+                      className={`inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 font-bold transition ${confirmDeleteId === item.id ? 'bg-red-100 text-red-700 ring-1 ring-red-300 hover:bg-red-200' : 'text-stone-400 hover:bg-red-50 hover:text-red-600'}`}
+                      aria-label={confirmDeleteId === item.id ? `Confirm removing ${item.name} from the menu` : `Remove ${item.name} from the menu`}
+                    >
+                      {confirmDeleteId === item.id ? (
+                        <>Sure?</>
+                      ) : (
+                        <>
+                          <Trash2 className="h-3 w-3" aria-hidden /> Delete
+                        </>
+                      )}
+                    </button>
                   </p>
                   {editPriceId === item.id && (
                     <div className="mt-2 flex items-center gap-2">
