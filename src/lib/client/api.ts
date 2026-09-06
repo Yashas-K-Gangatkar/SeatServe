@@ -1,4 +1,4 @@
-// SeatServe — typed API client (relative paths only; gateway-friendly)
+// NotiFetch — typed API client (relative paths only; gateway-friendly)
 import type { ApiEnvelope } from './types'
 
 export class ApiError extends Error {

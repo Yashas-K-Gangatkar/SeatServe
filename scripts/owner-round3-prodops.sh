@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# Owner round 3 prod ops (Task 25-a / 25-d), via live API as mall admin:
-#   1. login asha (MALL_ADMIN)
+# Owner round 3 prod ops (Task 25-a / 25-d), via live API as campus admin:
+#   1. login asha (CAMPUS_ADMIN)
 #   2. list staff  → find bhagya@gmail.com + diag-qa throwaway
 #   3. overview    → find "milk products" store id
 #   4. REASSIGN bhagya → STORE_MANAGER @ milk products
@@ -13,7 +13,7 @@ JAR="/tmp/nf-asha3.jar"
 code() { curl -s -o /tmp/nf3.json -w '%{http_code}' "$@"; }
 jqget() { python3 -c "import sys,json;d=json.load(sys.stdin);print(d$1)" 2>/dev/null || echo PARSE_FAIL; }
 
-echo '── 1. mall admin login'
+echo '── 1. campus admin login'
 C=$(code -c "$JAR" -X POST "$BASE/api/auth/login" -H 'Content-Type: application/json' \
   -d '{"email":"asha@seatserve.demo","password":"demo1234"}')
 echo "login=$C"
@@ -46,4 +46,4 @@ fi
 
 echo '── 6. verify staff list'
 C=$(code -b "$JAR" "$BASE/api/admin/staff")
-python3 -c "import json;d=json.load(open('/tmp/nf3.json'));[print('-',s['name'],s['email'],s['role'],'@',s.get('storeName') or s.get('cinemaName') or 'mall','active' if s['isActive'] else 'DISABLED') for s in d['data']['staff']]"
+python3 -c "import json;d=json.load(open('/tmp/nf3.json'));[print('-',s['name'],s['email'],s['role'],'@',s.get('storeName') or s.get('cinemaName') or 'campus','active' if s['isActive'] else 'DISABLED') for s in d['data']['staff']]"

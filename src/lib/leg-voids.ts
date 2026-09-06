@@ -1,6 +1,6 @@
-// SeatServe — store-leg void math for settlement fairness (no refunds).
+// NotiFetch — store-leg void math for settlement fairness (no refunds).
 //
-// POLICY: the cinema does not refund online. When a store leg is cancelled
+// POLICY: the block does not refund online. When a store leg is cancelled
 // before fulfilment, the only money effect is SETTLEMENT-INTERNAL: negative
 // VOIDED rows so the store is never paid for food it never made. Customer
 // exceptions are resolved in person at the counter.
@@ -86,7 +86,7 @@ export async function voidStoreLeg(orderId: string, storeId: string): Promise<{ 
     entityType: 'StoreTicket',
     entityId: ticket.id,
     orderId,
-    mallId: order.mallId,
+    campusId: order.campusId,
     meta: { storeId, voidTotalPaise: reversal.voidTotalPaise, ticketCode: ticket.ticketCode },
   })
 

@@ -1,7 +1,7 @@
 /**
- * SeatServe — Tester Hall seeder (idempotent, token-stable).
+ * NotiFetch — Tester Hall seeder (idempotent, token-stable).
  *
- * Creates (or reuses) a dedicated "Tester Hall" screen under
+ * Creates (or reuses) a dedicated "Tester Hall" classroom under
  * Aurora Cineplex — Wing A with a 10×10 seat grid (rows A–J × seats 1–10,
  * 100 seats). Every seat gets a UNIQUE QR token taken from
  * scripts/tester-hall-manifest.json — the manifest is created on first run
@@ -13,8 +13,8 @@
  * forever, so the token per seat is frozen in the manifest file. The
  * manifest intentionally stays OUT of git — keep it next to the printed kit.
  *
- * Showtime: one active show, demoAutoRoll=true — the demo-roll guardian
- * (rollStaleShowtimes) keeps ordering open forever, exactly like Screen 3.
+ * Lecture: one active show, demoAutoRoll=true — the demo-roll guardian
+ * (rollStaleShowtimes) keeps ordering open forever, exactly like Classroom 3.
  *
  * Run (sandbox SQLite):  bun scripts/seed-tester-hall.ts
  * Run (production):      see scripts/seed-tester-hall-prod.mjs
@@ -40,23 +40,23 @@ async function main() {
   let created = 0
   let reused = 0
 
-  const mall = await db.mall.findFirst({ where: { name: 'Aurora Mall' } })
-  if (!mall) throw new Error('Aurora Mall not found — run the demo seed first (bun run db:seed)')
-  const cinema = await db.cinema.findFirst({ where: { mallId: mall.id, wing: 'A' } })
-  if (!cinema) throw new Error('Aurora Cineplex — Wing A not found')
+  const campus = await db.campus.findFirst({ where: { name: 'Aurora Campus' } })
+  if (!campus) throw new Error('Aurora Campus not found — run the demo seed first (bun run db:seed)')
+  const block = await db.block.findFirst({ where: { campusId: campus.id, wing: 'A' } })
+  if (!block) throw new Error('Aurora Cineplex — Wing A not found')
 
-  let screen = await db.screen.findFirst({ where: { cinemaId: cinema.id, name: 'Tester Hall' } })
-  if (!screen) {
-    screen = await db.screen.create({
-      data: { cinemaId: cinema.id, name: 'Tester Hall', seatRows: ROWS.length, seatCols: COLS },
+  let classroom = await db.classroom.findFirst({ where: { blockId: block.id, name: 'Tester Hall' } })
+  if (!classroom) {
+    classroom = await db.classroom.create({
+      data: { blockId: block.id, name: 'Tester Hall', seatRows: ROWS.length, seatCols: COLS },
     })
-    console.log('✚ created screen Tester Hall')
+    console.log('✚ created classroom Tester Hall')
   }
 
   for (const row of ROWS) {
     for (let n = 1; n <= COLS; n++) {
       const code = `${row}-${n}`
-      const existing = await db.seat.findFirst({ where: { screenId: screen.id, code } })
+      const existing = await db.seat.findFirst({ where: { classroomId: classroom.id, code } })
       if (existing) {
         // keep the DB token authoritative; freeze it into the manifest
         manifest[code] = existing.qrToken
@@ -66,28 +66,28 @@ async function main() {
       const token = manifest[code] ?? generateQrToken()
       manifest[code] = token
       await db.seat.create({
-        data: { screenId: screen.id, code, rowLabel: row, seatNumber: n, qrToken: token },
+        data: { classroomId: classroom.id, code, rowLabel: row, seatNumber: n, qrToken: token },
       })
       created++
     }
   }
 
-  // Showtime — reuse an upcoming/active one if present, else create a rolling one.
-  const activeShows = await db.showtime.findMany({ where: { screenId: screen.id, isActive: true } })
+  // Lecture — reuse an upcoming/active one if present, else create a rolling one.
+  const activeShows = await db.lecture.findMany({ where: { classroomId: classroom.id, isActive: true } })
   if (activeShows.length === 0) {
-    await db.showtime.create({
+    await db.lecture.create({
       data: {
-        screenId: screen.id,
-        movieTitle: 'Tester Day — Open Show',
+        classroomId: classroom.id,
+        subject: 'Tester Day — Open Show',
         language: 'Hindi',
         startsAt: new Date(Date.now() + 2 * 60 * 60_000),
         orderCutoffMinutes: 30,
         demoAutoRoll: true,
       },
     })
-    console.log('✚ created rolling showtime (demoAutoRoll=true)')
+    console.log('✚ created rolling lecture (demoAutoRoll=true)')
   } else {
-    console.log(`= ${activeShows.length} active showtime(s) already on Tester Hall`)
+    console.log(`= ${activeShows.length} active lecture(s) already on Tester Hall`)
   }
 
   writeFileSync(MANIFEST, JSON.stringify(manifest, null, 2) + '\n')

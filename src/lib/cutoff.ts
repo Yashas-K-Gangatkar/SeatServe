@@ -1,4 +1,4 @@
-// SeatServe — showtime cutoff rules (pure)
+// NotiFetch — lecture cutoff rules (pure)
 
 export interface CutoffInfo {
   orderingOpen: boolean

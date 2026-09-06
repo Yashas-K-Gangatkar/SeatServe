@@ -1,4 +1,4 @@
-// SeatServe Phase 2 — client-side staff auth helpers.
+// NotiFetch Phase 2 — client-side staff auth helpers.
 // The session lives in an httpOnly cookie; the client only ever reads the
 // profile from /api/auth/me (it cannot touch or widen its own scope).
 'use client'
@@ -10,16 +10,16 @@ export interface StaffProfile {
   id: string
   name: string
   email: string | null
-  role: 'MALL_ADMIN' | 'CINEMA_MANAGER' | 'STORE_MANAGER' | 'KITCHEN_STAFF' | 'RUNNER'
-  mallId: string | null
-  cinemaId: string | null
+  role: 'CAMPUS_ADMIN' | 'BLOCK_MANAGER' | 'STORE_MANAGER' | 'KITCHEN_STAFF' | 'RUNNER'
+  campusId: string | null
+  blockId: string | null
   storeId: string | null
   runnerId: string | null
 }
 
 export const ROLE_LABELS: Record<StaffProfile['role'], string> = {
-  MALL_ADMIN: 'Mall Admin',
-  CINEMA_MANAGER: 'Cinema Manager',
+  CAMPUS_ADMIN: 'Campus Admin',
+  BLOCK_MANAGER: 'Block Manager',
   STORE_MANAGER: 'Store Manager',
   KITCHEN_STAFF: 'Kitchen Staff',
   RUNNER: 'Delivery Runner',

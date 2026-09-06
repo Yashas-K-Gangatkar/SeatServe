@@ -1,4 +1,4 @@
-// SeatServe Phase 3 — reconciliation: prove the money ledger is self-consistent.
+// NotiFetch Phase 3 — reconciliation: prove the money ledger is self-consistent.
 //
 // For every order in scope, five invariants must hold:
 //   R1  Σ positive split rows === order.totalPaise            (creation invariant)
@@ -7,7 +7,7 @@
 //   R4  every PAID order has exactly one SUCCESS payment and it is for totalPaise
 //   R5  every SUCCESS payment carries a signature-valid payment.captured event
 //
-// There are no online refunds (cinema policy): negative rows are settlement-
+// There are no online refunds (block policy): negative rows are settlement-
 // internal VOIDED rows for store legs cancelled before fulfilment. Legacy
 // REFUNDED rows from before the policy change are treated as adjustments too.
 //
@@ -26,16 +26,16 @@ export interface ReconciliationIssue {
 
 export interface ReconciliationReport {
   checkedAt: string
-  scope: { mallId: string | null; mallName: string | null }
+  scope: { campusId: string | null; mallName: string | null }
   ordersChecked: number
   healthy: boolean
   issues: ReconciliationIssue[]
   checks: Record<string, number> // per-check pass counts, for the UI
 }
 
-export async function reconcileOrders(mallId: string | null): Promise<ReconciliationReport> {
+export async function reconcileOrders(campusId: string | null): Promise<ReconciliationReport> {
   const orders = await db.order.findMany({
-    where: mallId ? { mallId } : {},
+    where: campusId ? { campusId } : {},
     select: { id: true, code: true, totalPaise: true, paymentStatus: true },
     orderBy: { placedAt: 'desc' },
     take: 500, // report bound — sandbox-sized
@@ -126,14 +126,14 @@ export async function reconcileOrders(mallId: string | null): Promise<Reconcilia
   }
 
   let mallName: string | null = null
-  if (mallId) {
-    const mall = await db.mall.findUnique({ where: { id: mallId }, select: { name: true } })
-    mallName = mall?.name ?? null
+  if (campusId) {
+    const campus = await db.campus.findUnique({ where: { id: campusId }, select: { name: true } })
+    mallName = campus?.name ?? null
   }
 
   return {
     checkedAt: new Date().toISOString(),
-    scope: { mallId, mallName },
+    scope: { campusId, mallName },
     ordersChecked: orders.length,
     healthy: issues.length === 0,
     issues,

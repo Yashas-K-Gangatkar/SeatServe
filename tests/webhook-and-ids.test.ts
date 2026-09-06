@@ -1,4 +1,4 @@
-// SeatServe — webhook signing, verification & id generation
+// NotiFetch — webhook signing, verification & id generation
 import { describe, test, expect } from 'bun:test'
 import { signPayload, verifySignature } from '../src/lib/webhook-sig'
 import { generateOrderCode, generateTicketCode, generatePaymentRef, generateEventId } from '../src/lib/ids'

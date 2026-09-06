@@ -1,6 +1,6 @@
 'use client'
 
-// SeatServe — client cart (Zustand + localStorage persistence, per seat token)
+// NotiFetch — client cart (Zustand + localStorage persistence, per seat token)
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 

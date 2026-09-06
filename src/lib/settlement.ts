@@ -1,4 +1,4 @@
-// SeatServe Phase 3 — settlement engine (ledger-driven).
+// NotiFetch Phase 3 — settlement engine (ledger-driven).
 //
 // The Split ledger is the single source of truth. STORE rows carry their own
 // commission & tax (set at order creation; negative adjustment rows carry
@@ -96,12 +96,12 @@ export interface SettlementBatchResult {
 
 /**
  * Creates PENDING Settlement batches for the given stores (default: every
- * store in the mall with settleable rows). Each batch snapshots the store's
+ * store in the campus with settleable rows). Each batch snapshots the store's
  * PENDING STORE rows + adjustment totals. Nothing is paid yet.
  */
-export async function runSettlementBatch(mallId: string, storeIds?: string[]): Promise<SettlementBatchResult> {
+export async function runSettlementBatch(campusId: string, storeIds?: string[]): Promise<SettlementBatchResult> {
   const stores = await db.store.findMany({
-    where: { mallId, ...(storeIds && storeIds.length > 0 ? { id: { in: storeIds } } : {}) },
+    where: { campusId, ...(storeIds && storeIds.length > 0 ? { id: { in: storeIds } } : {}) },
     orderBy: { name: 'asc' },
   })
 
@@ -169,11 +169,11 @@ export async function runSettlementBatch(mallId: string, storeIds?: string[]): P
   }
 
   await audit({
-    actorRole: 'MALL_ADMIN',
+    actorRole: 'CAMPUS_ADMIN',
     action: 'SETTLEMENT_BATCH_CREATED',
     entityType: 'Settlement',
     entityId: batches.map((b) => b.settlementId).join(','),
-    mallId,
+    campusId,
     meta: { batches: batches.length, totalPaise: batches.reduce((s, b) => s + b.amountPaise, 0), skipped: skipped.length },
   })
 
@@ -217,16 +217,16 @@ export async function processSettlement(
   void splitIds // snapshot retained in detail for the report
 
   await audit({
-    actorRole: 'MALL_ADMIN',
+    actorRole: 'CAMPUS_ADMIN',
     action: 'SETTLEMENT_PROCESSED',
     entityType: 'Settlement',
     entityId: settlement.id,
-    mallId: settlement.store.mallId,
+    campusId: settlement.store.campusId,
     meta: { storeName: settlement.store.name, amountPaise: settlement.amountPaise, utr },
   })
 
   await emitToRooms({
-    rooms: [`admin:${settlement.store.mallId}`, `store:${settlement.storeId}`],
+    rooms: [`admin:${settlement.store.campusId}`, `store:${settlement.storeId}`],
     event: 'settlement:update',
     data: { settlementId: settlement.id, storeName: settlement.store.name, status: 'PROCESSED', amountPaise: settlement.amountPaise },
   })

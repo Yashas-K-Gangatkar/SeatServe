@@ -1,6 +1,6 @@
 'use client'
 
-// SeatServe — shared UI atoms
+// NotiFetch — shared UI atoms
 import { cn } from '@/lib/utils'
 import { WifiOff, AlertTriangle, Loader2 } from 'lucide-react'
 

@@ -1,4 +1,4 @@
-// Task 33 — seed the MALL DEMO on live prod (notifetch.in), as asha (MALL_ADMIN):
+// Task 33 — seed the MALL DEMO on live prod (notifetch.in), as asha (CAMPUS_ADMIN):
 //   1. create "Wraphouse Kitchen" store + 6-item opening menu
 //   2. attach the shipped food photos to every item
 //   3. submit KYC (format-valid demo values) + VERIFY it
@@ -132,14 +132,14 @@ async function main() {
     console.log('[warn] no delivery zones found — runner skipped')
   }
 
-  // 6. demo seat QR token (Screen 1, seat A-1)
+  // 6. demo seat QR token (Classroom 1, seat A-1)
   const rq = await call('GET', '/api/admin/qr')
-  const screens = rq.json?.data?.screens ?? []
+  const classrooms = rq.json?.data?.classrooms ?? []
   let seatToken = null
-  for (const s of screens) {
+  for (const s of classrooms) {
     if (seatToken) break
-    const rqs = await call('GET', `/api/admin/qr?screenId=${s.id}`)
-    const seats = rqs.json?.data?.seats ?? rqs.json?.data?.screen?.seats ?? []
+    const rqs = await call('GET', `/api/admin/qr?classroomId=${s.id}`)
+    const seats = rqs.json?.data?.seats ?? rqs.json?.data?.classroom?.seats ?? []
     const a1 = seats.find((x) => x.code === 'A-1') ?? seats[0]
     if (a1) seatToken = a1.qrToken
   }

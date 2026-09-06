@@ -8,7 +8,7 @@
  *  - the AudioContext is only created inside a user gesture (browser policy);
  *    the first pointer press anywhere arms it, so cues start flowing naturally
  *  - `play()` is safe to call from anywhere; it no-ops while disabled,
- *    before unlock, on mobile lock-screen states, or on any failure
+ *    before unlock, on mobile lock-classroom states, or on any failure
  *
  * The preference is read through useSyncExternalStore so server HTML and
  * hydrated render always agree (no mismatch), and storage events keep

@@ -1,4 +1,4 @@
-// SeatServe — shared client-side API response types
+// NotiFetch — shared client-side API response types
 
 export interface CutoffData {
   orderingOpen: boolean
@@ -37,19 +37,22 @@ export interface StoreData {
 }
 
 export interface ContextResponse {
-  mall: { id: string; name: string; city: string }
-  cinema: { id: string; name: string; wing: string | null }
-  screen: { id: string; name: string }
-  seat: { id: string; code: string; qrToken: string }
-  showtime: {
+  /** 'seat' = per-seat QR (cinema style); 'door' = classroom door sticker (campus style). */
+  mode: 'seat' | 'door'
+  campus: { id: string; name: string; city: string }
+  block: { id: string; name: string; wing: string | null }
+  classroom: { id: string; name: string }
+  /** null in door mode — the student types their seat/roll label at checkout. */
+  seat: { id: string; code: string; qrToken: string } | null
+  lecture: {
     id: string
-    movieTitle: string
+    subject: string
     language: string | null
     startsAt: string
     cutoff: CutoffData
   } | null
   stores: StoreData[]
-  screenSeats: { code: string; qrToken: string }[]
+  classroomSeats: { code: string; qrToken: string }[]
   settings: { platformFeePct: number; walkBufferMin: number; paymentFeePct: number }
   serverTime: string
 }
@@ -69,7 +72,7 @@ export interface OrderCreateResponse {
   scheduledFor: string | null
   breakdown: BillBreakdown
   itemCount: number
-  seat: { code: string; screen: string; cinema: string }
+  seat: { code: string; classroom: string; block: string }
   cutoff: { cutoffAt: string; minutesUntilCutoff: number }
 }
 
@@ -110,8 +113,8 @@ export interface TrackingResponse {
   placedAt: string
   scheduledFor: string | null
   completedAt: string | null
-  location: { mall: string; cinema: string; screen: string; seat: string }
-  show: { movieTitle: string; startsAt: string; cutoffMinutesUntil: number | null } | null
+  location: { campus: string; block: string; classroom: string; seat: string }
+  show: { subject: string; startsAt: string; cutoffMinutesUntil: number | null } | null
   totals: { subtotalPaise: number; platformFeePaise: number; totalPaise: number }
   customer: { name: string | null; phone: string | null }
   stores: TrackingStore[]
@@ -131,10 +134,10 @@ export interface KitchenTicket {
   pickedUpAt: string | null
   deliveredAt: string | null
   prepEtaMinutes: number
-  screen: string
-  cinema: string
+  classroom: string
+  block: string
   seat: string
-  movieTitle: string | null
+  subject: string | null
   showStartsAt: string | null
   orderCode: string
   customerName: string | null
@@ -155,10 +158,10 @@ export interface RunnerQueueItem {
   orderCode: string
   storeName: string
   emoji: string | null
-  screen: string
-  cinema: string
+  classroom: string
+  block: string
   seat: string
-  movieTitle: string | null
+  subject: string | null
   readyAt: string | null
   scheduledFor: string | null
   assignedTo: string | null
@@ -166,7 +169,7 @@ export interface RunnerQueueItem {
 }
 
 export interface RunnerResponse {
-  mallId: string | null
+  campusId: string | null
   runners: { id: string; name: string; rating: number }[]
   activeRunnerId: string | null
   queue: RunnerQueueItem[]
@@ -178,10 +181,10 @@ export interface RunnerResponse {
     orderCode: string
     storeName: string
     emoji: string | null
-    screen: string
-    cinema: string
+    classroom: string
+    block: string
     seat: string
-    movieTitle: string | null
+    subject: string | null
     scheduledFor: string | null
     pickupLabel: string
     dropLabel: string
@@ -193,7 +196,7 @@ export interface RunnerResponse {
 }
 
 export interface AdminOverview {
-  scope: { role: string; label: string; mallId: string | null; cinemaId: string | null; storeId: string | null; realtimeMallId: string | null; mallName: string | null }
+  scope: { role: string; label: string; campusId: string | null; blockId: string | null; storeId: string | null; realtimeMallId: string | null; mallName: string | null }
   window: { since: string; label: string }
   kpis: {
     salesPaise: number
@@ -206,8 +209,8 @@ export interface AdminOverview {
   liveOrders: {
     code: string
     placedAt: string
-    screen: string
-    cinema: string
+    classroom: string
+    block: string
     seat: string
     totalPaise: number
     status: string
@@ -234,8 +237,8 @@ export interface AdminOverview {
 
 export interface QrResponse {
   origin: string
-  screens: { id: string; name: string; cinema: string; seatsCount: number }[]
-  screen: { id: string; name: string; cinema: string }
+  classrooms: { id: string; name: string; block: string; seatsCount: number }[]
+  classroom: { id: string; name: string; block: string }
   seats: { code: string; rowLabel: string; seatNumber: number; qrToken: string; target: string; dataUrl: string }[]
 }
 

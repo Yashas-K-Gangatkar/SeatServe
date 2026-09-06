@@ -28,7 +28,7 @@ const cols = (await c.query(
 console.log('store cols:', cols.join(', '))
 
 const store = (await c.query(
-  `SELECT id, name, "commissionPct", "kycStatus", "kycDetail", "isOpen", "mallId"
+  `SELECT id, name, "commissionPct", "kycStatus", "kycDetail", "isOpen", "campusId"
    FROM "${storeTable}" WHERE lower(name) LIKE '%milk%'`)).rows
 if (store.length !== 1) { console.log('STORE_MATCHES', store.length, JSON.stringify(store)); process.exit(1) }
 const s = store[0]

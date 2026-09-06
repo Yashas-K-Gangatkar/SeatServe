@@ -1,9 +1,9 @@
-// SeatServe — realtime room authorization tokens (pure, unit-testable).
+// NotiFetch — realtime room authorization tokens (pure, unit-testable).
 //
 // Audit fix #18: the socket.io hub accepted `subscribe` for ANY room from ANY
 // connection — an anonymous browser could join `admin` / `store:<id>` /
 // `runners` and receive ticket & order events. Now:
-//   • staff rooms are mall-scoped by name: admin:<mallId>, runners:<mallId>,
+//   • staff rooms are campus-scoped by name: admin:<campusId>, runners:<campusId>,
 //     store:<storeId> (unchanged shape)
 //   • joining one requires an HMAC-SHA256 token minted by /api/realtime/token
 //     AFTER requireStaff() has checked role + tenant scope

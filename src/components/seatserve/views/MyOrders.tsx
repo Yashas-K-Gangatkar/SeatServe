@@ -1,6 +1,6 @@
 'use client'
 
-// SeatServe — "Your orders" strip on the seat page.
+// NotiFetch — "Your orders" strip on the seat page.
 // Reads the orders this device placed from THIS seat (localStorage,
 // best-effort) and shows their live status right on the menu — so a
 // re-scan of the seat QR puts the customer straight back on top of their

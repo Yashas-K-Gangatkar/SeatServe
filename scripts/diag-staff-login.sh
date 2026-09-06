@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Controlled staff-login E2E on PROD + repair of bhagya's credentials.
-# 1) login as mall admin  2) create throwaway staff  3) login with shown pw
+# 1) login as campus admin  2) create throwaway staff  3) login with shown pw
 # 4) PATCH reset          5) login with new pw       6) deactivate throwaway
 # 7) SET a fresh password for bhagya@gmail.com and PROVE it logs in.
 set -uo pipefail
@@ -11,7 +11,7 @@ PW_NEW_BHAGYA="Wr4pHouseM0m"
 code() { curl -s -o /tmp/nf-out.json -w '%{http_code}' "$@"; }
 jqget() { python3 -c "import sys,json;d=json.load(sys.stdin);print(d$1)" 2>/dev/null || echo PARSE_FAIL; }
 
-echo '── 1. mall admin login'
+echo '── 1. campus admin login'
 C=$(code -c "$JAR" -X POST "$BASE/api/auth/login" -H 'Content-Type: application/json' \
   -d '{"email":"asha@seatserve.demo","password":"demo1234"}')
 echo "login=$C"

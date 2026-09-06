@@ -9,10 +9,10 @@ export function SiteFooter() {
       <div className="mx-auto grid max-w-5xl gap-8 px-4 py-12 sm:grid-cols-4 sm:px-6">
         <div>
           <p className="flex items-center gap-1.5 text-[17px] font-extrabold text-white" aria-hidden="true">
-            🍿 SeatServe
+            🍿 NotiFetch
           </p>
           <p className="mt-2 max-w-[220px] text-sm leading-[1.6]">
-            Snacks from every store, delivered to your cinema seat.
+            Snacks from every store, delivered to your block seat.
           </p>
         </div>
 
@@ -100,7 +100,7 @@ export function SiteFooter() {
         </nav>
       </div>
       <div className="border-t border-white/10 py-5 text-center text-[13px] text-stone-500">
-        © 2026 SeatServe · Payments by Razorpay · Orders fulfilled by venue outlets.
+        © 2026 NotiFetch · Payments by Razorpay · Orders fulfilled by venue outlets.
       </div>
     </footer>
   )

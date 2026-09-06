@@ -1,17 +1,17 @@
-// SeatServe — audit trail writer. Every money/state-relevant action lands here.
+// NotiFetch — audit trail writer. Every money/state-relevant action lands here.
 import { db } from '@/lib/db'
 
 export interface AuditEntry {
-  actorRole: string // CUSTOMER | KITCHEN_STAFF | RUNNER | MALL_ADMIN | SYSTEM | GATEWAY
+  actorRole: string // CUSTOMER | KITCHEN_STAFF | RUNNER | CAMPUS_ADMIN | SYSTEM | GATEWAY
   actorRef?: string
   action: string
   entityType: string
   entityId: string
   meta?: unknown
   orderId?: string
-  /** Denormalized tenant scope so /api/audit can filter exactly by mall even
+  /** Denormalized tenant scope so /api/audit can filter exactly by campus even
    *  for events that carry no orderId (store/product/auth events). */
-  mallId?: string | null
+  campusId?: string | null
 }
 
 export async function audit(entry: AuditEntry): Promise<void> {
@@ -25,7 +25,7 @@ export async function audit(entry: AuditEntry): Promise<void> {
         entityId: entry.entityId,
         meta: entry.meta === undefined ? null : JSON.stringify(entry.meta),
         orderId: entry.orderId ?? null,
-        mallId: entry.mallId ?? null,
+        campusId: entry.campusId ?? null,
       },
     })
   } catch (err) {

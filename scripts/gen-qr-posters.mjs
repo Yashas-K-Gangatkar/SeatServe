@@ -66,8 +66,8 @@ const indexRows = []
   for (const scr of seed) {
     const n = Math.ceil(scr.seats.length / PER_PAGE)
     const range = n === 1 ? `${pageNo}` : `${pageNo}–${pageNo + n - 1}`
-    const wing = scr.cinema.includes('Wing B') ? 'Wing B' : scr.cinema.includes('Wing A') ? 'Wing A' : '—'
-    indexRows.push(`<tr><td class="scr">${esc(scr.screen)}</td><td>${wing}</td><td class="num">${scr.seats.length}</td><td class="num">${range}</td></tr>`)
+    const wing = scr.block.includes('Wing B') ? 'Wing B' : scr.block.includes('Wing A') ? 'Wing A' : '—'
+    indexRows.push(`<tr><td class="scr">${esc(scr.classroom)}</td><td>${wing}</td><td class="num">${scr.seats.length}</td><td class="num">${range}</td></tr>`)
     pageNo += n
   }
 }
@@ -76,7 +76,7 @@ const coverHTML = `
 <section class="page cover">
   <div class="brand-row">
     <span class="brand">NotiFetch</span>
-    <span class="brand-tag">order food to your cinema seat</span>
+    <span class="brand-tag">order food to your block seat</span>
   </div>
   <h1>Seat QR<br/>Stickers</h1>
   <p class="lede">Print this file at <b>100% scale on A4</b>, cut along the dashed lines,
@@ -98,7 +98,7 @@ const coverHTML = `
         <span class="chip">Delivered to seat</span>
       </div>
       <table class="index">
-        <thead><tr><th>Screen</th><th>Wing</th><th class="r">Stickers</th><th class="r">Pages</th></tr></thead>
+        <thead><tr><th>Classroom</th><th>Wing</th><th class="r">Stickers</th><th class="r">Pages</th></tr></thead>
         <tbody>${indexRows.join('')}</tbody>
       </table>
     </div>
@@ -106,7 +106,7 @@ const coverHTML = `
       <p class="sample-title">Every sticker looks like this</p>
       <div class="card sample">
         <img src="${sample.qr}" alt="Sample seat QR code" />
-        <p class="seat">${esc(seed[0].screen)} · ${esc(sample.code)}</p>
+        <p class="seat">${esc(seed[0].classroom)} · ${esc(sample.code)}</p>
         <p class="sub">scan to order · notifetch.in</p>
       </div>
       <p class="sample-note">Sticker paper tip: matte A4 sticker sheets (or 65 gsm paper + glue stick) scan best — avoid glossy lamination directly over the code.</p>
@@ -114,7 +114,7 @@ const coverHTML = `
   </div>
 
   <footer class="cover-foot">
-    <span>${rendered} stickers · ${seed.length} screens · Aurora Cineplex</span>
+    <span>${rendered} stickers · ${seed.length} classrooms · Aurora Cineplex</span>
     <span>notifetch.in · generated ${today}</span>
   </footer>
 </section>`
@@ -125,7 +125,7 @@ const stickerPages = screenPages.map(({ scr, seats, part, partTotal, pageNo }) =
     .map(
       (s) => `<div class="card">
         <img src="${s.qr}" alt="QR for seat ${esc(s.code)}" />
-        <p class="seat">${esc(scr.screen)} · ${esc(s.code)}</p>
+        <p class="seat">${esc(scr.classroom)} · ${esc(s.code)}</p>
         <p class="sub">scan to order · notifetch.in</p>
       </div>`,
     )
@@ -134,8 +134,8 @@ const stickerPages = screenPages.map(({ scr, seats, part, partTotal, pageNo }) =
 <section class="page">
   <header class="page-head">
     <div>
-      <p class="kicker">${esc(scr.cinema)}</p>
-      <h2>${esc(scr.screen)} <span class="part">· sheet ${part}/${partTotal}</span></h2>
+      <p class="kicker">${esc(scr.block)}</p>
+      <h2>${esc(scr.classroom)} <span class="part">· sheet ${part}/${partTotal}</span></h2>
     </div>
     <p class="pg">${pageNo} / ${totalPages}</p>
   </header>

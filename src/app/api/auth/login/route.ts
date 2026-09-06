@@ -54,8 +54,8 @@ export async function POST(request: Request) {
     recordLoginFail(failKey)
     return fail('Invalid email or password', 401)
   }
-  if (!user.isActive) return fail('This account is deactivated — contact your mall admin', 403)
-  if (!['MALL_ADMIN', 'CINEMA_MANAGER', 'STORE_MANAGER', 'KITCHEN_STAFF', 'RUNNER'].includes(user.role)) {
+  if (!user.isActive) return fail('This account is deactivated — contact your campus admin', 403)
+  if (!['CAMPUS_ADMIN', 'BLOCK_MANAGER', 'STORE_MANAGER', 'KITCHEN_STAFF', 'RUNNER'].includes(user.role)) {
     return fail('This account is not a staff account', 403)
   }
 
@@ -68,7 +68,7 @@ export async function POST(request: Request) {
       action: 'LOGIN_FAILED',
       entityType: 'User',
       entityId: user.id,
-      mallId: user.mallId,
+      campusId: user.campusId,
       meta: { email },
     })
     return fail('Invalid email or password', 401)
@@ -99,8 +99,8 @@ export async function POST(request: Request) {
     name: user.name,
     email: user.email,
     role: user.role,
-    mallId: user.mallId,
-    cinemaId: user.cinemaId,
+    campusId: user.campusId,
+    blockId: user.blockId,
     storeId: user.storeId,
     runnerId: user.runnerId,
   }

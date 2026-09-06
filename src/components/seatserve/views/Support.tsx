@@ -1,7 +1,7 @@
 'use client'
 
-// SeatServe — customer help (#/support/<code>)
-// Policy: the cinema does not refund online. Money issues are resolved in
+// NotiFetch — customer help (#/support/<code>)
+// Policy: the block does not refund online. Money issues are resolved in
 // person at the counter — this page gives the customer their order facts and
 // exactly where to go, so staff can look the order up by its tracking number.
 import { useCallback, useEffect, useState } from 'react'
@@ -57,7 +57,7 @@ export default function Support({ code, go }: { code: string; go: (p: string) =>
           <CircleHelp className="h-6 w-6 text-orange-500" aria-hidden /> Help & support
         </h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          Order {order.code} · {order.location.screen} · Seat {order.location.seat} · {rupees(order.totals.totalPaise)}
+          Order {order.code} · {order.location.classroom} · Seat {order.location.seat} · {rupees(order.totals.totalPaise)}
         </p>
       </header>
 
@@ -65,14 +65,14 @@ export default function Support({ code, go }: { code: string; go: (p: string) =>
         <p className="text-sm font-bold text-amber-900">Talk to us in person</p>
         <p className="mt-1.5 text-xs leading-relaxed text-amber-800">
           For anything wrong with this order — a missing item, a cancelled store, a payment question — walk to the food-court
-          counter (ground floor, next to {order.location.cinema}). Show them the tracking number below; staff can see the full
+          counter (ground floor, next to {order.location.block}). Show them the tracking number below; staff can see the full
           order history instantly.
         </p>
         <p className="mt-3 select-all rounded-xl bg-white px-3 py-2 text-center text-lg font-black tracking-[0.14em] text-stone-900">
           {order.code}
         </p>
         <p className="mt-2 text-center text-[11px] text-amber-700">
-          As per cinema policy, payments are not refunded online — the counter resolves everything on the spot.
+          As per block policy, payments are not refunded online — the counter resolves everything on the spot.
         </p>
       </section>
 
@@ -82,8 +82,8 @@ export default function Support({ code, go }: { code: string; go: (p: string) =>
         </h2>
         <ul className="mt-2 space-y-1.5 text-sm text-stone-700">
           <li>• Food-court counter — ground floor, beside the ticketed lobby</li>
-          <li>• Or ask any runner wearing the SeatServe badge</li>
-          <li>• In-screen help: flag the aisle host before the interval</li>
+          <li>• Or ask any runner wearing the NotiFetch badge</li>
+          <li>• In-classroom help: flag the aisle host before the interval</li>
         </ul>
       </section>
 

@@ -2,7 +2,7 @@
 
 // Hero flow demo — a 45-second looping "video" built in code: five scenes
 // (scan → browse → pay → cook → delivered) crossfade inside a phone frame
-// over a cinema backdrop. Silent, autoplays, caption overlay per step.
+// over a block backdrop. Silent, autoplays, caption overlay per step.
 // A real mp4 can later be dropped in here without changing the layout.
 import { useEffect, useState } from 'react'
 import Image from 'next/image'
@@ -59,8 +59,8 @@ function Scene({ index }: { index: number }) {
           <span className="absolute bottom-0 left-0 h-4 w-4 border-b-2 border-l-2 border-[#D4AF37]" />
           <span className="absolute bottom-0 right-0 h-4 w-4 border-b-2 border-r-2 border-[#D4AF37]" />
         </div>
-        <p className="text-[10px] font-bold text-white">Screen 3 · Seat B7</p>
-        <p className="text-[8px] text-stone-400">Aurora Mall · Cineplex Wing A</p>
+        <p className="text-[10px] font-bold text-white">Classroom 3 · Seat B7</p>
+        <p className="text-[8px] text-stone-400">Nova Degree College · Science Wing A</p>
       </div>
     )
   }
@@ -80,7 +80,7 @@ function Scene({ index }: { index: number }) {
             </span>
           </div>
         ))}
-        <p className="mt-auto text-[8px] text-stone-400">Pizza Corner · Cinema Snacks · Dosa Junction</p>
+        <p className="mt-auto text-[8px] text-stone-400">Pizza Corner · Block Snacks · Dosa Junction</p>
       </div>
     )
   }
@@ -90,7 +90,7 @@ function Scene({ index }: { index: number }) {
         <p className="text-[9px] font-black uppercase tracking-wider text-stone-500">One payment</p>
         <div className="rounded-xl border border-stone-200 bg-white p-2 text-[9px]">
           <div className="flex justify-between"><span className="text-stone-500">Pizza Corner</span><span className="font-bold tabular">₹249</span></div>
-          <div className="flex justify-between"><span className="text-stone-500">Cinema Snacks</span><span className="font-bold tabular">₹240</span></div>
+          <div className="flex justify-between"><span className="text-stone-500">Block Snacks</span><span className="font-bold tabular">₹240</span></div>
           <div className="mt-1 flex justify-between border-t border-dashed border-stone-200 pt-1">
             <span className="font-black">Total</span><span className="font-black tabular">₹489</span>
           </div>
@@ -121,7 +121,7 @@ function Scene({ index }: { index: number }) {
           </div>
         </div>
         <div className="rounded-xl border border-emerald-300 bg-emerald-50 p-2">
-          <p className="text-[8px] font-bold uppercase tracking-wider text-emerald-700">Cinema Snacks · Ticket</p>
+          <p className="text-[8px] font-bold uppercase tracking-wider text-emerald-700">Block Snacks · Ticket</p>
           <p className="text-[10px] font-black text-stone-900">Seat B7 · READY</p>
         </div>
         <p className="mt-auto text-[8px] text-stone-400">Each store sees only its own ticket</p>
@@ -161,7 +161,7 @@ export default function FlowDemo() {
   return (
     <div className="w-full">
       <div className="relative aspect-square w-full overflow-hidden rounded-[2rem] shadow-[0_24px_60px_rgba(0,0,0,0.18)] sm:aspect-[16/10]">
-        <Image src="/landing/cinema.png" alt="Cinema auditorium with warm lighting" fill priority sizes="(max-width: 640px) 100vw, 720px" className="object-cover" />
+        <Image src="/landing/block.png" alt="Block auditorium with warm lighting" fill priority sizes="(max-width: 640px) 100vw, 720px" className="object-cover" />
         <div className="absolute inset-0 bg-gradient-to-b from-black/10 via-transparent to-black/40" />
         {/* phone */}
         <div className="absolute left-1/2 top-1/2 w-[44%] max-w-[220px] min-w-[170px] -translate-x-1/2 -translate-y-1/2">

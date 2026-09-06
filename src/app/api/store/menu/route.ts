@@ -1,6 +1,6 @@
 // GET /api/store/menu?storeId=<id> — menu-management data for the owner console.
-// STORE_MANAGER: their own store only. MALL_ADMIN / CINEMA_MANAGER: any store
-// in their mall. Without storeId: the list of accessible stores. With storeId:
+// STORE_MANAGER: their own store only. CAMPUS_ADMIN / BLOCK_MANAGER: any store
+// in their campus. Without storeId: the list of accessible stores. With storeId:
 // full product list.
 import { db } from '@/lib/db'
 import { ok, fail } from '@/lib/api-helpers'
@@ -8,14 +8,14 @@ import { requireStaff } from '@/lib/auth-server'
 import { canAccessStore } from '@/lib/auth'
 
 export async function GET(request: Request) {
-  const auth = await requireStaff(request, ['STORE_MANAGER', 'MALL_ADMIN', 'CINEMA_MANAGER'])
+  const auth = await requireStaff(request, ['STORE_MANAGER', 'CAMPUS_ADMIN', 'BLOCK_MANAGER'])
   if ('error' in auth) return auth.error
   const user = auth.user
 
   const stores = await db.store.findMany({
     where:
-      user.role === 'MALL_ADMIN' || user.role === 'CINEMA_MANAGER'
-        ? { mallId: user.mallId ?? '__none__' }
+      user.role === 'CAMPUS_ADMIN' || user.role === 'BLOCK_MANAGER'
+        ? { campusId: user.campusId ?? '__none__' }
         : { id: user.storeId ?? '__none__' },
     include: { _count: { select: { products: true } } },
     orderBy: { name: 'asc' },

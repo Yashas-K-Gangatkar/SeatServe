@@ -6,7 +6,7 @@ import { runHealthChecks, type HealthCheck } from '@/lib/health'
 export const dynamic = 'force-dynamic'
 
 export const metadata = {
-  title: 'SeatServe — System status',
+  title: 'NotiFetch — System status',
   description: 'Live self-check: web, database, demo pipeline and realtime bridge.',
 }
 
@@ -40,7 +40,7 @@ export default async function HealthPage() {
           {/* overall badge */}
           <div className="flex items-center justify-between gap-3">
             <p className="flex items-center gap-1.5 text-[17px] font-extrabold tracking-tight">
-              <span aria-hidden>🍿</span> SeatServe
+              <span aria-hidden>🍿</span> NotiFetch
             </p>
             <span
               className={`inline-flex items-center gap-2 rounded-full px-3.5 py-1.5 text-[12px] font-extrabold uppercase tracking-wider ${

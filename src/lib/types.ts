@@ -1,4 +1,4 @@
-// SeatServe — shared types & constants (SQLite has no enums; these are the source of truth)
+// NotiFetch — shared types & constants (SQLite has no enums; these are the source of truth)
 
 export const ORDER_STATUSES = [
   'PENDING_PAYMENT',
@@ -9,7 +9,7 @@ export const ORDER_STATUSES = [
 ] as const
 export type OrderStatus = (typeof ORDER_STATUSES)[number]
 
-// No refund statuses — cinema policy: money is never returned online; the
+// No refund statuses — block policy: money is never returned online; the
 // counter resolves exceptions in person. (Legacy rows may still carry the
 // old values; the UI renders unknown values as raw text.)
 export const ORDER_PAYMENT_STATUSES = ['PENDING', 'PAID', 'FAILED'] as const
@@ -39,8 +39,8 @@ export const KYC_STATUSES = ['PENDING', 'VERIFIED', 'REJECTED'] as const
 
 export const ROLES = [
   'CUSTOMER',
-  'MALL_ADMIN',
-  'CINEMA_MANAGER',
+  'CAMPUS_ADMIN',
+  'BLOCK_MANAGER',
   'STORE_MANAGER',
   'KITCHEN_STAFF',
   'RUNNER',

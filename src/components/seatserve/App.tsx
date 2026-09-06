@@ -1,6 +1,6 @@
 'use client'
 
-// SeatServe — single-route hash router + app shell.
+// NotiFetch — single-route hash router + app shell.
 // Views: #/ · #/seat/<qrToken> · #/track/<code> · #/kitchen(/<storeId>)
 //        #/runner(/<runnerId>) · #/admin · #/qr · #/menu · #/support(/<code>)
 //        #/staff · #/staff/login   ← Phase 2 staff portal (separate site)
@@ -86,7 +86,7 @@ export default function SeatServeApp() {
   return (
     <div className="flex min-h-dvh flex-col">
       <OfflineBanner show={!online} />
-      <main className="flex-1" aria-label="SeatServe">
+      <main className="flex-1" aria-label="NotiFetch">
         {route.name === 'landing' && <Landing />}
         {route.name === 'seat' && <SeatPage qrToken={route.param ?? ''} go={navigate} />}
         {route.name === 'track' && <Tracking code={route.param ?? ''} go={navigate} />}
@@ -101,7 +101,7 @@ export default function SeatServeApp() {
       </main>
       {route.name !== 'landing' && (
         <footer className="print-hide mt-auto border-t border-border/60 py-4 text-center text-[11px] text-muted-foreground/70">
-          SeatServe · in-seat food ordering · secure UPI payments
+          NotiFetch · in-seat food ordering · secure UPI payments
         </footer>
       )}
     </div>

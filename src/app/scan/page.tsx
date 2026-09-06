@@ -123,10 +123,10 @@ export default function ScanPage() {
         <a
           href="/"
           className="flex items-center gap-1.5 text-[17px] font-extrabold"
-          aria-label="SeatServe home"
+          aria-label="NotiFetch home"
         >
           <Popcorn className="h-5 w-5 text-[#D4AF37]" aria-hidden />
-          SeatServe
+          NotiFetch
         </a>
 
         <div>

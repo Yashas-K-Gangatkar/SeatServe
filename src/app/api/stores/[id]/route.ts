@@ -1,7 +1,7 @@
 // PATCH /api/stores/[id] — store controls (open/close, rename, commission).
-// STORE_MANAGER: own store only. MALL_ADMIN / CINEMA_MANAGER: any store in
-// their mall — but renaming a store and changing commission are money/signage
-// decisions that stay with the MALL_ADMIN; the cinema manager gets floor
+// STORE_MANAGER: own store only. CAMPUS_ADMIN / BLOCK_MANAGER: any store in
+// their campus — but renaming a store and changing commission are money/signage
+// decisions that stay with the CAMPUS_ADMIN; the block manager gets floor
 // controls (open/close).
 // Money model: NO delivery fee (stores are next door); commission stays editable.
 import { z } from 'zod'
@@ -22,22 +22,22 @@ const bodySchema = z.object({
 
 export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
-  const auth = await requireStaff(request, ['STORE_MANAGER', 'MALL_ADMIN', 'CINEMA_MANAGER'])
+  const auth = await requireStaff(request, ['STORE_MANAGER', 'CAMPUS_ADMIN', 'BLOCK_MANAGER'])
   if ('error' in auth) return auth.error
   const user = auth.user
 
   const parsed = await parseBody(request, bodySchema)
   if ('error' in parsed) return parsed.error
 
-  // Rename + commission are owner decisions — the delegated cinema manager
+  // Rename + commission are owner decisions — the delegated block manager
   // runs the floor (open/close) but never touches signage or revenue share.
-  if (user.role === 'CINEMA_MANAGER' && (parsed.data.name !== undefined || parsed.data.commissionPct !== undefined)) {
-    return fail('Only the mall admin can rename a store or change its commission', 403)
+  if (user.role === 'BLOCK_MANAGER' && (parsed.data.name !== undefined || parsed.data.commissionPct !== undefined)) {
+    return fail('Only the campus admin can rename a store or change its commission', 403)
   }
 
   const store = await db.store.findUnique({ where: { id } })
   if (!store) return fail('Store not found', 404)
-  if (!canAccessStore(user, { id: store.id, mallId: store.mallId })) {
+  if (!canAccessStore(user, { id: store.id, campusId: store.campusId })) {
     return fail('Your account is not authorized for this store', 403)
   }
 
@@ -55,11 +55,11 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
       action: 'STORE_RENAMED',
       entityType: 'Store',
       entityId: id,
-      mallId: store.mallId,
+      campusId: store.campusId,
       meta: { previousName, newName: data.name },
     })
     await emitToRooms({
-      rooms: [`admin:${store.mallId}`, `store:${id}`],
+      rooms: [`admin:${store.campusId}`, `store:${id}`],
       event: 'store:update',
       data: { storeId: id, name: data.name },
     })
@@ -72,10 +72,10 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
       action: data.isOpen ? 'STORE_OPENED' : 'STORE_CLOSED',
       entityType: 'Store',
       entityId: id,
-      mallId: store.mallId,
+      campusId: store.campusId,
       meta: { name: store.name },
     })
-    await emitToRooms({ rooms: [`admin:${store.mallId}`], event: 'store:update', data: { storeId: id, isOpen: data.isOpen } })
+    await emitToRooms({ rooms: [`admin:${store.campusId}`], event: 'store:update', data: { storeId: id, isOpen: data.isOpen } })
   }
   if (data.commissionPct !== undefined) {
     await db.store.update({ where: { id }, data })
@@ -85,7 +85,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
       action: 'STORE_UPDATED',
       entityType: 'Store',
       entityId: id,
-      mallId: store.mallId,
+      campusId: store.campusId,
       meta: {
         name: store.name,
         ...(data.commissionPct !== undefined ? { commissionPct: data.commissionPct, previousPct: store.commissionPct } : {}),

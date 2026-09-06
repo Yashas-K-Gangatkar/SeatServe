@@ -14,9 +14,9 @@ export function AuxHeader({ wide = false }: { wide?: boolean }) {
         <Link
           href="/"
           className="flex items-center gap-1.5 text-[17px] font-extrabold tracking-tight"
-          aria-label="SeatServe home"
+          aria-label="NotiFetch home"
         >
-          <span aria-hidden="true">🍿</span> SeatServe
+          <span aria-hidden="true">🍿</span> NotiFetch
         </Link>
         <Link
           href="/scan"
@@ -52,7 +52,7 @@ export function AuxFooter({ legal = false }: { legal?: boolean }) {
         </>
       ) : (
         <>
-          © 2026 SeatServe ·{' '}
+          © 2026 NotiFetch ·{' '}
           <Link href="/" className="hover:text-[#1A1A1A]">
             Home
           </Link>

@@ -1,10 +1,10 @@
 'use client'
 
-// SeatServe — Team panel (admin board section): create and manage staff logins.
+// NotiFetch — Team panel (admin board section): create and manage staff logins.
 // Answers the owner question "how do I give a chef real access?": pick their
 // store + role, hand them an email + password. No Google/Gmail is involved —
-// the login ID is issued by the mall admin and the account is server-pinned
-// to that one store (they can never see another store's screen).
+// the login ID is issued by the campus admin and the account is server-pinned
+// to that one store (they can never see another store's classroom).
 
 import { useCallback, useEffect, useState } from 'react'
 import { KeyRound, Pencil, Plus, RefreshCw, Trash2, UserPlus, Users } from 'lucide-react'
@@ -21,19 +21,19 @@ interface StaffRow {
   isActive: boolean
   storeId: string | null
   storeName: string | null
-  cinemaId: string | null
+  blockId: string | null
   cinemaName: string | null
 }
 
 interface TeamData {
   staff: StaffRow[]
-  cinemas: { id: string; name: string }[]
+  blocks: { id: string; name: string }[]
   zones?: { id: string; name: string }[]
 }
 
 const ROLE_LABEL: Record<string, string> = {
-  MALL_ADMIN: 'Mall admin',
-  CINEMA_MANAGER: 'Cinema manager',
+  CAMPUS_ADMIN: 'Campus admin',
+  BLOCK_MANAGER: 'Block manager',
   STORE_MANAGER: 'Store manager',
   KITCHEN_STAFF: 'Kitchen staff',
   RUNNER: 'Runner',
@@ -41,9 +41,9 @@ const ROLE_LABEL: Record<string, string> = {
 
 const ROLE_HELP: Record<string, string> = {
   STORE_MANAGER: 'Runs one shop: menu, items, tickets',
-  KITCHEN_STAFF: 'Kitchen screen for ONE shop only — nothing else',
-  CINEMA_MANAGER: 'Screens, seats and QR sheets for one cinema',
-  RUNNER: 'Delivers ready orders from shops to screens & seats',
+  KITCHEN_STAFF: 'Kitchen classroom for ONE shop only — nothing else',
+  BLOCK_MANAGER: 'Screens, seats and QR sheets for one block',
+  RUNNER: 'Delivers ready orders from shops to classrooms & seats',
 }
 
 /** Unambiguous 12-char password: letters + digits, no 0/O/1/l/I. */
@@ -165,8 +165,8 @@ export default function TeamPanel({
         Staff sign in with the <b>email + password you give them</b> — never Gmail, never Google. The email is just a work
         login ID you create here (it does not need to be a real mailbox; nothing is emailed to it).
         {managerMode
-          ? ' Accounts you create are locked to YOUR store — they see only this shop’s kitchen screen.'
-          : ' Each account is locked to its own store — a chef can only ever see their shop’s kitchen screen.'}
+          ? ' Accounts you create are locked to YOUR store — they see only this shop’s kitchen classroom.'
+          : ' Each account is locked to its own store — a chef can only ever see their shop’s kitchen classroom.'}
       </p>
 
       {justCreated && (
@@ -221,7 +221,7 @@ export default function TeamPanel({
       {showForm && (
         <AddStaffForm
           stores={stores ?? []}
-          cinemas={data.cinemas}
+          blocks={data.blocks}
           zones={data.zones ?? []}
           managerMode={managerMode}
           busy={busy}
@@ -255,11 +255,11 @@ export default function TeamPanel({
                     )}
                   </p>
                   <p className="truncate text-[11px] text-muted-foreground">
-                    {s.email ?? 'no login'} · {s.storeName ?? s.cinemaName ?? 'mall-wide'}
+                    {s.email ?? 'no login'} · {s.storeName ?? s.cinemaName ?? 'campus-wide'}
                   </p>
                 </div>
                 <div className="flex shrink-0 items-center gap-1.5">
-                  {s.role !== 'MALL_ADMIN' && !managerMode && (
+                  {s.role !== 'CAMPUS_ADMIN' && !managerMode && (
                     <button
                       onClick={() => {
                         setEditFor({ id: s.id, name: s.name })
@@ -318,7 +318,7 @@ export default function TeamPanel({
                 <EditStaffForm
                   staff={s}
                   stores={stores ?? []}
-                  cinemas={data.cinemas}
+                  blocks={data.blocks}
                   busy={busy}
                   setBusy={setBusy}
                   onSaved={() => {
@@ -401,7 +401,7 @@ export default function TeamPanel({
 function EditStaffForm({
   staff,
   stores,
-  cinemas,
+  blocks,
   busy,
   setBusy,
   onSaved,
@@ -409,15 +409,15 @@ function EditStaffForm({
 }: {
   staff: StaffRow
   stores: { id: string; name: string; emoji: string | null }[]
-  cinemas: { id: string; name: string }[]
+  blocks: { id: string; name: string }[]
   busy: boolean
   setBusy: (v: boolean) => void
   onSaved: () => void
   onCancel: () => void
 }) {
-  const [role, setRole] = useState(staff.role as 'KITCHEN_STAFF' | 'STORE_MANAGER' | 'CINEMA_MANAGER')
+  const [role, setRole] = useState(staff.role as 'KITCHEN_STAFF' | 'STORE_MANAGER' | 'BLOCK_MANAGER')
   const [storeId, setStoreId] = useState(staff.storeId ?? stores[0]?.id ?? '')
-  const [cinemaId, setCinemaId] = useState(staff.cinemaId ?? cinemas[0]?.id ?? '')
+  const [blockId, setCinemaId] = useState(staff.blockId ?? blocks[0]?.id ?? '')
   const [error, setError] = useState<string | null>(null)
 
   const inputCls =
@@ -431,7 +431,7 @@ function EditStaffForm({
       const res = await patch<{ message: string }>(`/api/admin/staff/${staff.id}`, {
         action: 'REASSIGN',
         role,
-        ...(role === 'CINEMA_MANAGER' ? { cinemaId } : { storeId }),
+        ...(role === 'BLOCK_MANAGER' ? { blockId } : { storeId }),
       })
       toast.success(res.message ?? `${staff.name} updated`)
       onSaved()
@@ -451,15 +451,15 @@ function EditStaffForm({
           <select id={`edit-role-${staff.id}`} value={role} onChange={(e) => setRole(e.target.value as typeof role)} className={inputCls}>
             <option value="KITCHEN_STAFF">Kitchen staff (chef)</option>
             <option value="STORE_MANAGER">Store manager</option>
-            <option value="CINEMA_MANAGER">Cinema manager</option>
+            <option value="BLOCK_MANAGER">Block manager</option>
           </select>
           <p className="mt-1 text-[10px] text-muted-foreground">{ROLE_HELP[role]}</p>
         </div>
-        {role === 'CINEMA_MANAGER' ? (
+        {role === 'BLOCK_MANAGER' ? (
           <div>
-            <label className={labelCls} htmlFor={`edit-cinema-${staff.id}`}>Cinema</label>
-            <select id={`edit-cinema-${staff.id}`} value={cinemaId} onChange={(e) => setCinemaId(e.target.value)} className={inputCls}>
-              {cinemas.map((c) => (
+            <label className={labelCls} htmlFor={`edit-block-${staff.id}`}>Block</label>
+            <select id={`edit-block-${staff.id}`} value={blockId} onChange={(e) => setCinemaId(e.target.value)} className={inputCls}>
+              {blocks.map((c) => (
                 <option key={c.id} value={c.id}>{c.name}</option>
               ))}
             </select>
@@ -500,7 +500,7 @@ function EditStaffForm({
 
 function AddStaffForm({
   stores,
-  cinemas,
+  blocks,
   zones,
   managerMode = false,
   busy,
@@ -508,7 +508,7 @@ function AddStaffForm({
   onCreated,
 }: {
   stores: { id: string; name: string; emoji: string | null }[]
-  cinemas: { id: string; name: string }[]
+  blocks: { id: string; name: string }[]
   zones: { id: string; name: string }[]
   managerMode?: boolean
   busy: boolean
@@ -516,9 +516,9 @@ function AddStaffForm({
   onCreated: (email: string, password: string) => void
 }) {
   const [name, setName] = useState('')
-  const [role, setRole] = useState<'KITCHEN_STAFF' | 'STORE_MANAGER' | 'CINEMA_MANAGER' | 'RUNNER'>('KITCHEN_STAFF')
+  const [role, setRole] = useState<'KITCHEN_STAFF' | 'STORE_MANAGER' | 'BLOCK_MANAGER' | 'RUNNER'>('KITCHEN_STAFF')
   const [storeId, setStoreId] = useState(stores[0]?.id ?? '')
-  const [cinemaId, setCinemaId] = useState(cinemas[0]?.id ?? '')
+  const [blockId, setCinemaId] = useState(blocks[0]?.id ?? '')
   const [zoneId, setZoneId] = useState(zones[0]?.id ?? '')
   const [email, setEmail] = useState('')
   const [phone, setPhone] = useState('')
@@ -543,7 +543,7 @@ function AddStaffForm({
               email,
               phone,
               password,
-              ...(role === 'CINEMA_MANAGER' ? { cinemaId } : role === 'RUNNER' ? { zoneId } : { storeId }),
+              ...(role === 'BLOCK_MANAGER' ? { blockId } : role === 'RUNNER' ? { zoneId } : { storeId }),
             },
       )
       onCreated(email.toLowerCase(), password)
@@ -579,7 +579,7 @@ function AddStaffForm({
                 <option>Kitchen staff (chef) — your store only</option>
               </select>
             </div>
-            <p className="mt-1 text-[10px] text-muted-foreground">Pinned to YOUR store — the mall admin can promote or move people.</p>
+            <p className="mt-1 text-[10px] text-muted-foreground">Pinned to YOUR store — the campus admin can promote or move people.</p>
           </div>
         ) : (
           <div>
@@ -587,17 +587,17 @@ function AddStaffForm({
             <select id="staff-role" value={role} onChange={(e) => setRole(e.target.value as typeof role)} className={inputCls}>
               <option value="KITCHEN_STAFF">Kitchen staff (chef)</option>
               <option value="STORE_MANAGER">Store manager</option>
-              <option value="CINEMA_MANAGER">Cinema manager</option>
+              <option value="BLOCK_MANAGER">Block manager</option>
               <option value="RUNNER">Delivery runner</option>
             </select>
             <p className="mt-1 text-[10px] text-muted-foreground">{ROLE_HELP[role]}</p>
           </div>
         )}
-        {!managerMode && role === 'CINEMA_MANAGER' && (
+        {!managerMode && role === 'BLOCK_MANAGER' && (
           <div>
-            <label className={labelCls} htmlFor="staff-cinema">Cinema</label>
-            <select id="staff-cinema" value={cinemaId} onChange={(e) => setCinemaId(e.target.value)} className={inputCls}>
-              {cinemas.map((c) => (
+            <label className={labelCls} htmlFor="staff-block">Block</label>
+            <select id="staff-block" value={blockId} onChange={(e) => setCinemaId(e.target.value)} className={inputCls}>
+              {blocks.map((c) => (
                 <option key={c.id} value={c.id}>{c.name}</option>
               ))}
             </select>
@@ -608,7 +608,7 @@ function AddStaffForm({
             <label className={labelCls} htmlFor="staff-zone">Delivery zone</label>
             {zones.length === 0 ? (
               <p className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-[11px] font-bold text-amber-800">
-                No delivery zones exist yet in your mall — ask your platform contact to add one before creating runners.
+                No delivery zones exist yet in your campus — ask your platform contact to add one before creating runners.
               </p>
             ) : (
               <select id="staff-zone" value={zoneId} onChange={(e) => setZoneId(e.target.value)} className={inputCls}>
@@ -617,7 +617,7 @@ function AddStaffForm({
                 ))}
               </select>
             )}
-            <p className="mt-1 text-[10px] text-muted-foreground">Runners are matched to ready orders inside their zone&apos;s mall.</p>
+            <p className="mt-1 text-[10px] text-muted-foreground">Runners are matched to ready orders inside their zone&apos;s campus.</p>
           </div>
         )}
         {!managerMode && (role === 'KITCHEN_STAFF' || role === 'STORE_MANAGER') && (

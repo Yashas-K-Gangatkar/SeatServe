@@ -23,11 +23,11 @@ const FAQS = [
   },
   {
     q: 'Is this actually free to try?',
-    a: 'There is no fee to use the service — you pay only for your order, once, at checkout (UPI, card or netbanking). No booking charge, no subscription, and the payment screen always shows the exact amount before you confirm.',
+    a: 'There is no fee to use the service — you pay only for your order, once, at checkout (UPI, card or netbanking). No booking charge, no subscription, and the payment classroom always shows the exact amount before you confirm.',
   },
   {
     q: 'Which stores can I order from?',
-    a: 'Every food outlet inside the venue that has joined the platform — at Aurora Mall that is Cinema Snacks, Pizza Corner, Dosa Junction, Mithai & More and Wrap House, all in one cart.',
+    a: 'Every food outlet inside the venue that has joined the platform — at Aurora Campus that is Block Snacks, Pizza Corner, Dosa Junction, Mithai & More and Wrap House, all in one cart.',
   },
   {
     q: 'How do I pay?',
@@ -43,7 +43,7 @@ const FAQS = [
   },
   {
     q: "I'm staff — where do I sign in?",
-    a: 'At the staff sign-in page. Venue staff receive their own credentials from the venue manager — kitchen, runner, store, cinema and mall roles each see only their own scope.',
+    a: 'At the staff sign-in page. Venue staff receive their own credentials from the venue manager — kitchen, runner, store, block and campus roles each see only their own scope.',
   },
 ] as const
 

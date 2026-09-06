@@ -1,7 +1,7 @@
 // POST /api/orders/[code]/cancel — customer cancel BEFORE any store accepts.
 //
 // OWNER RULE (the refund window): from payment until the store taps
-// "Accept ticket" the customer may cancel from the tracking screen and the
+// "Accept ticket" the customer may cancel from the tracking classroom and the
 // money returns to source automatically. The moment ANY store leg is
 // accepted, the order is LOCKED — this endpoint refuses with 409 and the
 // customer UI hides the button. Stores are instructed to accept fast,
@@ -81,7 +81,7 @@ export async function POST(_request: Request, { params }: { params: Promise<{ co
     entityType: 'Order',
     entityId: order.id,
     orderId: order.id,
-    mallId: order.mallId,
+    campusId: order.campusId,
     meta: { code: order.code, ticketsCancelled: claimed, windowMs: CANCEL_WINDOW_MS },
   })
 
@@ -102,7 +102,7 @@ export async function POST(_request: Request, { params }: { params: Promise<{ co
         entityType: 'Payment',
         entityId: payment.id,
         orderId: order.id,
-        mallId: order.mallId,
+        campusId: order.campusId,
         meta: { code: order.code, gatewayPaymentId: payment.providerRef, amountPaise: order.totalPaise, error: r.error },
       })
       return fail('Order cancelled — the refund needs manual completion and support has been notified. No food will be made.', 502)
@@ -118,7 +118,7 @@ export async function POST(_request: Request, { params }: { params: Promise<{ co
     entityType: 'Payment',
     entityId: payment.id,
     orderId: order.id,
-    mallId: order.mallId,
+    campusId: order.campusId,
     meta: { code: order.code, provider: refund.provider, gatewayRefundId: refund.refundId, amountPaise: refund.amountPaise },
   })
 
@@ -126,7 +126,7 @@ export async function POST(_request: Request, { params }: { params: Promise<{ co
   await emitToRooms({ rooms: [`order:${order.code}`], event: 'order:update', data: { code: order.code, status: 'CANCELLED' } })
   for (const storeId of storeIds) {
     await emitToRooms({
-      rooms: [`store:${storeId}`, `admin:${order.mallId}`],
+      rooms: [`store:${storeId}`, `admin:${order.campusId}`],
       event: 'ticket:cancelled',
       data: { orderCode: order.code, ticketId: order.tickets.find((t) => t.storeId === storeId)?.id },
     })

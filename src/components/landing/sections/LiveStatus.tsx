@@ -11,7 +11,7 @@
  * invisible and the scene never snaps.
  *
  * Sound: a quiet notification ping locks to the CSS loop's `animationiteration`
- * event — a cue per real loop turn, only while the section is on screen and
+ * event — a cue per real loop turn, only while the section is on classroom and
  * the tab is visible. No timers, no React re-renders.
  */
 import { useEffect, useRef } from 'react'
@@ -43,7 +43,7 @@ const FEED = [
   {
     id: 'running',
     emoji: '🛵',
-    app: 'Cinema Snacks',
+    app: 'Block Snacks',
     title: 'Popcorn ready — runner on the way',
     body: 'Seat B7 · two stops away',
     chip: '⚡ on time',
@@ -68,7 +68,7 @@ export function LiveStatus() {
   const phoneDrift = useTransform(scrollYProgress, [0, 1], [10, -10])
   const copyDrift = useTransform(scrollYProgress, [0, 1], [-6, 6])
 
-  // the feed only cues while it is actually on screen
+  // the feed only cues while it is actually on classroom
   useEffect(() => {
     const el = stackRef.current
     if (!el) return

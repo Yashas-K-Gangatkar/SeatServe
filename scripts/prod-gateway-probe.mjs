@@ -1,6 +1,6 @@
 // Probe production: is the REAL Razorpay gateway active (env vars set)?
 // Flow: demo seat → cheapest product → place order → ask /api/payments/session for mode.
-// Harmless: the order stays PENDING_PAYMENT (demo mall), no money moves.
+// Harmless: the order stays PENDING_PAYMENT (demo campus), no money moves.
 const BASE = process.env.PROBE_BASE || 'https://ctshop-git-main-noti-fetch.vercel.app'
 
 const j = (r) => r.json()

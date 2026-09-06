@@ -1,6 +1,6 @@
 // POST /api/runner/assign — claim a ready ticket for delivery (login required).
 // RUNNER role is pinned to their own runner profile from the session;
-// MALL_ADMIN may assign any on-duty runner (front-desk coordination).
+// CAMPUS_ADMIN may assign any on-duty runner (front-desk coordination).
 import { z } from 'zod'
 import type { Runner, DeliveryZone } from '@prisma/client'
 import { db } from '@/lib/db'
@@ -11,11 +11,11 @@ import { emitToRooms } from '@/lib/realtime'
 
 const bodySchema = z.object({
   ticketId: z.string().min(1),
-  runnerId: z.string().min(1).optional(), // honored for MALL_ADMIN only
+  runnerId: z.string().min(1).optional(), // honored for CAMPUS_ADMIN only
 })
 
 export async function POST(request: Request) {
-  const auth = await requireStaff(request, ['RUNNER', 'MALL_ADMIN'])
+  const auth = await requireStaff(request, ['RUNNER', 'CAMPUS_ADMIN'])
   if ('error' in auth) return auth.error
   const user = auth.user
 
@@ -24,7 +24,7 @@ export async function POST(request: Request) {
 
   const ticket = await db.storeTicket.findUnique({
     where: { id: parsed.data.ticketId },
-    include: { store: true, order: { include: { seat: true, screen: { include: { cinema: true } } } } },
+    include: { store: true, order: { include: { seat: true, classroom: { include: { block: true } } } } },
   })
   if (!ticket) return fail('Ticket not found', 404)
   if (ticket.status !== 'READY_FOR_PICKUP') return fail(`Ticket is ${ticket.status}, not READY_FOR_PICKUP`, 409)
@@ -32,22 +32,22 @@ export async function POST(request: Request) {
   const existing = await db.deliveryRun.findUnique({ where: { ticketId: ticket.id } })
   if (existing) return fail('This ticket already has a runner assigned', 409)
 
-  // Audit fix #17: no mall scoping — a runner could claim a ticket in another
-  // mall. Resolve the caller's mall (runner → their zone's mall, admin → mallId)
+  // Audit fix #17: no campus scoping — a runner could claim a ticket in another
+  // campus. Resolve the caller's campus (runner → their zone's campus, admin → campusId)
   // and require the ticket to live in it.
   let callerMallId: string | null = null
   if (user.role === 'RUNNER') {
     const me = await db.runner.findUnique({ where: { id: user.runnerId ?? '' }, include: { zone: true } })
-    callerMallId = me?.zone?.mallId ?? null
+    callerMallId = me?.zone?.campusId ?? null
   } else {
-    callerMallId = user.mallId ?? null
+    callerMallId = user.campusId ?? null
   }
-  if (ticket.order.mallId !== callerMallId) {
-    return fail('This ticket is outside your mall', 403)
+  if (ticket.order.campusId !== callerMallId) {
+    return fail('This ticket is outside your campus', 403)
   }
 
   // session pinning: a runner can only self-assign; admins may pick any runner
-  // NOTE: both branches carry `include: { zone: true }` (the mall check below needs
+  // NOTE: both branches carry `include: { zone: true }` (the campus check below needs
   // it for either path). An explicit annotation avoids Prisma's conditional-type
   // collapse across a ternary union (findUnique vs findFirst arg shapes differ),
   // which silently dropped `zone` from the inferred type and broke tsc.
@@ -57,16 +57,16 @@ export async function POST(request: Request) {
     runner = await db.runner.findUnique({ where: { id: requestedRunnerId }, include: { zone: true } })
   } else {
     runner = await db.runner.findFirst({
-      where: { isOnDuty: true, zone: { mallId: callerMallId ?? '__none__' } },
+      where: { isOnDuty: true, zone: { campusId: callerMallId ?? '__none__' } },
       orderBy: { name: 'asc' },
       include: { zone: true },
     })
   }
   if (!runner) return fail('No on-duty runner available', 409)
   if (user.role === 'RUNNER' && !runner.isOnDuty) return fail('You are off duty — clock in first', 409)
-  // the assigned runner must also belong to the same mall as the ticket
-  if ((runner.zone?.mallId ?? null) !== ticket.order.mallId) {
-    return fail('That runner belongs to a different mall', 409)
+  // the assigned runner must also belong to the same campus as the ticket
+  if ((runner.zone?.campusId ?? null) !== ticket.order.campusId) {
+    return fail('That runner belongs to a different campus', 409)
   }
 
   // Audit fix #24: two runners pressing "claim" at the same instant both passed
@@ -81,7 +81,7 @@ export async function POST(request: Request) {
         runnerId: runner.id,
         status: 'ASSIGNED',
         pickupLabel: `${ticket.store.name} · Food court, ground floor`,
-        dropLabel: `${ticket.order.screen.name} · Seat ${ticket.order.seat.code} · ${ticket.order.screen.cinema.name}`,
+        dropLabel: `${ticket.order.classroom.name} · ${ticket.order.seat?.code ?? ticket.order.seatLabel ?? 'door delivery'} · ${ticket.order.classroom.block.name}`,
       },
     })
   } catch (err) {
@@ -98,10 +98,10 @@ export async function POST(request: Request) {
     entityType: 'DeliveryRun',
     entityId: run.id,
     orderId: ticket.orderId,
-    mallId: ticket.order.mallId,
+    campusId: ticket.order.campusId,
     meta: { ticketCode: ticket.ticketCode, runner: runner.name },
   })
-  await emitToRooms({ rooms: [`runners:${ticket.order.mallId}`, `admin:${ticket.order.mallId}`, `order:${ticket.order.code}`], event: 'run:assigned', data: { ticketId: ticket.id, runner: runner.name } })
+  await emitToRooms({ rooms: [`runners:${ticket.order.campusId}`, `admin:${ticket.order.campusId}`, `order:${ticket.order.code}`], event: 'run:assigned', data: { ticketId: ticket.id, runner: runner.name } })
 
   return ok({ runId: run.id, runner: runner.name, ticketId: ticket.id }, 201)
 }

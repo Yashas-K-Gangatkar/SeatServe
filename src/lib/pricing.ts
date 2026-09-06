@@ -1,8 +1,8 @@
-// SeatServe — pure money & split-settlement math.
+// NotiFetch — pure money & split-settlement math.
 // RULE: every amount is an INTEGER number of paise. Floating-point ₹ is forbidden.
 //
 // BUSINESS MODEL (owner decision):
-//   · NO delivery fee — stores sit next door to the cinema screens.
+//   · NO delivery fee — stores sit next door to the block classrooms.
 //   · NO platform-level GST handling — menu prices are GST-inclusive and the
 //     STORE remits its own GST. The platform never extracts or holds tax.
 //   · Platform fee is FIXED at 5% of the TOTAL the customer pays:
@@ -38,7 +38,7 @@ export function priceLine({ unitPricePaise, qty, taxRatePct }: PricedLineInput):
 
 export interface StoreFeeConfig {
   commissionPct: number
-  prepBufferMin: number // extra handling time for in-cinema delivery
+  prepBufferMin: number // extra handling time for in-block delivery
 }
 
 export interface StoreLineGroup {

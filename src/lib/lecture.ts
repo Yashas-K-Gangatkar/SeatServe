@@ -1,4 +1,4 @@
-// SeatServe — showtime selection (pure, shared by /api/context and /api/orders).
+// NotiFetch — lecture selection (pure, shared by /api/context and /api/orders).
 //
 // Audit fix #20: the old code picked the FIRST show that started within the
 // last 3 hours ("current show window") — even when its ordering cutoff had
@@ -17,7 +17,7 @@ export const CURRENT_SHOW_WINDOW_MIN = 180
 
 export interface ShowtimeLike {
   id: string
-  movieTitle: string
+  subject: string
   language?: string | null
   startsAt: Date | string
   orderCutoffMinutes: number
@@ -30,9 +30,9 @@ export interface CurrentShow<T extends ShowtimeLike> {
   reason: 'ordering-open' | 'blocked-cutoff' | 'none-in-window'
 }
 
-export function pickCurrentShow<T extends ShowtimeLike>(showtimes: T[], now: Date): CurrentShow<T> {
+export function pickCurrentShow<T extends ShowtimeLike>(lectures: T[], now: Date): CurrentShow<T> {
   const windowStart = now.getTime() - CURRENT_SHOW_WINDOW_MIN * 60_000
-  const candidates = showtimes
+  const candidates = lectures
     .filter((s) => new Date(s.startsAt).getTime() > windowStart)
     .sort((a, b) => new Date(a.startsAt).getTime() - new Date(b.startsAt).getTime())
   if (candidates.length === 0) return { show: null, info: null, reason: 'none-in-window' }

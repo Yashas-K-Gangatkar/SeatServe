@@ -1,6 +1,6 @@
 'use client'
 
-// SeatServe — kitchen dashboard (#/kitchen/<storeId> | #/kitchen to pick a store)
+// NotiFetch — kitchen dashboard (#/kitchen/<storeId> | #/kitchen to pick a store)
 // Realtime paid tickets (socket.io + polling fallback), chime on new tickets,
 // status flow NEW → ACCEPTED → PREPARING → READY_FOR_PICKUP, allergy highlights,
 // busy-mode overload control, open/close store.
@@ -33,7 +33,7 @@ const NEXT_ACTION: Record<string, { to: string; label: string }> = {
 
 export default function Kitchen({ storeId, go, onRouteChange }: { storeId?: string; go: (p: string) => void; onRouteChange?: () => void }) {
   return (
-    <StaffGate roles={['KITCHEN_STAFF', 'STORE_MANAGER', 'MALL_ADMIN', 'CINEMA_MANAGER']} go={go} consoleName="Kitchen console">
+    <StaffGate roles={['KITCHEN_STAFF', 'STORE_MANAGER', 'CAMPUS_ADMIN', 'BLOCK_MANAGER']} go={go} consoleName="Kitchen console">
       {(user) => <KitchenPicker user={user} storeId={storeId} go={go} onRouteChange={onRouteChange} />}
     </StaffGate>
   )
@@ -42,7 +42,7 @@ export default function Kitchen({ storeId, go, onRouteChange }: { storeId?: stri
 function KitchenPicker({ user, storeId, go, onRouteChange }: { user: StaffProfile; storeId?: string; go: (p: string) => void; onRouteChange?: () => void }) {
   // Phase 2: store staff are PINNED to their own store by the session — a URL
   // pointing at another store cannot widen their view (server enforces 403 too).
-  const pinned = user.role !== 'MALL_ADMIN' ? (user.storeId ?? undefined) : undefined
+  const pinned = user.role !== 'CAMPUS_ADMIN' ? (user.storeId ?? undefined) : undefined
   const effective = pinned ?? storeId ?? undefined
 
   const [stores, setStores] = useState<StoreLite[] | null>(null)
@@ -55,14 +55,14 @@ function KitchenPicker({ user, storeId, go, onRouteChange }: { user: StaffProfil
   }, [effective])
 
   if (!effective) {
-    // only MALL_ADMIN reaches the picker
+    // only CAMPUS_ADMIN reaches the picker
     return (
       <div className="mx-auto w-full max-w-md px-4 pb-16 pt-6">
         <button onClick={() => go('#/')} className="mb-3 inline-flex items-center gap-1 text-xs font-semibold text-muted-foreground hover:text-foreground">
           <ChevronLeft className="h-3.5 w-3.5" aria-hidden /> Demo home
         </button>
         <h1 className="text-2xl font-black tracking-tight">Which kitchen?</h1>
-        <p className="mt-1 text-sm text-muted-foreground">Mall-admin supervision view — pick any store in your mall. Store staff skip this screen entirely.</p>
+        <p className="mt-1 text-sm text-muted-foreground">Campus-admin supervision view — pick any store in your campus. Store staff skip this classroom entirely.</p>
         {stores === null ? (
           <Spinner />
         ) : (
@@ -91,7 +91,7 @@ function KitchenPicker({ user, storeId, go, onRouteChange }: { user: StaffProfil
       </div>
     )
   }
-  return <KitchenDashboard storeSlugOrId={effective} canSwitch={user.role === 'MALL_ADMIN' || user.role === 'CINEMA_MANAGER'} go={go} />
+  return <KitchenDashboard storeSlugOrId={effective} canSwitch={user.role === 'CAMPUS_ADMIN' || user.role === 'BLOCK_MANAGER'} go={go} />
 }
 
 function KitchenDashboard({ storeSlugOrId, canSwitch, go }: { storeSlugOrId: string; canSwitch: boolean; go: (p: string) => void }) {
@@ -277,7 +277,7 @@ function KitchenDashboard({ storeSlugOrId, canSwitch, go }: { storeSlugOrId: str
                         )}
                       </p>
                       <p className="text-[11px] text-muted-foreground">
-                        {t.screen} · {t.cinema} · {t.movieTitle ?? 'walk-in'} · placed {minAgo(t.placedAt)}
+                        {t.classroom} · {t.block} · {t.subject ?? 'walk-in'} · placed {minAgo(t.placedAt)}
                       </p>
                     </div>
                     <StatusPill status={t.status} />

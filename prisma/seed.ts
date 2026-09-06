@@ -1,7 +1,7 @@
 /**
- * SeatServe — demo seed.
- * One mall · two cinemas · six screens · seats with unique QR tokens ·
- * four stores · showtimes (incl. one past-cutoff to demo the blocked state) ·
+ * NotiFetch — demo seed.
+ * One campus · two blocks · six classrooms · seats with unique QR tokens ·
+ * four stores · lectures (incl. one past-cutoff to demo the blocked state) ·
  * runners · role-based users · settings · two pre-built orders so that the
  * staff dashboards are not empty on first open.
  *
@@ -34,34 +34,34 @@ export async function seedDemoData(db: DB): Promise<void> {
   await db.runner.deleteMany()
   await db.product.deleteMany()
   await db.store.deleteMany()
-  await db.showtime.deleteMany()
+  await db.lecture.deleteMany()
   await db.seat.deleteMany()
-  await db.screen.deleteMany()
-  await db.cinema.deleteMany()
+  await db.classroom.deleteMany()
+  await db.block.deleteMany()
   await db.deliveryZone.deleteMany()
-  await db.mall.deleteMany()
+  await db.campus.deleteMany()
   await db.appSetting.deleteMany()
 
   // ── venues ───────────────────────────────────────────────────────
-  const mall = await db.mall.create({
-    data: { name: 'Aurora Mall', city: 'Mumbai', address: 'Linking Road, Bandra West, Mumbai 400050' },
+  const campus = await db.campus.create({
+    data: { name: 'Aurora Campus', city: 'Mumbai', address: 'Linking Road, Bandra West, Mumbai 400050' },
   })
 
-  // SECOND MALL — proves multi-mall isolation end-to-end (orders, context,
-  // runner queue, admin scoping are all tested across the mall boundary).
-  const mall2 = await db.mall.create({
-    data: { name: 'Nexora Mall', city: 'Pune', address: 'Nagar Road, Yerawada, Pune 411006' },
+  // SECOND MALL — proves multi-campus isolation end-to-end (orders, context,
+  // runner queue, admin scoping are all tested across the campus boundary).
+  const mall2 = await db.campus.create({
+    data: { name: 'Nexora Campus', city: 'Pune', address: 'Nagar Road, Yerawada, Pune 411006' },
   })
 
-  const zoneA = await db.deliveryZone.create({ data: { mallId: mall.id, name: 'Zone A · Wing A (Screens 1–3)' } })
-  const zoneB = await db.deliveryZone.create({ data: { mallId: mall.id, name: 'Zone B · Wing B (Screens 4–6)' } })
-  const zoneN = await db.deliveryZone.create({ data: { mallId: mall2.id, name: 'Zone N · Nexora levels 1–3' } })
+  const zoneA = await db.deliveryZone.create({ data: { campusId: campus.id, name: 'Zone A · Wing A (Screens 1–3)' } })
+  const zoneB = await db.deliveryZone.create({ data: { campusId: campus.id, name: 'Zone B · Wing B (Screens 4–6)' } })
+  const zoneN = await db.deliveryZone.create({ data: { campusId: mall2.id, name: 'Zone N · Nexora levels 1–3' } })
 
-  const cinemaA = await db.cinema.create({
-    data: { mallId: mall.id, name: 'Aurora Cineplex — Wing A', wing: 'A' },
+  const cinemaA = await db.block.create({
+    data: { campusId: campus.id, name: 'Aurora Cineplex — Wing A', wing: 'A' },
   })
-  const cinemaB = await db.cinema.create({
-    data: { mallId: mall.id, name: 'Aurora Cineplex — Wing B', wing: 'B' },
+  const cinemaB = await db.block.create({
+    data: { campusId: campus.id, name: 'Aurora Cineplex — Wing B', wing: 'B' },
   })
 
   const ROWS = ['A', 'B', 'C', 'D', 'E', 'F']
@@ -71,10 +71,10 @@ export async function seedDemoData(db: DB): Promise<void> {
   // a capability: being able to guess another seat's token would let anyone
   // order to / read that seat. Deterministic A1-A1-style tokens were removed
   // in the logical-mistake fix round for exactly that reason.
-  async function createScreen(cinemaId: string, screenNum: number, name: string, rows = ROWS, cols = COLS) {
-    return db.screen.create({
+  async function createScreen(blockId: string, screenNum: number, name: string, rows = ROWS, cols = COLS) {
+    return db.classroom.create({
       data: {
-        cinemaId,
+        blockId,
         name,
         seatRows: rows.length,
         seatCols: cols,
@@ -93,22 +93,22 @@ export async function seedDemoData(db: DB): Promise<void> {
     })
   }
 
-  const screen1 = await createScreen(cinemaA.id, 1, 'Screen 1')
-  const screen2 = await createScreen(cinemaA.id, 2, 'Screen 2')
-  const screen3 = await createScreen(cinemaA.id, 3, 'Screen 3')
-  const screen4 = await createScreen(cinemaB.id, 4, 'Screen 4')
-  const screen5 = await createScreen(cinemaB.id, 5, 'Screen 5')
-  const screen6 = await createScreen(cinemaB.id, 6, 'Screen 6')
+  const screen1 = await createScreen(cinemaA.id, 1, 'Classroom 1')
+  const screen2 = await createScreen(cinemaA.id, 2, 'Classroom 2')
+  const screen3 = await createScreen(cinemaA.id, 3, 'Classroom 3')
+  const screen4 = await createScreen(cinemaB.id, 4, 'Classroom 4')
+  const screen5 = await createScreen(cinemaB.id, 5, 'Classroom 5')
+  const screen6 = await createScreen(cinemaB.id, 6, 'Classroom 6')
 
-  const cinemaN = await db.cinema.create({
-    data: { mallId: mall2.id, name: 'Nexora Cinemas', wing: 'N' },
+  const cinemaN = await db.block.create({
+    data: { campusId: mall2.id, name: 'Nexora Cinemas', wing: 'N' },
   })
-  const screenN1 = await createScreen(cinemaN.id, 1, 'Nexora Screen 1', ['A', 'B', 'C', 'D'], 8)
+  const screenN1 = await createScreen(cinemaN.id, 1, 'Nexora Classroom 1', ['A', 'B', 'C', 'D'], 8)
 
-  // Showtimes — Screen 1 starts in 20 min ⇒ 30-min cutoff already passed (blocked demo,
+  // Showtimes — Classroom 1 starts in 20 min ⇒ 30-min cutoff already passed (blocked demo,
   // demoAutoRoll=false keeps it permanently demonstrable via the demo-roll guardian)
-  const st = (screenId: string, movieTitle: string, language: string, startsAt: Date, cutoff = 30, demoAutoRoll = true) =>
-    db.showtime.create({ data: { screenId, movieTitle, language, startsAt, orderCutoffMinutes: cutoff, demoAutoRoll } })
+  const st = (classroomId: string, subject: string, language: string, startsAt: Date, cutoff = 30, demoAutoRoll = true) =>
+    db.lecture.create({ data: { classroomId, subject, language, startsAt, orderCutoffMinutes: cutoff, demoAutoRoll } })
 
   const show1 = await st(screen1.id, 'Vikram Damaka', 'Hindi', minutes(20), 30, false) // BLOCKED (demo)
   await st(screen2.id, 'Kalki 2899 AD — Rerun', 'Telugu (dub. Hindi)', hours(3))
@@ -121,9 +121,9 @@ export async function seedDemoData(db: DB): Promise<void> {
   // ── stores & products ────────────────────────────────────────────
   const snacks = await db.store.create({
     data: {
-      mallId: mall.id,
-      name: 'Cinema Snacks',
-      slug: 'cinema-snacks',
+      campusId: campus.id,
+      name: 'Block Snacks',
+      slug: 'block-snacks',
       tagline: 'Popcorn, nachos & chai since 2009',
       emoji: '🍿',
       prepBufferMin: 8,
@@ -135,7 +135,7 @@ export async function seedDemoData(db: DB): Promise<void> {
   })
   const pizza = await db.store.create({
     data: {
-      mallId: mall.id,
+      campusId: campus.id,
       name: 'Pizza Corner',
       slug: 'pizza-corner',
       tagline: 'Wood-fired, delivered to your recliner',
@@ -149,7 +149,7 @@ export async function seedDemoData(db: DB): Promise<void> {
   })
   const wraps = await db.store.create({
     data: {
-      mallId: mall.id,
+      campusId: campus.id,
       name: 'Wrap House',
       slug: 'wrap-house',
       tagline: 'Rolls, wraps & fries',
@@ -163,7 +163,7 @@ export async function seedDemoData(db: DB): Promise<void> {
   })
   const mithai = await db.store.create({
     data: {
-      mallId: mall.id,
+      campusId: campus.id,
       name: 'Mithai & More',
       slug: 'mithai-more',
       tagline: 'Indian sweets & filter coffee',
@@ -201,10 +201,10 @@ export async function seedDemoData(db: DB): Promise<void> {
   ]
   for (const p of products) await db.product.create({ data: p })
 
-  // ── second-mall store (Nexora · Pune) ────────────────────────────
+  // ── second-campus store (Nexora · Pune) ────────────────────────────
   const dosa = await db.store.create({
     data: {
-      mallId: mall2.id,
+      campusId: mall2.id,
       name: 'Dosa Junction',
       slug: 'dosa-junction',
       tagline: 'Crisp dosas, filter kaapi, Pune style',
@@ -234,21 +234,21 @@ export async function seedDemoData(db: DB): Promise<void> {
   await db.runner.create({ data: { name: 'Arjun Das', phone: '+91 98200 33333', zoneId: zoneA.id, rating: 4.6, isOnDuty: false } })
   const rN = await db.runner.create({ data: { name: 'Kiran Patil', phone: '+91 98200 44444', zoneId: zoneN.id, rating: 4.7 } })
 
-  await db.user.create({ data: { name: 'Asha Rao', phone: '+91 90000 00001', email: 'asha@seatserve.demo', role: 'MALL_ADMIN', mallId: mall.id, passwordHash: demoHash } })
-  await db.user.create({ data: { name: 'Vikram Mehta', phone: '+91 90000 00002', email: 'vikram@aurora.demo', role: 'CINEMA_MANAGER', mallId: mall.id, cinemaId: cinemaA.id, passwordHash: demoHash } })
+  await db.user.create({ data: { name: 'Asha Rao', phone: '+91 90000 00001', email: 'asha@seatserve.demo', role: 'CAMPUS_ADMIN', campusId: campus.id, passwordHash: demoHash } })
+  await db.user.create({ data: { name: 'Vikram Mehta', phone: '+91 90000 00002', email: 'vikram@aurora.demo', role: 'BLOCK_MANAGER', campusId: campus.id, blockId: cinemaA.id, passwordHash: demoHash } })
   for (const s of [snacks, pizza, wraps, mithai]) {
     await db.user.create({ data: { name: `${s.name} Manager`, phone: `+91 9000${s.slug.length} 1100`, email: `manager@${s.slug}.demo`, role: 'STORE_MANAGER', storeId: s.id, passwordHash: demoHash } })
     await db.user.create({ data: { name: `${s.name} Kitchen`, phone: `+91 9000${s.slug.length} 2200`, email: `kitchen@${s.slug}.demo`, role: 'KITCHEN_STAFF', storeId: s.id, passwordHash: demoHash } })
   }
-  await db.user.create({ data: { name: 'Ravi Kumar', phone: '+91 90000 00003', email: 'ravi@runner.demo', role: 'RUNNER', runnerId: r1.id, mallId: mall.id, passwordHash: demoHash } })
-  await db.user.create({ data: { name: 'Sana Sheikh', phone: '+91 90000 00004', email: 'sana@runner.demo', role: 'RUNNER', runnerId: r2.id, mallId: mall.id, passwordHash: demoHash } })
+  await db.user.create({ data: { name: 'Ravi Kumar', phone: '+91 90000 00003', email: 'ravi@runner.demo', role: 'RUNNER', runnerId: r1.id, campusId: campus.id, passwordHash: demoHash } })
+  await db.user.create({ data: { name: 'Sana Sheikh', phone: '+91 90000 00004', email: 'sana@runner.demo', role: 'RUNNER', runnerId: r2.id, campusId: campus.id, passwordHash: demoHash } })
   await db.user.create({ data: { name: 'Priya Sharma', phone: '+91 90000 00005', role: 'CUSTOMER' } })
 
-  // second-mall staff — their boards must show NOTHING from Aurora
-  await db.user.create({ data: { name: 'Meera Iyer', phone: '+91 91000 00001', email: 'meera@nexora.demo', role: 'MALL_ADMIN', mallId: mall2.id, passwordHash: demoHash } })
+  // second-campus staff — their boards must show NOTHING from Aurora
+  await db.user.create({ data: { name: 'Meera Iyer', phone: '+91 91000 00001', email: 'meera@nexora.demo', role: 'CAMPUS_ADMIN', campusId: mall2.id, passwordHash: demoHash } })
   await db.user.create({ data: { name: 'Dosa Junction Manager', phone: '+91 91000 00002', email: 'manager@dosa-junction.demo', role: 'STORE_MANAGER', storeId: dosa.id, passwordHash: demoHash } })
   await db.user.create({ data: { name: 'Dosa Junction Kitchen', phone: '+91 91000 00003', email: 'kitchen@dosa-junction.demo', role: 'KITCHEN_STAFF', storeId: dosa.id, passwordHash: demoHash } })
-  await db.user.create({ data: { name: 'Kiran Patil', phone: '+91 91000 00004', email: 'kiran@runner.demo', role: 'RUNNER', runnerId: rN.id, mallId: mall2.id, passwordHash: demoHash } })
+  await db.user.create({ data: { name: 'Kiran Patil', phone: '+91 91000 00004', email: 'kiran@runner.demo', role: 'RUNNER', runnerId: rN.id, campusId: mall2.id, passwordHash: demoHash } })
 
   // ── settings ─────────────────────────────────────────────────────
   await db.appSetting.create({ data: { key: 'walk_buffer_min', value: JSON.stringify(6) } })
@@ -256,8 +256,8 @@ export async function seedDemoData(db: DB): Promise<void> {
   await db.appSetting.create({ data: { key: 'payment_fee_pct', value: JSON.stringify(2) } })
 
   // ── pre-built orders (so staff dashboards are never empty) ───────
-  const seatsOf = (screen: { seats: { id: string; code: string }[] }, code: string) =>
-    screen.seats.find((s) => s.code === code)!
+  const seatsOf = (classroom: { seats: { id: string; code: string }[] }, code: string) =>
+    classroom.seats.find((s) => s.code === code)!
 
   const storeFee = (s: { id: string; commissionPct: number; prepBufferMin: number }) => ({
     commissionPct: s.commissionPct,
@@ -265,9 +265,9 @@ export async function seedDemoData(db: DB): Promise<void> {
   })
 
   const mkOrder = async (opts: {
-    screen: typeof screen3
+    classroom: typeof screen3
     seatCode: string
-    showtimeId: string | null
+    lectureId: string | null
     placedAt: Date
     code: string
     customerName: string
@@ -278,7 +278,7 @@ export async function seedDemoData(db: DB): Promise<void> {
     ticketStatus: 'NEW' | 'DELIVERED'
     runnerId?: string
   }) => {
-    const seat = seatsOf(opts.screen, opts.seatCode)
+    const seat = seatsOf(opts.classroom, opts.seatCode)
     const groups: StoreLineGroup[] = opts.groups.map((g) => ({
       storeId: g.store.id,
       prepMinutes: g.items.map((i) => i.prepEstimateMin),
@@ -290,11 +290,11 @@ export async function seedDemoData(db: DB): Promise<void> {
     const order = await db.order.create({
       data: {
         code: opts.code,
-        mallId: mall.id,
-        cinemaId: opts.screen.cinemaId,
-        screenId: opts.screen.id,
+        campusId: campus.id,
+        blockId: opts.classroom.blockId,
+        classroomId: opts.classroom.id,
         seatId: seat.id,
-        showtimeId: opts.showtimeId,
+        lectureId: opts.lectureId,
         status: opts.ticketStatus === 'DELIVERED' ? 'COMPLETED' : 'PAID',
         paymentStatus: 'PAID',
         subtotalPaise: bill.subtotalPaise,
@@ -346,7 +346,7 @@ export async function seedDemoData(db: DB): Promise<void> {
             runnerId: opts.runnerId,
             status: 'DELIVERED',
             pickupLabel: `${g.store.name} · Food court, ground floor`,
-            dropLabel: `${opts.screen.name} · Seat ${opts.seatCode} · ${opts.screen.cinemaId === cinemaA.id ? 'Wing A' : 'Wing B'}`,
+            dropLabel: `${opts.classroom.name} · Seat ${opts.seatCode} · ${opts.classroom.blockId === cinemaA.id ? 'Wing A' : 'Wing B'}`,
             assignedAt: opts.placedAt,
             pickedUpAt: opts.placedAt,
             deliveredAt: opts.placedAt,
@@ -430,11 +430,11 @@ export async function seedDemoData(db: DB): Promise<void> {
     return order
   }
 
-  // yesterday's completed order (Screen 3 · A-1): popcorn + coffee from Cinema Snacks
+  // yesterday's completed order (Classroom 3 · A-1): popcorn + coffee from Block Snacks
   await mkOrder({
-    screen: screen3,
+    classroom: screen3,
     seatCode: 'A-1',
-    showtimeId: null,
+    lectureId: null,
     placedAt: new Date(Date.now() - 26 * 3600_000),
     code: 'SS-DEMO01',
     customerName: 'Rohan Verma',
@@ -451,11 +451,11 @@ export async function seedDemoData(db: DB): Promise<void> {
     runnerId: r1.id,
   })
 
-  // live PAID order right now (Screen 3 · E-4): pizza + wraps, tickets NEW
+  // live PAID order right now (Classroom 3 · E-4): pizza + wraps, tickets NEW
   await mkOrder({
-    screen: screen3,
+    classroom: screen3,
     seatCode: 'E-4',
-    showtimeId: show3.id,
+    lectureId: show3.id,
     placedAt: new Date(Date.now() - 2 * 60_000),
     code: 'SS-DEMO02',
     customerName: 'Priya Sharma',
@@ -483,7 +483,7 @@ if (isDirectRun) {
   const db = new PrismaClient()
   seedDemoData(db)
     .then(() => {
-      console.log('✅ SeatServe demo data seeded')
+      console.log('✅ NotiFetch demo data seeded')
       return db.$disconnect()
     })
     .catch((err) => {

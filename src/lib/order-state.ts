@@ -1,4 +1,4 @@
-// SeatServe — ticket & order state machines (pure).
+// NotiFetch — ticket & order state machines (pure).
 // Store ticket flow:  NEW → ACCEPTED → PREPARING → READY_FOR_PICKUP → PICKED_UP → DELIVERED
 // Cancellation: allowed by staff from NEW / ACCEPTED / PREPARING only (food not yet out).
 

@@ -1,6 +1,6 @@
 'use client'
 
-// SeatServe — checkout sheet (bill breakdown) + payment sheet.
+// NotiFetch — checkout sheet (bill breakdown) + payment sheet.
 // The payment sheet talks to POST /api/orders (server computes money) and then
 // to POST /api/payments/session: SANDBOX_MOCK drives the signed mock-gateway
 // pipeline; RAZORPAY opens the real Razorpay checkout (checkout.js) and the
@@ -12,7 +12,7 @@ import { toast } from 'sonner'
 import { get, post, ApiError } from '@/lib/client/api'
 import { useSound } from '@/lib/sound/SoundProvider'
 import { platformFeePaise } from '@/lib/pricing'
-import { upcomingSlots, slotLabel } from '@/lib/scheduling'
+import { upcomingSlots, slotLabel, validateScheduledFor } from '@/lib/scheduling'
 import { useCart } from '@/lib/client/cart'
 import { rememberOrder } from '@/lib/client/orderMemory'
 import { rupees } from '../ui-bits'
@@ -88,11 +88,17 @@ export function CheckoutSheet({
   open,
   onOpenChange,
   ctx,
+  qrToken,
+  seatLabel,
   onPlaced,
 }: {
   open: boolean
   onOpenChange: (v: boolean) => void
   ctx: ContextResponse
+  /** the RAW scanned QR token (seat token in seat mode, door token in door mode) */
+  qrToken: string
+  /** door mode only: the student's seat / roll label */
+  seatLabel?: string
   onPlaced: (order: OrderCreateResponse) => void
 }) {
   const cart = useCart()
@@ -105,6 +111,23 @@ export function CheckoutSheet({
 
   // selectable future slots (order now, eat at the break / interval)
   const slots = useMemo(() => (open ? upcomingSlots(new Date(), 16) : []), [open])
+
+  // ULTRA: when the classroom's next lecture has a valid delivery slot, the
+  // checkout opens PRE-SELECTED to the bell — students order during class and
+  // the food lands the moment the break starts, with zero extra taps.
+  const lectureSlot = useMemo(() => {
+    if (!open || !ctx.lecture?.cutoff.orderingOpen) return null
+    const startsAt = new Date(ctx.lecture.startsAt)
+    const check = validateScheduledFor(startsAt.toISOString(), new Date())
+    return check.ok ? startsAt : null
+  }, [open, ctx.lecture])
+  useEffect(() => {
+    if (open && lectureSlot) setSlotIso(lectureSlot.toISOString())
+  }, [open, lectureSlot])
+  const allSlots = useMemo(
+    () => (lectureSlot && !slots.some((s) => s.getTime() === lectureSlot.getTime()) ? [lectureSlot, ...slots] : slots),
+    [slots, lectureSlot],
+  )
 
   const selection = useMemo(() => {
     const rows: { storeId: string; storeName: string; emoji: string | null; items: { id: string; name: string; qty: number; pricePaise: number; note: string }[] }[] = []
@@ -144,7 +167,7 @@ export function CheckoutSheet({
   }, [selection, ctx])
 
   const placeOrder = async () => {
-    if (!ctx.showtime?.cutoff.orderingOpen) {
+    if (!ctx.lecture?.cutoff.orderingOpen) {
       toast.error('Ordering is closed for this show')
       return
     }
@@ -160,17 +183,18 @@ export function CheckoutSheet({
         r.items.map((i) => ({ productId: i.id, qty: i.qty, ...(i.note.trim() ? { notes: i.note.trim() } : {}) })),
       )
       const order = await post<OrderCreateResponse>('/api/orders', {
-        qrToken: ctx.seat.qrToken,
+        qrToken,
         items,
         customerName: name.trim() || undefined,
         customerPhone: phone.trim() || undefined,
         ...(slotIso ? { scheduledFor: slotIso } : {}),
+        ...(ctx.mode === 'door' && seatLabel?.trim() ? { seatLabel: seatLabel.trim() } : {}),
       })
       // keep the checkout mounted; the payment sheet opens on top.
       // Navigation happens when the payment sheet closes (paid or "pay later").
-      // Also remember it on this device for this seat — a re-scan of the seat
-      // QR will then show the order without needing the copied code.
-      rememberOrder(order.code, ctx.seat.qrToken)
+      // Also remember it on this device for this QR — a re-scan of the seat
+      // or door QR will then show the order without needing the copied code.
+      rememberOrder(order.code, qrToken)
       setPlacedOrder(order)
       play('pop')
     } catch (err) {
@@ -185,7 +209,10 @@ export function CheckoutSheet({
       <Sheet open={open && !placedOrder} onOpenChange={onOpenChange}>
         <SheetContent side="bottom" className="mx-auto max-h-[92dvh] w-full max-w-md overflow-y-auto kitchen-scroll rounded-t-3xl border-border bg-popover p-0 sm:left-1/2 sm:-translate-x-1/2 sm:right-auto">
           <SheetHeader className="p-5 pb-0">
-            <SheetTitle className="text-left">Your cart · Seat {ctx.seat.code}</SheetTitle>
+            <SheetTitle className="text-left">
+              Your cart · {ctx.classroom.name}
+              {ctx.seat ? ` · Seat ${ctx.seat.code}` : seatLabel ? ` · Seat ${seatLabel}` : ' · Door delivery'}
+            </SheetTitle>
             <SheetDescription className="text-left">
               One cart, {selection.length} store{selection.length === 1 ? '' : 's'} · one payment, split automatically
             </SheetDescription>
@@ -230,7 +257,7 @@ export function CheckoutSheet({
               </dl>
               <p className="mt-1 text-[10px] text-muted-foreground">Final bill is computed server-side at placement.</p>
               <p className="mt-2 flex items-center gap-1.5 text-[11px] text-muted-foreground">
-                <Timer className="h-3 w-3" aria-hidden /> Est. delivery ~{estDeliveryMin} min · ordering closes {ctx.showtime ? new Date(ctx.showtime.cutoff.cutoffAt).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }) : '—'}
+                <Timer className="h-3 w-3" aria-hidden /> Est. delivery ~{estDeliveryMin} min · ordering closes {ctx.lecture ? new Date(ctx.lecture.cutoff.cutoffAt).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }) : '—'}
               </p>
             </div>
 
@@ -261,9 +288,10 @@ export function CheckoutSheet({
               </div>
               {slotIso && (
                 <div className="kitchen-scroll mt-2.5 flex gap-1.5 overflow-x-auto pb-1" role="listbox" aria-label="Delivery slots">
-                  {slots.map((s) => {
+                  {allSlots.map((s) => {
                     const iso = s.toISOString()
                     const active = iso === slotIso
+                    const isBell = !!lectureSlot && s.getTime() === lectureSlot.getTime()
                     return (
                       <button
                         key={iso}
@@ -272,7 +300,7 @@ export function CheckoutSheet({
                         onClick={() => setSlotIso(iso)}
                         className={`shrink-0 rounded-full border px-3 py-1.5 text-[11px] font-extrabold tabular ${active ? 'border-orange-500 bg-orange-500 text-white' : 'border-border bg-background text-foreground hover:bg-muted/40'}`}
                       >
-                        {slotLabel(s)}
+                        {isBell ? `⚡ ${slotLabel(s)} break` : slotLabel(s)}
                       </button>
                     )
                   })}
@@ -299,7 +327,7 @@ export function CheckoutSheet({
               {placing ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : <Lock className="h-4 w-4" aria-hidden />}
               Continue to pay ~{rupees(estimatedTotal)}
             </button>
-            <p className="mt-2 text-center text-[11px] text-muted-foreground">One tap to pay — UPI, card or netbanking. The payment screen always shows the exact amount before you confirm.</p>
+            <p className="mt-2 text-center text-[11px] text-muted-foreground">One tap to pay — UPI, card or netbanking. The payment classroom always shows the exact amount before you confirm.</p>
           </div>
         </SheetContent>
       </Sheet>
@@ -308,10 +336,10 @@ export function CheckoutSheet({
         order={placedOrder ? { code: placedOrder.code, totalPaise: placedOrder.breakdown.totalPaise } : null}
         customer={{ name: name.trim() || undefined, phone: phone.trim() || undefined }}
         receipt={{
-          seatCode: ctx.seat.code,
-          screenName: ctx.screen.name,
-          cinemaName: ctx.cinema.name,
-          movie: ctx.showtime?.movieTitle,
+          seatCode: ctx.seat?.code ?? seatLabel ?? 'door',
+          screenName: ctx.classroom.name,
+          cinemaName: ctx.block.name,
+          movie: ctx.lecture?.subject,
           groups: selection.map((r) => ({
             storeName: r.storeName,
             emoji: r.emoji,
@@ -435,7 +463,7 @@ export function PaymentSheet({
       order_id: session.gatewayOrderId,
       amount: session.amountPaise,
       currency: 'INR',
-      name: 'SeatServe',
+      name: 'NotiFetch',
       description: `Order ${order.code}`,
       // UPI first: pre-select the UPI tab so most customers go straight to their
       // UPI app (GPay / PhonePe / Paytm) with the amount prefilled — instead of
@@ -561,7 +589,7 @@ export function PaymentSheet({
             <div className="py-1" role="status">
               {/* confirmation + code + copy come FIRST — they must never be
                   pushed below the fold by the (tall) receipt. Bug: on bigger
-                  orders the copy button used to sit under the paper, off-screen. */}
+                  orders the copy button used to sit under the paper, off-classroom. */}
               <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-center">
                 <p className="text-sm font-bold text-emerald-800">Payment received — your order is in the kitchens</p>
                 <p className="mt-2 text-[11px] font-bold uppercase tracking-wider text-emerald-700/80">Your tracking number</p>

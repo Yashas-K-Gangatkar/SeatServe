@@ -55,8 +55,8 @@ function ScanPanel() {
         <span className="absolute bottom-0 left-0 h-4 w-4 border-b-2 border-l-2 border-[#D4AF37]" />
         <span className="absolute bottom-0 right-0 h-4 w-4 border-b-2 border-r-2 border-[#D4AF37]" />
       </div>
-      <p className="text-[10px] font-bold text-white">Screen 3 · Seat B7</p>
-      <p className="text-[8px] text-stone-400">Aurora Mall · Cineplex Wing A</p>
+      <p className="text-[10px] font-bold text-white">Classroom 3 · Seat B7</p>
+      <p className="text-[8px] text-stone-400">Nova Degree College · Science Wing A</p>
     </div>
   )
 }
@@ -91,7 +91,7 @@ function BrowsePanel() {
         </div>
       ))}
       <p className="text-center text-[8px] text-stone-400">
-        Pizza Corner · Cinema Snacks · Wrap House
+        Pizza Corner · Block Snacks · Wrap House
       </p>
     </div>
   )

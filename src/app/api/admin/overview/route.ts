@@ -1,67 +1,68 @@
 // GET /api/admin/overview — live board + KPIs (rolling 24h window).
 // Phase 2 multi-tenancy: the board is scoped by the session, never by params.
-//   MALL_ADMIN     → everything inside their mall
-//   CINEMA_MANAGER → orders of their own cinema; stores of their mall
-//                    (delegated mall operator — verifies/feeds mall stores)
+//   CAMPUS_ADMIN     → everything inside their campus
+//   BLOCK_MANAGER → orders of their own block; stores of their campus
+//                    (delegated campus operator — verifies/feeds campus stores)
 //   STORE_MANAGER  → only orders containing their store's tickets + their store row
 import { db } from '@/lib/db'
 import { ok } from '@/lib/api-helpers'
 import { requireStaff } from '@/lib/auth-server'
 
 export async function GET(request: Request) {
-  const auth = await requireStaff(request, ['MALL_ADMIN', 'CINEMA_MANAGER', 'STORE_MANAGER'])
+  const auth = await requireStaff(request, ['CAMPUS_ADMIN', 'BLOCK_MANAGER', 'STORE_MANAGER'])
   if ('error' in auth) return auth.error
   const user = auth.user
 
   const since = new Date(Date.now() - 24 * 3600_000)
 
-  // resolved mall for the token-gated realtime room (admin:<mallId>); the
-  // CINEMA_MANAGER row carries mallId, but resolve from the cinema as a
-  // fallback for legacy rows — the same mall anchors the store scope below.
+  // resolved campus for the token-gated realtime room (admin:<campusId>); the
+  // BLOCK_MANAGER row carries campusId, but resolve from the block as a
+  // fallback for legacy rows — the same campus anchors the store scope below.
   let realtimeMallId: string | null = null
-  if (user.role === 'MALL_ADMIN' || user.role === 'RUNNER') realtimeMallId = user.mallId
-  else if (user.role === 'CINEMA_MANAGER') {
-    if (user.mallId) realtimeMallId = user.mallId
-    else if (user.cinemaId) {
-      const cinema = await db.cinema.findUnique({ where: { id: user.cinemaId }, select: { mallId: true } })
-      realtimeMallId = cinema?.mallId ?? null
+  if (user.role === 'CAMPUS_ADMIN' || user.role === 'RUNNER') realtimeMallId = user.campusId
+  else if (user.role === 'BLOCK_MANAGER') {
+    if (user.campusId) realtimeMallId = user.campusId
+    else if (user.blockId) {
+      const block = await db.block.findUnique({ where: { id: user.blockId }, select: { campusId: true } })
+      realtimeMallId = block?.campusId ?? null
     }
   } else if (user.role === 'STORE_MANAGER' && user.storeId) {
-    const store = await db.store.findUnique({ where: { id: user.storeId }, select: { mallId: true } })
-    realtimeMallId = store?.mallId ?? null
+    const store = await db.store.findUnique({ where: { id: user.storeId }, select: { campusId: true } })
+    realtimeMallId = store?.campusId ?? null
   }
 
   // ── tenant scope ────────────────────────────────────────────────
   const orderScope =
-    user.role === 'MALL_ADMIN'
-      ? { mallId: user.mallId ?? '__none__' }
-      : user.role === 'CINEMA_MANAGER'
-        ? { screen: { cinemaId: user.cinemaId ?? '__none__' } }
+    user.role === 'CAMPUS_ADMIN'
+      ? { campusId: user.campusId ?? '__none__' }
+      : user.role === 'BLOCK_MANAGER'
+        ? { classroom: { blockId: user.blockId ?? '__none__' } }
         : { tickets: { some: { storeId: user.storeId ?? '__none__' } } }
   const storeScope =
-    user.role === 'MALL_ADMIN'
-      ? { mallId: user.mallId ?? '__none__' }
-      : user.role === 'CINEMA_MANAGER'
+    user.role === 'CAMPUS_ADMIN'
+      ? { campusId: user.campusId ?? '__none__' }
+      : user.role === 'BLOCK_MANAGER'
         // audit fix: was unfiltered (platform-wide store list) — pin to the
-        // cinema manager's mall so delegation can never see another mall
-        ? { mallId: realtimeMallId ?? '__none__' }
+        // block manager's campus so delegation can never see another campus
+        ? { campusId: realtimeMallId ?? '__none__' }
         : { id: user.storeId ?? '__none__' }
   const scopeLabel =
-    user.role === 'MALL_ADMIN'
-      ? 'Mall-wide'
-      : user.role === 'CINEMA_MANAGER'
-        ? 'Cinema orders · mall stores'
+    user.role === 'CAMPUS_ADMIN'
+      ? 'Campus-wide'
+      : user.role === 'BLOCK_MANAGER'
+        ? 'Block orders · campus stores'
         : 'Your store only'
 
-  //   (realtime room + mall name resolved above, before the parallel reads)
-  const mallName = realtimeMallId ? (await db.mall.findUnique({ where: { id: realtimeMallId }, select: { name: true } }))?.name ?? null : null
+  //   (realtime room + campus name resolved above, before the parallel reads)
+  const mallName = realtimeMallId ? (await db.campus.findUnique({ where: { id: realtimeMallId }, select: { name: true } }))?.name ?? null : null
 
   const [orders, liveOrders, stores, recentAudit] = await Promise.all([
     db.order.findMany({ where: { placedAt: { gte: since }, ...orderScope }, include: { tickets: true, payments: true } }),
     db.order.findMany({
       where: { paymentStatus: 'PAID', status: { in: ['PAID', 'PARTIALLY_CANCELLED'] }, ...orderScope },
       include: {
-        seat: { include: { screen: { include: { cinema: true } } } },
+        seat: true,
+        classroom: { include: { block: true } },
         tickets: { include: { store: { select: { name: true, emoji: true } } } },
       },
       orderBy: { placedAt: 'desc' },
@@ -104,7 +105,7 @@ export async function GET(request: Request) {
     db.split.groupBy({ by: ['storeId'], _sum: { amountPaise: true }, where: { orderId: { in: orderIds }, beneficiary: 'STORE' } }),
   ])
 
-  // Money never moves back online (cinema policy), so every captured payment
+  // Money never moves back online (block policy), so every captured payment
   // counts as sales; exceptions are resolved at the counter, off the books.
   const paidOrders = orders.filter((o) => o.paymentStatus === 'PAID')
   const salesPaise = paidOrders.reduce((s, o) => s + o.totalPaise, 0)
@@ -141,8 +142,8 @@ export async function GET(request: Request) {
     scope: {
       role: user.role,
       label: scopeLabel,
-      mallId: user.mallId,
-      cinemaId: user.cinemaId,
+      campusId: user.campusId,
+      blockId: user.blockId,
       storeId: user.storeId,
       realtimeMallId,
       mallName,
@@ -159,9 +160,9 @@ export async function GET(request: Request) {
     liveOrders: liveOrders.map((o) => ({
       code: o.code,
       placedAt: o.placedAt,
-      screen: o.seat.screen.name,
-      cinema: o.seat.screen.cinema.name,
-      seat: o.seat.code,
+      classroom: o.classroom.name,
+      block: o.classroom.block.name,
+      seat: o.seat?.code ?? o.seatLabel ?? 'door',
       totalPaise: o.totalPaise,
       status: o.status,
       // store managers see only their own leg of a shared multi-store order

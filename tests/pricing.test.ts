@@ -1,4 +1,4 @@
-// SeatServe — pricing & split-ledger invariants
+// NotiFetch — pricing & split-ledger invariants
 // Money model: NO delivery fee · NO platform-held GST · platform fee fixed at
 // 5% of the TOTAL the customer pays (gross-up).
 import { describe, test, expect } from 'bun:test'

@@ -1,6 +1,6 @@
 // Attach the generated food photos to every production menu item.
 // Waits until the new deployment (products expose imageUrl) is live, then
-// logs in as the mall admin and PATCHes each product with /menu/<slug>.jpg.
+// logs in as the campus admin and PATCHes each product with /menu/<slug>.jpg.
 const BASE = process.env.PROBE_BASE || 'https://notifetch.in'
 
 const NAME_TO_FILE = {

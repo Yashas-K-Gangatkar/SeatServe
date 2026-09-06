@@ -3,7 +3,7 @@
 import { z } from 'zod'
 import { db } from '@/lib/db'
 import { ok, fail, parseBody } from '@/lib/api-helpers'
-import { pickCurrentShow } from '@/lib/showtime'
+import { pickCurrentShow } from '@/lib/lecture'
 import { computeBill, computeSplits, type StoreLineGroup } from '@/lib/pricing'
 import { getSettings } from '@/lib/settings'
 import { generateOrderCode, generateTicketCode } from '@/lib/ids'
@@ -30,6 +30,9 @@ const bodySchema = z.object({
   // ISO timestamp of a FUTURE delivery slot (class break / movie interval).
   // Absent = deliver ASAP. Range-checked server-side in validateScheduledFor.
   scheduledFor: z.string().max(40).optional(),
+  // campus door-QR flow: the student's seat / roll label ("A-12", "23") typed
+  // at checkout. Optional; only stored with door-QR orders (seatId null).
+  seatLabel: z.string().trim().min(1).max(12).optional(),
 })
 
 export async function POST(request: Request) {
@@ -42,16 +45,23 @@ export async function POST(request: Request) {
   const schedule = validateScheduledFor(parsed.data.scheduledFor, new Date())
   if (!schedule.ok) return fail(schedule.error, 400)
 
+  // CAMPUS PIVOT — the QR can now be either:
+  //   • a per-seat QR (cinema-style, the printed sticker on the seat), or
+  //   • the classroom DOOR QR sticker (campus-style — one per room; the
+  //     student types their seat/roll label at checkout, delivery is at the
+  //     classroom door).
   const seat = await db.seat.findUnique({
     where: { qrToken },
-    include: { screen: { include: { cinema: true } } },
+    include: { classroom: { include: { block: true } } },
   })
-  if (!seat) return fail('Unknown seat QR', 404)
+  const classroom = seat?.classroom ?? (await db.classroom.findUnique({ where: { doorQrToken: qrToken }, include: { block: true } }))
+  if (!classroom) return fail('Unknown QR. Scan the QR at your seat or on your classroom door.', 404)
+  const seatLabel = parsed.data.seatLabel ?? null
 
-  // Sandbox demo guardian: keep stale showtimes usable (see lib/demo-roll.ts)
-  await rollStaleShowtimes(seat.screenId)
-  const screenShowtimes = await db.showtime.findMany({
-    where: { screenId: seat.screenId, isActive: true },
+  // Sandbox demo guardian: keep stale lectures usable (see lib/demo-roll.ts)
+  await rollStaleShowtimes(classroom.id)
+  const classroomLectures = await db.lecture.findMany({
+    where: { classroomId: classroom.id, isActive: true },
     orderBy: { startsAt: 'asc' },
   })
 
@@ -59,9 +69,9 @@ export async function POST(request: Request) {
   // Audit fix #20: pick the earliest show whose cutoff is STILL OPEN (falls
   // back to the blocked-state demo show inside the 3h window) — never an
   // already-started show while a later orderable show exists.
-  const picked = pickCurrentShow(screenShowtimes, now)
+  const picked = pickCurrentShow(classroomLectures, now)
   const show = picked.show
-  if (!show) return fail('No active showtime for this screen right now.', 409)
+  if (!show) return fail('No active lecture for this classroom right now.', 409)
 
   const info = picked.info!
   if (!info.orderingOpen) {
@@ -71,18 +81,18 @@ export async function POST(request: Request) {
     )
   }
 
-  // validate items — availability, store openness AND same-mall isolation
-  // (Audit fix #12: a seat in Mall A could previously order from a store in
-  // Mall B because the store's mallId was never compared to the seat's mall.)
-  const mallId = seat.screen.cinema.mallId
+  // validate items — availability, store openness AND same-campus isolation
+  // (Audit fix #12: a seat in Campus A could previously order from a store in
+  // Campus B because the store's campusId was never compared to the seat's campus.)
+  const campusId = classroom.block.campusId
   const productIds = items.map((i) => i.productId)
   const products = await db.product.findMany({ where: { id: { in: productIds } }, include: { store: true } })
   const byId = new Map(products.map((p) => [p.id, p]))
   for (const item of items) {
     const p = byId.get(item.productId)
     if (!p) return fail(`Unknown product: ${item.productId}`, 404)
-    if (p.store.mallId !== mallId) {
-      return fail(`"${p.name}" is from a store outside this mall and cannot be delivered to your seat.`, 409)
+    if (p.store.campusId !== campusId) {
+      return fail(`"${p.name}" is from a store outside this campus and cannot be delivered to your seat.`, 409)
     }
     if (!p.isAvailable) return fail(`"${p.name}" is sold out right now.`, 409)
     if (!p.store.isOpen) return fail(`${p.store.name} is closed right now.`, 409)
@@ -113,11 +123,12 @@ export async function POST(request: Request) {
   const order = await db.order.create({
     data: {
       code,
-      mallId: seat.screen.cinema.mallId,
-      cinemaId: seat.screen.cinema.id,
-      screenId: seat.screen.id,
-      seatId: seat.id,
-      showtimeId: show.id,
+      campusId: classroom.block.campusId,
+      blockId: classroom.block.id,
+      classroomId: classroom.id,
+      seatId: seat?.id ?? null,
+      seatLabel,
+      lectureId: show.id,
       status: 'PENDING_PAYMENT',
       paymentStatus: 'PENDING',
       subtotalPaise: bill.subtotalPaise,
@@ -174,7 +185,7 @@ export async function POST(request: Request) {
     entityType: 'Order',
     entityId: order.id,
     orderId: order.id,
-    mallId: order.mallId,
+    campusId: order.campusId,
     meta: { code, totalPaise: bill.totalPaise, stores: [...groupsMap.keys()] },
   })
 
@@ -186,7 +197,7 @@ export async function POST(request: Request) {
       scheduledFor: order.scheduledFor,
       breakdown: bill,
       itemCount: items.reduce((s, i) => s + i.qty, 0),
-      seat: { code: seat.code, screen: seat.screen.name, cinema: seat.screen.cinema.name },
+      seat: { code: seat?.code ?? seatLabel ?? 'door', classroom: classroom.name, block: classroom.block.name },
       cutoff: { cutoffAt: info.cutoffAt, minutesUntilCutoff: info.minutesUntilCutoff },
     },
     201,

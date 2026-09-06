@@ -1,4 +1,4 @@
-// SeatServe — payment webhook processing (shared by the real webhook route and
+// NotiFetch — payment webhook processing (shared by the real webhook route and
 // the sandbox gateway loop). Phase 3: signature verification is delegated to the
 // provider adapters (SANDBOX_MOCK | RAZORPAY | CASHFREE — see lib/payments/
 // provider.ts); this module owns duplicate-event protection + state transitions
@@ -74,7 +74,7 @@ export async function processNormalizedEvent(event: NormalizedPaymentEvent, rawB
       entityType: 'Payment',
       entityId: payment.id,
       orderId: payment.orderId,
-      mallId: payment.order.mallId,
+      campusId: payment.order.campusId,
       meta: { refundId: event.refundId, amountPaise: event.refundAmountPaise, gatewayPaymentId: event.providerRef, provider: event.provider },
     })
     await emitToRooms({ rooms: [`order:${payment.order.code}`], event: 'order:update', data: { code: payment.order.code, refundProcessed: true } })
@@ -111,15 +111,15 @@ export async function processNormalizedEvent(event: NormalizedPaymentEvent, rawB
       entityType: 'Payment',
       entityId: payment.id,
       orderId: payment.orderId,
-      mallId: payment.order.mallId,
+      campusId: payment.order.campusId,
       meta: { providerRef: payment.providerRef, amountPaise: payment.amountPaise, method: event.method, provider: event.provider, rawType: event.rawType },
     })
 
-    // fanout: customer room, each store room, mall-scoped admin room
+    // fanout: customer room, each store room, campus-scoped admin room
     await emitToRooms({ rooms: [`order:${payment.order.code}`], event: 'order:paid', data: { code: payment.order.code } })
     for (const t of tickets) {
       await emitToRooms({
-        rooms: [`store:${t.storeId}`, `admin:${payment.order.mallId}`],
+        rooms: [`store:${t.storeId}`, `admin:${payment.order.campusId}`],
         event: 'ticket:new',
         data: { ticketId: t.id, orderCode: payment.order.code, storeName: t.store.name },
       })
@@ -145,7 +145,7 @@ export async function processNormalizedEvent(event: NormalizedPaymentEvent, rawB
       entityType: 'Payment',
       entityId: payment.id,
       orderId: payment.orderId,
-      mallId: payment.order.mallId,
+      campusId: payment.order.campusId,
       meta: { providerRef: payment.providerRef, reason: event.failureReason, provider: event.provider },
     })
     await emitToRooms({ rooms: [`order:${payment.order.code}`], event: 'order:update', data: { code: payment.order.code, paymentStatus: 'FAILED' } })

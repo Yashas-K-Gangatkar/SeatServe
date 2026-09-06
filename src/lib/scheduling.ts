@@ -3,7 +3,7 @@
 // future slot; the kitchen fires 10 minutes before the slot and the runner
 // drops the food right as the break starts. Slots are quantized to 15-minute
 // clock marks (:00 :15 :30 :45) so a whole classroom's orders batch into one
-// runner run — and in cinemas the same mechanic becomes interval delivery.
+// runner run — and in blocks the same mechanic becomes interval delivery.
 
 export const SLOT_MINUTES = 15
 export const MIN_LEAD_MINUTES = 15 // kitchen needs at least this much notice

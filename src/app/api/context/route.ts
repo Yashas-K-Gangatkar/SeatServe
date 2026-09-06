@@ -1,55 +1,65 @@
-// GET /api/context?qr=<seatToken>
-// The QR endpoint: resolves a printed seat QR to everything the customer page needs.
+// GET /api/context?qr=<seatToken | classroomDoorToken>
+// The QR endpoint: resolves a printed QR to everything the customer page
+// needs. Two scan types since the campus pivot:
+//   • seat QR (cinema-style) → mode: 'seat'
+//   • classroom DOOR QR (campus-style, one sticker per room) → mode: 'door'
+//     (seat: null — the student types their seat/roll label at checkout)
 import { db } from '@/lib/db'
 import { ok, fail } from '@/lib/api-helpers'
-import { pickCurrentShow } from '@/lib/showtime'
+import { pickCurrentShow } from '@/lib/lecture'
 import { getSettings } from '@/lib/settings'
 import { rollStaleShowtimes } from '@/lib/demo-roll'
 
 export async function GET(request: Request) {
   const url = new URL(request.url)
   const qr = url.searchParams.get('qr')?.trim()
-  if (!qr) return fail('Missing ?qr= seat token', 400)
+  if (!qr) return fail('Missing ?qr= token', 400)
 
   const seat = await db.seat.findUnique({
     where: { qrToken: qr },
     include: {
-      screen: {
+      classroom: {
         include: {
-          cinema: { include: { mall: true } },
+          block: { include: { campus: true } },
         },
       },
     },
   })
-  if (!seat) return fail('Unknown seat QR. Please scan the QR printed at your seat.', 404)
+  const classroom =
+    seat?.classroom ??
+    (await db.classroom.findUnique({
+      where: { doorQrToken: qr },
+      include: { block: { include: { campus: true } } },
+    }))
+  if (!classroom) return fail('Unknown QR. Please scan the QR at your seat or on your classroom door.', 404)
 
-  // Sandbox demo guardian: keep stale showtimes usable (see lib/demo-roll.ts)
-  await rollStaleShowtimes(seat.screenId)
-  const showtimes = await db.showtime.findMany({
-    where: { screenId: seat.screenId, isActive: true },
+  // Sandbox demo guardian: keep stale lectures usable (see lib/demo-roll.ts)
+  await rollStaleShowtimes(classroom.id)
+  const lectures = await db.lecture.findMany({
+    where: { classroomId: classroom.id, isActive: true },
     orderBy: { startsAt: 'asc' },
   })
 
   const now = new Date()
   // Audit fix #20: same selection rule as /api/orders so the UI can never
   // advertise a show the order API would reject (and vice versa).
-  const picked = pickCurrentShow(showtimes, now)
+  const picked = pickCurrentShow(lectures, now)
   const currentShow = picked.show
   const cutoff = picked.info
 
   const settings = await getSettings()
 
-  // Audit fix #13: return ONLY stores inside the seat's mall. The old query
-  // returned every store on the platform (cross-mall leak — and with the
-  // second seed mall it would have let an Aurora seat order from Nexora).
+  // Audit fix #13: return ONLY stores inside the seat's campus. The old query
+  // returned every store on the platform (cross-campus leak — and with the
+  // second seed campus it would have let an Aurora seat order from Nexora).
   const stores = await db.store.findMany({
-    where: { mallId: seat.screen.cinema.mallId },
+    where: { campusId: classroom.block.campusId },
     orderBy: { name: 'asc' },
     include: { products: { orderBy: [{ category: 'asc' }, { name: 'asc' }] } },
   })
 
   // FSSAI display rule: a food business's license number is shown to customers
-  // ONLY once the mall admin has KYC-VERIFIED the store (a pending/fake store
+  // ONLY once the campus admin has KYC-VERIFIED the store (a pending/fake store
   // can never borrow credibility). The 14-digit shape is re-validated here so
   // a malformed legacy KYC payload can never leak into the customer UI.
   const fssaiOf = (s: (typeof stores)[number]): string | null => {
@@ -62,21 +72,22 @@ export async function GET(request: Request) {
     }
   }
 
-  const screenSeats = await db.seat.findMany({
-    where: { screenId: seat.screenId },
+  const classroomSeats = await db.seat.findMany({
+    where: { classroomId: classroom.id },
     orderBy: [{ rowLabel: 'asc' }, { seatNumber: 'asc' }],
     select: { code: true, qrToken: true },
   })
 
   return ok({
-    mall: { id: seat.screen.cinema.mall.id, name: seat.screen.cinema.mall.name, city: seat.screen.cinema.mall.city },
-    cinema: { id: seat.screen.cinema.id, name: seat.screen.cinema.name, wing: seat.screen.cinema.wing },
-    screen: { id: seat.screen.id, name: seat.screen.name },
-    seat: { id: seat.id, code: seat.code, qrToken: seat.qrToken },
-    showtime: currentShow
+    mode: seat ? ('seat' as const) : ('door' as const),
+    campus: { id: classroom.block.campus.id, name: classroom.block.campus.name, city: classroom.block.campus.city },
+    block: { id: classroom.block.id, name: classroom.block.name, wing: classroom.block.wing },
+    classroom: { id: classroom.id, name: classroom.name },
+    seat: seat ? { id: seat.id, code: seat.code, qrToken: seat.qrToken } : null,
+    lecture: currentShow
       ? {
           id: currentShow.id,
-          movieTitle: currentShow.movieTitle,
+          subject: currentShow.subject,
           language: currentShow.language,
           startsAt: currentShow.startsAt,
           cutoff: {
@@ -112,7 +123,7 @@ export async function GET(request: Request) {
         isAvailable: p.isAvailable,
       })),
     })),
-    screenSeats,
+    classroomSeats,
     settings: { platformFeePct: settings.platformFeePct, walkBufferMin: settings.walkBufferMin, paymentFeePct: settings.paymentFeePct },
     serverTime: now.toISOString(),
   })

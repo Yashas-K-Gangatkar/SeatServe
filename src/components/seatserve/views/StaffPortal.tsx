@@ -1,9 +1,9 @@
 'use client'
 
-// SeatServe Phase 2 — staff portal hub (#/staff).
+// NotiFetch Phase 2 — staff portal hub (#/staff).
 // Post-login landing: shows ONLY the consoles this role may open, with the
-// tenant scope spelled out (mall / cinema / store). Sign-out + demo reset
-// (mall admin only) live here.
+// tenant scope spelled out (campus / block / store). Sign-out + demo reset
+// (campus admin only) live here.
 import { useState } from 'react'
 import { ChefHat, Bike, LayoutDashboard, ScanLine, LogOut, RotateCcw, Building2, Store as StoreIcon, Clapperboard, ChevronLeft, UtensilsCrossed, Users } from 'lucide-react'
 import { toast } from 'sonner'
@@ -22,25 +22,25 @@ interface ConsoleCard {
 
 function consolesFor(user: StaffProfile): ConsoleCard[] {
   switch (user.role) {
-    case 'MALL_ADMIN':
+    case 'CAMPUS_ADMIN':
       return [
-        { href: '#/admin', icon: LayoutDashboard, title: 'Mall admin board', sub: 'Every store in your mall: live orders, KPIs, settlement, audit', tint: 'text-amber-600 bg-amber-100' },
-        { href: '#/menu', icon: UtensilsCrossed, title: 'Menu manager', sub: 'Any store in your mall: create items, set prices, mark items out of stock', tint: 'text-teal-600 bg-teal-100' },
-        { href: '#/qr', icon: ScanLine, title: 'Seat QR generator', sub: 'Printable QR sheets for every screen in your mall', tint: 'text-rose-600 bg-rose-100' },
-        { href: '#/kitchen', icon: ChefHat, title: 'Any kitchen (supervise)', sub: 'Open any store\u2019s kitchen console inside your mall', tint: 'text-violet-600 bg-violet-100' },
+        { href: '#/admin', icon: LayoutDashboard, title: 'Campus admin board', sub: 'Every store in your campus: live orders, KPIs, settlement, audit', tint: 'text-amber-600 bg-amber-100' },
+        { href: '#/menu', icon: UtensilsCrossed, title: 'Menu manager', sub: 'Any store in your campus: create items, set prices, mark items out of stock', tint: 'text-teal-600 bg-teal-100' },
+        { href: '#/qr', icon: ScanLine, title: 'Seat QR generator', sub: 'Printable QR sheets for every classroom in your campus', tint: 'text-rose-600 bg-rose-100' },
+        { href: '#/kitchen', icon: ChefHat, title: 'Any kitchen (supervise)', sub: 'Open any store\u2019s kitchen console inside your campus', tint: 'text-violet-600 bg-violet-100' },
       ]
-    case 'CINEMA_MANAGER':
+    case 'BLOCK_MANAGER':
       return [
-        { href: '#/admin', icon: LayoutDashboard, title: 'Operations board', sub: 'Your cinema\u2019s live orders + every mall store: open new stores, verify KYC, manage staff logins', tint: 'text-amber-600 bg-amber-100' },
-        { href: '#/menu', icon: UtensilsCrossed, title: 'Menu manager', sub: 'Any store in your mall: create items, set prices, mark items out of stock', tint: 'text-teal-600 bg-teal-100' },
-        { href: '#/kitchen', icon: ChefHat, title: 'Any kitchen (supervise)', sub: 'Open any store\u2019s kitchen console inside your mall', tint: 'text-violet-600 bg-violet-100' },
-        { href: '#/qr', icon: ScanLine, title: 'Seat QR generator', sub: 'Your cinema\u2019s screens only', tint: 'text-rose-600 bg-rose-100' },
+        { href: '#/admin', icon: LayoutDashboard, title: 'Operations board', sub: 'Your block\u2019s live orders + every campus store: open new stores, verify KYC, manage staff logins', tint: 'text-amber-600 bg-amber-100' },
+        { href: '#/menu', icon: UtensilsCrossed, title: 'Menu manager', sub: 'Any store in your campus: create items, set prices, mark items out of stock', tint: 'text-teal-600 bg-teal-100' },
+        { href: '#/kitchen', icon: ChefHat, title: 'Any kitchen (supervise)', sub: 'Open any store\u2019s kitchen console inside your campus', tint: 'text-violet-600 bg-violet-100' },
+        { href: '#/qr', icon: ScanLine, title: 'Seat QR generator', sub: 'Your block\u2019s classrooms only', tint: 'text-rose-600 bg-rose-100' },
       ]
     case 'STORE_MANAGER':
       return [
         { href: '#/kitchen', icon: ChefHat, title: 'Your store kitchen', sub: 'Tickets, accept → prepare → ready, open/close your store', tint: 'text-violet-600 bg-violet-100' },
         { href: '#/menu', icon: UtensilsCrossed, title: 'Your menu', sub: 'Create new items, set prices, mark items out of stock', tint: 'text-teal-600 bg-teal-100' },
-        { href: '#/admin', icon: LayoutDashboard, title: 'Store performance', sub: 'Your store\u2019s live orders and settlement share (mall view, your rows)', tint: 'text-amber-600 bg-amber-100' },
+        { href: '#/admin', icon: LayoutDashboard, title: 'Store performance', sub: 'Your store\u2019s live orders and settlement share (campus view, your rows)', tint: 'text-amber-600 bg-amber-100' },
         { href: '#/admin', icon: Users, title: 'My team', sub: 'Create kitchen staff logins for your store, set their passwords, disable access', tint: 'text-sky-600 bg-sky-100' },
       ]
     case 'KITCHEN_STAFF':
@@ -49,7 +49,7 @@ function consolesFor(user: StaffProfile): ConsoleCard[] {
       ]
     case 'RUNNER':
       return [
-        { href: '#/runner', icon: Bike, title: 'Runner console', sub: 'Ready pickups → pick up → deliver to screen & seat. Your runs only.', tint: 'text-emerald-600 bg-emerald-100' },
+        { href: '#/runner', icon: Bike, title: 'Runner console', sub: 'Ready pickups → pick up → deliver to classroom & seat. Your runs only.', tint: 'text-emerald-600 bg-emerald-100' },
       ]
     default:
       return []
@@ -58,8 +58,8 @@ function consolesFor(user: StaffProfile): ConsoleCard[] {
 
 function ScopeBadge({ user }: { user: StaffProfile }) {
   const map: Record<StaffProfile['role'], { icon: React.ComponentType<{ className?: string }>; label: string }> = {
-    MALL_ADMIN: { icon: Building2, label: 'Scope: entire mall' },
-    CINEMA_MANAGER: { icon: Clapperboard, label: 'Scope: your cinema' },
+    CAMPUS_ADMIN: { icon: Building2, label: 'Scope: entire campus' },
+    BLOCK_MANAGER: { icon: Clapperboard, label: 'Scope: your block' },
     STORE_MANAGER: { icon: StoreIcon, label: 'Scope: your store' },
     KITCHEN_STAFF: { icon: ChefHat, label: 'Scope: your store\u2019s kitchen' },
     RUNNER: { icon: Bike, label: 'Scope: your delivery runs' },
@@ -131,7 +131,7 @@ export default function StaffPortal({ go }: { go: (p: string) => void }) {
         <div className="mt-3"><ScopeBadge user={user} /></div>
         <p className="mt-3 text-xs leading-relaxed text-stone-500">
           Your role decides what loads here. Scoping is enforced on the server for every API call — opening someone
-          else&apos;s store, cinema or run by URL returns 403, not just a hidden button.
+          else&apos;s store, block or run by URL returns 403, not just a hidden button.
         </p>
       </header>
 
@@ -161,10 +161,10 @@ export default function StaffPortal({ go }: { go: (p: string) => void }) {
 
       {user.role === 'STORE_MANAGER' && user.storeId && <KycCard storeId={user.storeId} />}
 
-      {user.role === 'MALL_ADMIN' && (
+      {user.role === 'CAMPUS_ADMIN' && (
         <section className="mt-8 rounded-2xl border border-border bg-card p-5">
           <h2 className="font-bold">Demo maintenance</h2>
-          <p className="mt-1 text-xs text-stone-500">Wipes and reseeds the dataset (1 mall, 2 cinemas, 4 stores, 2 sample orders). All staff sessions are revoked.</p>
+          <p className="mt-1 text-xs text-stone-500">Wipes and reseeds the dataset (1 campus, 2 blocks, 4 stores, 2 sample orders). All staff sessions are revoked.</p>
           <button
             onClick={resetDemo}
             disabled={resetting}
@@ -180,7 +180,7 @@ export default function StaffPortal({ go }: { go: (p: string) => void }) {
 }
 
 // Phase 4 — merchant KYC submission (store onboarding). Only MASKED compliance
-// values are collected; the mall admin verifies before any payout can happen.
+// values are collected; the campus admin verifies before any payout can happen.
 function KycCard({ storeId }: { storeId: string }) {
   const [gstin, setGstin] = useState('27AABCU9603R1ZM')
   const [pan, setPan] = useState('ABCPA1234F')
@@ -194,7 +194,7 @@ function KycCard({ storeId }: { storeId: string }) {
     try {
       const res = await post<{ kycStatus: string }>(`/api/stores/${storeId}/kyc`, { gstin, panMasked: pan, bankMasked: bank, fssai })
       setStatus(res.kycStatus)
-      toast.success('KYC submitted', { description: 'The mall admin reviews and verifies before payouts unlock.' })
+      toast.success('KYC submitted', { description: 'The campus admin reviews and verifies before payouts unlock.' })
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'KYC submission failed')
     } finally {

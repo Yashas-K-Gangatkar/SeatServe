@@ -1,10 +1,10 @@
-// SeatServe Phase 3 — REAL gateway rails (Razorpay Route · Cashfree Easy Split).
+// NotiFetch Phase 3 — REAL gateway rails (Razorpay Route · Cashfree Easy Split).
 //
 // Everything here is env-activated: with no credentials configured the platform
 // runs the SANDBOX_MOCK gateway (mock-pay + signed local webhooks). The moment
 // RAZORPAY_KEY_ID/RAZORPAY_KEY_SECRET or CASHFREE_APP_ID/CASHFREE_SECRET_KEY
 // are set (test/sandbox keys first!), these clients hit the REAL sandbox APIs —
-// order creation and split instructions (no refund rails — cinema policy: no online refunds) — using the exact
+// order creation and split instructions (no refund rails — block policy: no online refunds) — using the exact
 // request shapes the providers document.
 //
 // SECURITY: secret keys NEVER reach the client. The checkout session endpoint

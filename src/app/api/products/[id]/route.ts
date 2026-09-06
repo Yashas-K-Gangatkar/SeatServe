@@ -1,5 +1,5 @@
 // PATCH /api/products/[id] — mark item unavailable/available (86'd items).
-// Phase 2: STORE_MANAGER (own store); MALL_ADMIN / CINEMA_MANAGER (own mall).
+// Phase 2: STORE_MANAGER (own store); CAMPUS_ADMIN / BLOCK_MANAGER (own campus).
 import { z } from 'zod'
 import { db } from '@/lib/db'
 import { ok, fail, parseBody } from '@/lib/api-helpers'
@@ -10,7 +10,7 @@ import { emitToRooms } from '@/lib/realtime'
 
 const bodySchema = z.object({
   isAvailable: z.boolean().optional(),
-  // Audit fix #44 (CRUD increment): mall admin / store manager can reprice items
+  // Audit fix #44 (CRUD increment): campus admin / store manager can reprice items
   pricePaise: z.number().int().min(100).max(10_000_00).optional(),
   // photo can be attached/updated any time (compulsory at creation)
   imageUrl: z.string().trim().min(4).max(400).optional(),
@@ -18,7 +18,7 @@ const bodySchema = z.object({
 
 export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
-  const auth = await requireStaff(request, ['STORE_MANAGER', 'MALL_ADMIN', 'CINEMA_MANAGER'])
+  const auth = await requireStaff(request, ['STORE_MANAGER', 'CAMPUS_ADMIN', 'BLOCK_MANAGER'])
   if ('error' in auth) return auth.error
   const user = auth.user
 
@@ -27,7 +27,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
 
   const product = await db.product.findUnique({ where: { id }, include: { store: true } })
   if (!product) return fail('Product not found', 404)
-  if (!canAccessStore(user, { id: product.storeId, mallId: product.store.mallId })) {
+  if (!canAccessStore(user, { id: product.storeId, campusId: product.store.campusId })) {
     return fail('Your account is not authorized for this store', 403)
   }
 
@@ -44,10 +44,10 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
     action: parsed.data.isAvailable === false ? 'PRODUCT_SOLD_OUT' : parsed.data.isAvailable === true ? 'PRODUCT_AVAILABLE' : parsed.data.pricePaise !== undefined ? 'PRODUCT_REPRICED' : 'PRODUCT_UPDATED',
     entityType: 'Product',
     entityId: id,
-    mallId: product.store.mallId,
+    campusId: product.store.campusId,
     meta: { name: product.name, store: product.store.name, ...(parsed.data.pricePaise !== undefined ? { pricePaise: parsed.data.pricePaise, previousPaise: product.pricePaise } : {}) },
   })
-  await emitToRooms({ rooms: [`admin:${product.store.mallId}`], event: 'product:update', data: { productId: id, isAvailable: data.isAvailable ?? product.isAvailable } })
+  await emitToRooms({ rooms: [`admin:${product.store.campusId}`], event: 'product:update', data: { productId: id, isAvailable: data.isAvailable ?? product.isAvailable } })
 
   const fresh = await db.product.findUnique({ where: { id }, select: { id: true, isAvailable: true, pricePaise: true, imageUrl: true } })
   return ok(fresh)

@@ -13,7 +13,7 @@ import { useReveal } from '@/lib/motion/useReveal'
 const FAQS = [
   {
     q: 'How do I scan the QR code?',
-    a: 'Your seat has a small QR sticker on the armrest or seat back. Open seatserve on your phone, tap Scan, point the camera — the menu opens by itself. No app to install.',
+    a: 'Your classroom door (and every canteen counter) has a NotiFetch QR sticker. Scan it with your phone camera — the canteen menu opens by itself. No app to install.',
   },
   {
     q: 'Can I order for my friends too?',
@@ -25,7 +25,7 @@ const FAQS = [
   },
   {
     q: 'Is this actually free to try?',
-    a: 'There is no fee to use the service — you pay only for your order, once, at checkout (UPI, card or netbanking). No booking charge, no subscription, and the payment screen always shows the exact amount before you confirm.',
+    a: 'There is no fee to use the service — you pay only for your order, once, at checkout (UPI, card or netbanking). No booking charge, no subscription, and the payment classroom always shows the exact amount before you confirm.',
   },
 ]
 

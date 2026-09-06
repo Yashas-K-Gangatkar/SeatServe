@@ -1,5 +1,5 @@
 // POST /api/store/products — create a menu item (owner console).
-// STORE_MANAGER (own store), MALL_ADMIN or delegated CINEMA_MANAGER (own mall).
+// STORE_MANAGER (own store), CAMPUS_ADMIN or delegated BLOCK_MANAGER (own campus).
 // Audited; realtime-pushed to the admin board. New items start AVAILABLE
 // unless explicitly added as sold out.
 import { z } from 'zod'
@@ -25,7 +25,7 @@ const bodySchema = z.object({
 })
 
 export async function POST(request: Request) {
-  const auth = await requireStaff(request, ['STORE_MANAGER', 'MALL_ADMIN', 'CINEMA_MANAGER'])
+  const auth = await requireStaff(request, ['STORE_MANAGER', 'CAMPUS_ADMIN', 'BLOCK_MANAGER'])
   if ('error' in auth) return auth.error
   const user = auth.user
 
@@ -35,7 +35,7 @@ export async function POST(request: Request) {
 
   const store = await db.store.findUnique({ where: { id: input.storeId } })
   if (!store) return fail('Store not found', 404)
-  if (!canAccessStore(user, { id: store.id, mallId: store.mallId })) {
+  if (!canAccessStore(user, { id: store.id, campusId: store.campusId })) {
     return fail('Your account is not authorized for this store', 403)
   }
 
@@ -65,7 +65,7 @@ export async function POST(request: Request) {
     action: 'PRODUCT_CREATED',
     entityType: 'Product',
     entityId: product.id,
-    mallId: store.mallId,
+    campusId: store.campusId,
     meta: { name: product.name, store: store.name, pricePaise: product.pricePaise, isAvailable: product.isAvailable },
   })
 

@@ -1,4 +1,4 @@
-// SeatServe — payment webhook signing & verification (pure crypto).
+// NotiFetch — payment webhook signing & verification (pure crypto).
 // Phase 1: the sandbox mock gateway signs its callbacks exactly the way a real
 // gateway (Razorpay X-Signature / Cashfree x-webhook-signature) does — HMAC-SHA256
 // over the raw body with a shared secret. Receivers MUST verify before trusting.

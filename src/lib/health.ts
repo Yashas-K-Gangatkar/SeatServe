@@ -1,9 +1,9 @@
-// SeatServe — production self-check (shared by /health page, /api/health, cron ping).
+// NotiFetch — production self-check (shared by /health page, /api/health, cron ping).
 // One call answers the owner question "is prod + DB + demo + realtime up?"
 // without logging into Vercel or asking anyone.
 import { db } from '@/lib/db'
 import { rollStaleShowtimes } from '@/lib/demo-roll'
-import { pickCurrentShow } from '@/lib/showtime'
+import { pickCurrentShow } from '@/lib/lecture'
 
 export interface HealthCheck {
   name: string
@@ -33,7 +33,7 @@ export async function runHealthChecks(trigger: 'manual' | 'cron' = 'manual'): Pr
   const checks: HealthCheck[] = []
 
   // 1 · API process — if this code runs, the serverless/standalone app is alive
-  checks.push({ name: 'api', status: 'ok', detail: 'seatserve-api responding' })
+  checks.push({ name: 'api', status: 'ok', detail: 'notifetch-api responding' })
 
   // 2 · database — round-trip query + row sanity
   let dbOk = false
@@ -55,17 +55,17 @@ export async function runHealthChecks(trigger: 'manual' | 'cron' = 'manual'): Pr
   if (dbOk) {
     try {
       const seat = await db.seat.findFirst({
-        where: { screen: { name: 'Screen 3' }, code: 'A-1' },
-        select: { qrToken: true, code: true, screenId: true },
+        where: { classroom: { name: { in: ['Classroom 3', 'Screen 3'] } }, code: 'A-1' },
+        select: { qrToken: true, code: true, classroomId: true },
       })
       if (seat) {
-        await rollStaleShowtimes(seat.screenId)
-        const showtimes = await db.showtime.findMany({ where: { screenId: seat.screenId, isActive: true } })
-        const picked = pickCurrentShow(showtimes, new Date())
+        await rollStaleShowtimes(seat.classroomId)
+        const lectures = await db.lecture.findMany({ where: { classroomId: seat.classroomId, isActive: true } })
+        const picked = pickCurrentShow(lectures, new Date())
         demoOk = !!picked.show && !!picked.info?.orderingOpen
         demo = {
           seat: seat.code,
-          show: picked.show?.movieTitle ?? null,
+          show: picked.show?.subject ?? null,
           orderingOpen: !!picked.info?.orderingOpen,
           minutesUntilCutoff: picked.info?.minutesUntilCutoff ?? null,
         }
@@ -73,11 +73,11 @@ export async function runHealthChecks(trigger: 'manual' | 'cron' = 'manual'): Pr
           name: 'demo',
           status: demoOk ? 'ok' : 'degraded',
           detail: demoOk
-            ? `Seat ${seat.code} · "${picked.show?.movieTitle}" · ${picked.info!.minutesUntilCutoff}m left to order`
-            : 'no orderable showtime after auto-roll',
+            ? `Seat ${seat.code} · "${picked.show?.subject}" · ${picked.info!.minutesUntilCutoff}m left to order`
+            : 'no orderable lecture after auto-roll',
         })
       } else {
-        checks.push({ name: 'demo', status: 'down', detail: 'demo seat (Screen 3 / A-1) missing' })
+        checks.push({ name: 'demo', status: 'down', detail: 'demo seat (Classroom 3 / A-1) missing' })
       }
     } catch {
       checks.push({ name: 'demo', status: 'down', detail: 'demo pipeline error' })
@@ -114,5 +114,5 @@ export async function runHealthChecks(trigger: 'manual' | 'cron' = 'manual'): Pr
 
   // realtime degraded does NOT fail the report — polling is a designed fallback
   const ok = dbOk && demoOk
-  return { ok, service: 'seatserve-api', time: new Date().toISOString(), uptimeSec: Math.round(process.uptime()), trigger, checks, demo }
+  return { ok, service: 'notifetch-api', time: new Date().toISOString(), uptimeSec: Math.round(process.uptime()), trigger, checks, demo }
 }

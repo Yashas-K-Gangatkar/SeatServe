@@ -1,5 +1,5 @@
 /**
- * SeatServe — generate the 100 tester-hall QR PNGs from the manifest.
+ * NotiFetch — generate the 100 tester-hall QR PNGs from the manifest.
  * Each QR encodes the PRODUCTION url: https://ctshop-five.vercel.app/?qr=<token>
  * so a tester's phone camera opens the live demo seat directly.
  *

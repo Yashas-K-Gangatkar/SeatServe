@@ -16,15 +16,15 @@ const STORE_DOTS = ['#D4AF37', '#C4552D', '#7A9E4F', '#8E5A79', '#8a6d1f']
 const LINE_ITEMS = [
   '20-minute wait',
   'Standing in queue',
-  "Can't watch the movie",
+  "Can't leave the class",
   'Stressful',
-  'Miss opening scenes',
+  'Miss the break',
 ] as const
 
 const SERVE_ITEMS = [
   '8-minute delivery',
   'Sitting in your seat',
-  'Watch the movie',
+  'In class, no queue',
   'Stress-free',
   'Real-time tracking',
 ] as const
@@ -34,12 +34,12 @@ export function WhySeatServe() {
 
   return (
     <section
-      aria-label="Why SeatServe"
+      aria-label="Why NotiFetch"
       className="mx-auto max-w-5xl px-4 py-14 sm:px-6 sm:py-20"
     >
       <div ref={reveal} className="ss-reveal">
         <h2 className="text-center text-[28px] font-bold tracking-tight sm:text-[36px]">
-          Why SeatServe
+          Why NotiFetch
         </h2>
 
         <div className="mt-10 grid gap-4 sm:grid-cols-3 sm:gap-6">
@@ -112,7 +112,7 @@ export function WhySeatServe() {
         </div>
 
         <h3 className="mt-12 text-center text-[24px] font-bold tracking-tight">
-          The SeatServe Difference
+          The NotiFetch Difference
         </h3>
         <div className="mt-5 grid gap-4 sm:grid-cols-2 sm:gap-5">
           <div className="rounded-2xl border border-[#C41E3C]/15 bg-[#C41E3C]/[0.05] p-6">
@@ -136,7 +136,7 @@ export function WhySeatServe() {
           </div>
           <div className="rounded-2xl border border-[#D4AF37]/40 bg-[#D4AF37]/[0.1] p-6 shadow-[0_4px_12px_rgba(212,175,55,0.14)]">
             <p className="text-sm font-extrabold uppercase tracking-wider text-[#8a6d1f]">
-              ⚡ ✅ SeatServe Order
+              ⚡ ✅ NotiFetch Order
             </p>
             <ul className="mt-3 space-y-2">
               {SERVE_ITEMS.map((item) => (

@@ -16,9 +16,9 @@ const geistMono = Geist_Mono({
 });
 
 const SITE_URL = "https://notifetch.in";
-const SITE_TITLE = "NotiFetch — order food to your cinema seat";
+const SITE_TITLE = "NotiFetch — order food to your block seat";
 const SITE_DESCRIPTION =
-  "NotiFetch turns your cinema seat into a food counter. Scan the seat QR, order from multiple outlets, pay by UPI or card, and get snacks delivered to your Screen & Seat. Payments by Razorpay.";
+  "NotiFetch turns your block seat into a food counter. Scan the seat QR, order from multiple outlets, pay by UPI or card, and get snacks delivered to your Classroom & Seat. Payments by Razorpay.";
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),

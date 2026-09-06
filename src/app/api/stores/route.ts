@@ -1,12 +1,12 @@
 // GET /api/stores — public demo list (kitchen selector, admin toggles reuse overview)
-// POST /api/stores — MALL_ADMIN or the delegated CINEMA_MANAGER opens a NEW
-// store in their mall (same-mall expansion): storefront + its opening menu in
+// POST /api/stores — CAMPUS_ADMIN or the delegated BLOCK_MANAGER opens a NEW
+// store in their campus (same-campus expansion): storefront + its opening menu in
 // one call. The new store starts KYC=PENDING (settlement skips payout until
 // verified) and isOpen=true so the customer app can list it immediately.
 //
 // Role boundaries:
-//   MALL_ADMIN     — may create stores inside their own mall
-//   CINEMA_MANAGER — delegated mall operator: same mall-wide store onboarding
+//   CAMPUS_ADMIN     — may create stores inside their own campus
+//   BLOCK_MANAGER — delegated campus operator: same campus-wide store onboarding
 //   STORE_MANAGER  — 403 (they run their own store; they don't open new ones)
 
 import { z } from 'zod'
@@ -45,24 +45,24 @@ function slugify(name: string): string {
 }
 
 export async function POST(request: Request) {
-  const auth = await requireStaff(request, ['MALL_ADMIN', 'CINEMA_MANAGER'])
+  const auth = await requireStaff(request, ['CAMPUS_ADMIN', 'BLOCK_MANAGER'])
   if ('error' in auth) return auth.error
   const user = auth.user
 
-  if (!user.mallId) return fail('Your admin account is not tied to a mall', 403)
+  if (!user.campusId) return fail('Your admin account is not tied to a campus', 403)
 
   const parsed = await parseBody(request, bodySchema)
   if ('error' in parsed) return parsed.error
   const { name, emoji, tagline, prepBufferMin, commissionPct, products } = parsed.data
 
-  // duplicate-name guard within the mall (different malls may share names)
-  const mallStores = await db.store.findMany({ where: { mallId: user.mallId }, select: { name: true } })
+  // duplicate-name guard within the campus (different campuses may share names)
+  const mallStores = await db.store.findMany({ where: { campusId: user.campusId }, select: { name: true } })
   const clash = mallStores.find((s) => s.name.trim().toLowerCase() === name.trim().toLowerCase())
-  if (clash) return fail(`A store named "${clash.name}" already exists in your mall`, 409)
+  if (clash) return fail(`A store named "${clash.name}" already exists in your campus`, 409)
 
   const created = await db.store.create({
     data: {
-      mallId: user.mallId,
+      campusId: user.campusId,
       name,
       slug: slugify(name),
       emoji: emoji || '🏬',
@@ -93,12 +93,12 @@ export async function POST(request: Request) {
     action: 'STORE_CREATED',
     entityType: 'Store',
     entityId: created.id,
-    mallId: user.mallId,
+    campusId: user.campusId,
     meta: { name: created.name, productCount: created.products.length, commissionPct },
   })
 
   await emitToRooms({
-    rooms: [`admin:${user.mallId}`],
+    rooms: [`admin:${user.campusId}`],
     event: 'store:update',
     data: { storeId: created.id, name: created.name },
   })

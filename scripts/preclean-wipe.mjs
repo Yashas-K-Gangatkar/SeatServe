@@ -1,8 +1,8 @@
 // PRECLEAN BACKUP + WIPE — removes ALL test/demo commerce data, keeps real things.
 // KEEPS: landing reviews/testimonials (code, untouched), store ratings, mom's store
 //        "milk products" + its menu (the family-loop store), bhagya, admin logins,
-//        screens/seats/showtimes (QR posters depend on them), audit history.
-// DELETES: demo stores (Cinema Snacks, Pizza Corner, Wrap House, Mithai & More) +
+//        classrooms/seats/lectures (QR posters depend on them), audit history.
+// DELETES: demo stores (Block Snacks, Pizza Corner, Wrap House, Mithai & More) +
 //          their products, ALL orders/items/payments/refunds/splits/settlements/
 //          carts/tickets/delivery runs, demo @seatserve.demo non-admin staff.
 import pkg from 'pg'
@@ -42,7 +42,7 @@ if (await hasCol('DeliveryRun', 'orderId') || true) await backup('DeliveryRun')
 await backup('Product', `WHERE "storeId" != '${MILK}'`)
 await backup('Store', `WHERE id != '${MILK}'`)
 await backup('Runner')
-await backup('User', `WHERE email LIKE '%@seatserve.demo' AND role != 'MALL_ADMIN'`)
+await backup('User', `WHERE email LIKE '%@seatserve.demo' AND role != 'CAMPUS_ADMIN'`)
 if (await hasCol('DeliveryZone', 'storeId')) await backup('DeliveryZone', `WHERE "storeId" != '${MILK}'`)
 
 console.log('=== WIPE (children first) ===')
@@ -66,8 +66,8 @@ try {
   if (await hasCol('Runner', 'storeId')) await del('Runner', `"storeId" IS NULL OR "storeId" != '${MILK}'`, '(demo)')
   // detach staff still pointing at deleted stores
   await c.query(`UPDATE "User" SET "storeId"=NULL WHERE "storeId" IS NOT NULL AND "storeId" != '${MILK}'`)
-  // demo staff (keep MALL_ADMIN logins + real Gmail accounts)
-  await del('User', `email LIKE '%@seatserve.demo' AND role != 'MALL_ADMIN'`, '(demo kitchen/runner staff)')
+  // demo staff (keep CAMPUS_ADMIN logins + real Gmail accounts)
+  await del('User', `email LIKE '%@seatserve.demo' AND role != 'CAMPUS_ADMIN'`, '(demo kitchen/runner staff)')
   // demo stores
   await del('Store', `id != '${MILK}'`, '(demo stores)')
   await c.query('COMMIT')

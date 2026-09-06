@@ -1,6 +1,6 @@
 'use client'
 
-// SeatServe — realtime (socket.io) + polling helpers
+// NotiFetch — realtime (socket.io) + polling helpers
 
 import { useEffect, useRef, useState } from 'react'
 import { io, type Socket } from 'socket.io-client'

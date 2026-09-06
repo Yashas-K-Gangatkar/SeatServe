@@ -25,7 +25,7 @@ export async function GET(request: Request) {
     }
 
     return ok({
-      service: 'seatserve-api',
+      service: 'notifetch-api',
       status: 'healthy',
       time: new Date().toISOString(),
       latencyMs,

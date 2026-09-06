@@ -1,6 +1,6 @@
 'use client'
 
-// SeatServe — runner console (#/runner[/<runnerId>])
+// NotiFetch — runner console (#/runner[/<runnerId>])
 // Ready pickups → claim → Pick up → Deliver. Zones & drop labels shown per run.
 import { useCallback, useEffect, useState } from 'react'
 import { Bike, ChevronLeft, Clock, MapPin, PackageCheck, ShoppingBag, Zap } from 'lucide-react'
@@ -14,7 +14,7 @@ import { slotLabel } from '@/lib/scheduling'
 
 export default function Runner({ runnerId, go, onRouteChange }: { runnerId?: string; go: (p: string) => void; onRouteChange?: () => void }) {
   return (
-    <StaffGate roles={['RUNNER', 'MALL_ADMIN']} go={go} consoleName="Runner console">
+    <StaffGate roles={['RUNNER', 'CAMPUS_ADMIN']} go={go} consoleName="Runner console">
       {(user) => <RunnerConsole role={user.role} runnerId={runnerId} go={go} onRouteChange={onRouteChange} />}
     </StaffGate>
   )
@@ -44,8 +44,8 @@ function RunnerConsole({ role, runnerId, go, onRouteChange }: { role: string; ru
   }, [load])
 
   usePolling(load, 5000)
-  // mall-scoped runner room (token-gated) — known once the console has loaded
-  useRealtime(data?.mallId ? [`runners:${data.mallId}`] : [], () => void load())
+  // campus-scoped runner room (token-gated) — known once the console has loaded
+  useRealtime(data?.campusId ? [`runners:${data.campusId}`] : [], () => void load())
 
   const claim = async (ticketId: string) => {
     setActing(ticketId)
@@ -109,9 +109,9 @@ function RunnerConsole({ role, runnerId, go, onRouteChange }: { role: string; ru
         <div className="mt-3 flex flex-wrap gap-2">
           {/* Audit fix #34: RUNNER could tap another runner's chip and the URL
               changed, but the server pins data to the session runner — the UI
-              showed a wrong "active" runner. Only the mall admin (front-desk
+              showed a wrong "active" runner. Only the campus admin (front-desk
               coordination) sees the switcher; runners are always themselves. */}
-          {role === 'MALL_ADMIN' &&
+          {role === 'CAMPUS_ADMIN' &&
             data.runners.map((r) => (
               <button
                 key={r.id}
@@ -153,7 +153,7 @@ function RunnerConsole({ role, runnerId, go, onRouteChange }: { role: string; ru
                         )}
                       </p>
                       <p className="text-[11px] text-muted-foreground">
-                        {t.orderCode} · {t.screen} · {t.cinema} · ready {minAgo(t.readyAt ?? '')}
+                        {t.orderCode} · {t.classroom} · {t.block} · ready {minAgo(t.readyAt ?? '')}
                       </p>
                     </div>
                     <StatusPill status="READY_FOR_PICKUP" />
@@ -204,7 +204,7 @@ function RunnerConsole({ role, runnerId, go, onRouteChange }: { role: string; ru
                     <p className="flex items-start gap-1.5">
                       <MapPin className="mt-0.5 h-3.5 w-3.5 shrink-0 text-orange-500" aria-hidden />
                       <span>
-                        Deliver: {run.dropLabel} {run.movieTitle ? `· ${run.movieTitle}` : ''}
+                        Deliver: {run.dropLabel} {run.subject ? `· ${run.subject}` : ''}
                       </span>
                     </p>
                   </div>

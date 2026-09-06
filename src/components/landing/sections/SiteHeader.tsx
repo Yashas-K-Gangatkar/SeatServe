@@ -21,9 +21,9 @@ export function SiteHeader() {
         <a
           href="/"
           className="flex items-center gap-1.5 text-[17px] font-extrabold tracking-tight"
-          aria-label="SeatServe home"
+          aria-label="NotiFetch home"
         >
-          <span aria-hidden="true">🍿</span> SeatServe
+          <span aria-hidden="true">🍿</span> NotiFetch
         </a>
         <div className="flex items-center gap-2">
           <SoundToggle />

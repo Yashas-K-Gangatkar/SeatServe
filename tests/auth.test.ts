@@ -1,4 +1,4 @@
-// SeatServe Phase 2 — auth core unit tests: scrypt passwords, session token
+// NotiFetch Phase 2 — auth core unit tests: scrypt passwords, session token
 // hashing, RBAC allow-lists and tenant-scope guards.
 import { describe, test, expect } from 'bun:test'
 import {
@@ -20,8 +20,8 @@ const mkUser = (over: Partial<StaffUser> = {}): StaffUser => ({
   name: 'Test Kitchen',
   email: 'kitchen@test.demo',
   role: 'KITCHEN_STAFF',
-  mallId: null,
-  cinemaId: null,
+  campusId: null,
+  blockId: null,
   storeId: 'store_snacks',
   runnerId: null,
   ...over,
@@ -79,7 +79,7 @@ describe('session tokens', () => {
 
 describe('RBAC allow-lists', () => {
   test('staff roles recognized', () => {
-    for (const r of ['MALL_ADMIN', 'CINEMA_MANAGER', 'STORE_MANAGER', 'KITCHEN_STAFF', 'RUNNER']) {
+    for (const r of ['CAMPUS_ADMIN', 'BLOCK_MANAGER', 'STORE_MANAGER', 'KITCHEN_STAFF', 'RUNNER']) {
       expect(isStaffRole(r)).toBe(true)
     }
     expect(isStaffRole('CUSTOMER')).toBe(false)
@@ -89,8 +89,8 @@ describe('RBAC allow-lists', () => {
   test('empty allow-list = any staff; customer never passes', () => {
     expect(roleAllowed('KITCHEN_STAFF', [])).toBe(true)
     expect(roleAllowed('CUSTOMER', [])).toBe(false)
-    expect(roleAllowed('MALL_ADMIN', ['MALL_ADMIN', 'CINEMA_MANAGER'])).toBe(true)
-    expect(roleAllowed('KITCHEN_STAFF', ['MALL_ADMIN', 'CINEMA_MANAGER'])).toBe(false)
+    expect(roleAllowed('CAMPUS_ADMIN', ['CAMPUS_ADMIN', 'BLOCK_MANAGER'])).toBe(true)
+    expect(roleAllowed('KITCHEN_STAFF', ['CAMPUS_ADMIN', 'BLOCK_MANAGER'])).toBe(false)
   })
 })
 
@@ -102,78 +102,78 @@ describe('tenant scope guards', () => {
     expect(scopeErrorFor(mkUser({ role: 'STORE_MANAGER', storeId: null }))).toMatch(/no store scope/)
   })
 
-  test('cinema manager needs cinemaId; mall admin needs mallId; runner needs runnerId', () => {
-    expect(scopeErrorFor(mkUser({ role: 'CINEMA_MANAGER', cinemaId: 'c1' }))).toBeNull()
-    expect(scopeErrorFor(mkUser({ role: 'CINEMA_MANAGER', cinemaId: null }))).toMatch(/no cinema scope/)
-    expect(scopeErrorFor(mkUser({ role: 'MALL_ADMIN', mallId: 'm1', storeId: null }))).toBeNull()
-    expect(scopeErrorFor(mkUser({ role: 'MALL_ADMIN', mallId: null }))).toMatch(/no mall scope/)
+  test('block manager needs blockId; campus admin needs campusId; runner needs runnerId', () => {
+    expect(scopeErrorFor(mkUser({ role: 'BLOCK_MANAGER', blockId: 'c1' }))).toBeNull()
+    expect(scopeErrorFor(mkUser({ role: 'BLOCK_MANAGER', blockId: null }))).toMatch(/no block scope/)
+    expect(scopeErrorFor(mkUser({ role: 'CAMPUS_ADMIN', campusId: 'm1', storeId: null }))).toBeNull()
+    expect(scopeErrorFor(mkUser({ role: 'CAMPUS_ADMIN', campusId: null }))).toMatch(/no campus scope/)
     expect(scopeErrorFor(mkUser({ role: 'RUNNER', runnerId: 'r1', storeId: null }))).toBeNull()
     expect(scopeErrorFor(mkUser({ role: 'RUNNER', runnerId: null }))).toMatch(/no runner scope/)
   })
 
   test('canAccessStore: cook pinned to own store only', () => {
     const cook = mkUser()
-    expect(canAccessStore(cook, { id: 'store_snacks', mallId: 'mall1' })).toBe(true)
-    expect(canAccessStore(cook, { id: 'store_pizza', mallId: 'mall1' })).toBe(false)
+    expect(canAccessStore(cook, { id: 'store_snacks', campusId: 'mall1' })).toBe(true)
+    expect(canAccessStore(cook, { id: 'store_pizza', campusId: 'mall1' })).toBe(false)
   })
 
-  test('canAccessStore: mall admin covers whole mall, not other malls', () => {
-    const admin = mkUser({ role: 'MALL_ADMIN', storeId: null, mallId: 'mall1' })
-    expect(canAccessStore(admin, { id: 'store_snacks', mallId: 'mall1' })).toBe(true)
-    expect(canAccessStore(admin, { id: 'store_elsewhere', mallId: 'mall2' })).toBe(false)
+  test('canAccessStore: campus admin covers whole campus, not other campuses', () => {
+    const admin = mkUser({ role: 'CAMPUS_ADMIN', storeId: null, campusId: 'mall1' })
+    expect(canAccessStore(admin, { id: 'store_snacks', campusId: 'mall1' })).toBe(true)
+    expect(canAccessStore(admin, { id: 'store_elsewhere', campusId: 'mall2' })).toBe(false)
   })
 
-  test('canAccessStore: cinema manager covers their mall, runner never passes', () => {
-    const cm = mkUser({ role: 'CINEMA_MANAGER', storeId: null, cinemaId: 'c1', mallId: 'mall1' })
+  test('canAccessStore: block manager covers their campus, runner never passes', () => {
+    const cm = mkUser({ role: 'BLOCK_MANAGER', storeId: null, blockId: 'c1', campusId: 'mall1' })
     const runner = mkUser({ role: 'RUNNER', storeId: null, runnerId: 'r1' })
-    expect(canAccessStore(cm, { id: 'store_snacks', mallId: 'mall1' })).toBe(true)
-    expect(canAccessStore(cm, { id: 'store_elsewhere', mallId: 'mall2' })).toBe(false)
-    expect(canAccessStore(runner, { id: 'store_snacks', mallId: 'mall1' })).toBe(false)
+    expect(canAccessStore(cm, { id: 'store_snacks', campusId: 'mall1' })).toBe(true)
+    expect(canAccessStore(cm, { id: 'store_elsewhere', campusId: 'mall2' })).toBe(false)
+    expect(canAccessStore(runner, { id: 'store_snacks', campusId: 'mall1' })).toBe(false)
   })
 })
 
 // ───────── staff management RBAC matrix (Team panel) ─────────
 
 describe('staffMutationError matrix', () => {
-  const admin = mkUser({ id: 'admin', role: 'MALL_ADMIN', mallId: 'mall_1', storeId: null })
-  const managerA = mkUser({ id: 'mgrA', role: 'STORE_MANAGER', mallId: null, storeId: 'store_A' })
-  const managerB = mkUser({ id: 'mgrB', role: 'STORE_MANAGER', mallId: null, storeId: 'store_B' })
-  const chefA = mkUser({ id: 'chefA', role: 'KITCHEN_STAFF', mallId: null, storeId: 'store_A' })
-  const chefB = mkUser({ id: 'chefB', role: 'KITCHEN_STAFF', mallId: null, storeId: 'store_B' })
-  const target = (u: StaffUser) => ({ id: u.id, role: u.role, mallId: u.mallId, storeId: u.storeId, cinemaId: u.cinemaId })
+  const admin = mkUser({ id: 'admin', role: 'CAMPUS_ADMIN', campusId: 'mall_1', storeId: null })
+  const managerA = mkUser({ id: 'mgrA', role: 'STORE_MANAGER', campusId: null, storeId: 'store_A' })
+  const managerB = mkUser({ id: 'mgrB', role: 'STORE_MANAGER', campusId: null, storeId: 'store_B' })
+  const chefA = mkUser({ id: 'chefA', role: 'KITCHEN_STAFF', campusId: null, storeId: 'store_A' })
+  const chefB = mkUser({ id: 'chefB', role: 'KITCHEN_STAFF', campusId: null, storeId: 'store_B' })
+  const target = (u: StaffUser) => ({ id: u.id, role: u.role, campusId: u.campusId, storeId: u.storeId, blockId: u.blockId })
 
-  test('mall admin controls every non-self account in every way', () => {
+  test('campus admin controls every non-self account in every way', () => {
     for (const action of ['SET_PASSWORD', 'DEACTIVATE', 'ACTIVATE', 'REASSIGN', 'DELETE'] as const) {
       expect(staffMutationError(admin, target(chefA), action)).toBeNull()
       expect(staffMutationError(admin, target(managerA), action)).toBeNull()
     }
   })
 
-  test('mall admin can never mutate their own account (single-admin lockout guard)', () => {
+  test('campus admin can never mutate their own account (single-admin lockout guard)', () => {
     expect(staffMutationError(admin, target(admin), 'SET_PASSWORD')).toMatch(/separate admin/)
     expect(staffMutationError(admin, target(admin), 'DEACTIVATE')).toMatch(/own account/)
     expect(staffMutationError(admin, target(admin), 'REASSIGN')).toMatch(/own account/)
   })
 
-  test('mall admin accounts cannot be deleted or reassigned by anyone', () => {
-    const admin2 = mkUser({ id: 'admin2', role: 'MALL_ADMIN', mallId: 'mall_1' })
+  test('campus admin accounts cannot be deleted or reassigned by anyone', () => {
+    const admin2 = mkUser({ id: 'admin2', role: 'CAMPUS_ADMIN', campusId: 'mall_1' })
     expect(staffMutationError(admin, target(admin2), 'DELETE')).toMatch(/cannot be removed/)
     expect(staffMutationError(admin, target(admin2), 'REASSIGN')).toMatch(/cannot be reassigned/)
   })
 
-  test('cinema manager (delegated operator) manages the mall workforce', () => {
-    const cm = mkUser({ id: 'cm', role: 'CINEMA_MANAGER', mallId: 'mall_1', storeId: null, cinemaId: 'c1' })
+  test('block manager (delegated operator) manages the campus workforce', () => {
+    const cm = mkUser({ id: 'cm', role: 'BLOCK_MANAGER', campusId: 'mall_1', storeId: null, blockId: 'c1' })
     for (const action of ['SET_PASSWORD', 'DEACTIVATE', 'ACTIVATE', 'REASSIGN', 'DELETE'] as const) {
       expect(staffMutationError(cm, target(chefA), action)).toBeNull()
       expect(staffMutationError(cm, target(managerA), action)).toBeNull()
     }
   })
 
-  test('cinema manager can never touch mall admin accounts', () => {
-    const cm = mkUser({ id: 'cm', role: 'CINEMA_MANAGER', mallId: 'mall_1', storeId: null, cinemaId: 'c1' })
-    const admin2 = mkUser({ id: 'admin2', role: 'MALL_ADMIN', mallId: 'mall_1' })
+  test('block manager can never touch campus admin accounts', () => {
+    const cm = mkUser({ id: 'cm', role: 'BLOCK_MANAGER', campusId: 'mall_1', storeId: null, blockId: 'c1' })
+    const admin2 = mkUser({ id: 'admin2', role: 'CAMPUS_ADMIN', campusId: 'mall_1' })
     for (const action of ['SET_PASSWORD', 'DEACTIVATE', 'REASSIGN', 'DELETE'] as const) {
-      expect(staffMutationError(cm, target(admin2), action)).toMatch(/only be managed by another mall admin/)
+      expect(staffMutationError(cm, target(admin2), action)).toMatch(/only be managed by another campus admin/)
     }
   })
 
@@ -191,8 +191,8 @@ describe('staffMutationError matrix', () => {
   test('store manager cannot manage managers, reassign, or delete', () => {
     expect(staffMutationError(managerA, target(managerB), 'SET_PASSWORD')).toMatch(/only manage kitchen staff/)
     expect(staffMutationError(managerA, target(managerB), 'DEACTIVATE')).toMatch(/only manage kitchen staff/)
-    expect(staffMutationError(managerA, target(chefA), 'REASSIGN')).toMatch(/only the mall admin/i)
-    expect(staffMutationError(managerA, target(chefA), 'DELETE')).toMatch(/only the mall admin/i)
+    expect(staffMutationError(managerA, target(chefA), 'REASSIGN')).toMatch(/only the campus admin/i)
+    expect(staffMutationError(managerA, target(chefA), 'DELETE')).toMatch(/only the campus admin/i)
   })
 
   test('kitchen staff can manage nobody', () => {

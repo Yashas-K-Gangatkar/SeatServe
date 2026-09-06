@@ -13,7 +13,8 @@ export async function GET(_request: Request, { params }: { params: Promise<{ cod
   const order = await db.order.findUnique({
     where: { code: code.replace(/[^A-Z0-9-]/g, '') },
     include: {
-      seat: { include: { screen: { include: { cinema: { include: { mall: true } }, showtimes: true } } } },
+      seat: true,
+      classroom: { include: { block: { include: { campus: true } }, lectures: true } },
       items: { orderBy: { nameSnapshot: 'asc' } },
       tickets: {
         include: {
@@ -27,7 +28,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ cod
   if (!order) return fail('Order not found. Check the order ID.', 404)
 
   const now = new Date()
-  const show = order.seat.screen.showtimes.find((s) => s.id === order.showtimeId) ?? null
+  const show = order.classroom.lectures.find((s) => s.id === order.lectureId) ?? null
   const cutoff = show ? cutoffInfo(new Date(show.startsAt), show.orderCutoffMinutes, now) : null
 
   const byStore = new Map<string, typeof order.items>()
@@ -45,12 +46,12 @@ export async function GET(_request: Request, { params }: { params: Promise<{ cod
     scheduledFor: order.scheduledFor,
     completedAt: order.completedAt,
     location: {
-      mall: order.seat.screen.cinema.mall.name,
-      cinema: order.seat.screen.cinema.name,
-      screen: order.seat.screen.name,
-      seat: order.seat.code,
+      campus: order.classroom.block.campus.name,
+      block: order.classroom.block.name,
+      classroom: order.classroom.name,
+      seat: order.seat?.code ?? order.seatLabel ?? 'door delivery',
     },
-    show: show ? { movieTitle: show.movieTitle, startsAt: show.startsAt, cutoffMinutesUntil: cutoff?.minutesUntilCutoff ?? null } : null,
+    show: show ? { subject: show.subject, startsAt: show.startsAt, cutoffMinutesUntil: cutoff?.minutesUntilCutoff ?? null } : null,
     totals: {
       subtotalPaise: order.subtotalPaise,
       platformFeePaise: order.platformFeePaise,

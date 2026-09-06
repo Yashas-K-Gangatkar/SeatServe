@@ -1,6 +1,6 @@
 'use client'
 
-// SeatServe — mall admin board (#/admin)
+// NotiFetch — campus admin board (#/admin)
 // KPIs, live orders, settlement summary, store & inventory controls, audit log.
 import { useCallback, useEffect, useState } from 'react'
 import { ChevronLeft, IndianRupee, Pencil, Receipt, Timer, Truck, CircleSlash, Wallet, ScrollText, ChevronDown, ChevronUp, ScanSearch } from 'lucide-react'
@@ -20,13 +20,13 @@ const BENEFICIARY_LABEL: Record<string, string> = {
 
 export default function Admin({ go }: { go: (p: string) => void }) {
   return (
-    <StaffGate roles={['MALL_ADMIN', 'CINEMA_MANAGER', 'STORE_MANAGER']} go={go} consoleName="Admin board">
+    <StaffGate roles={['CAMPUS_ADMIN', 'BLOCK_MANAGER', 'STORE_MANAGER']} go={go} consoleName="Admin board">
       {(user) => <AdminBoard go={go} scopeRole={user.role} />}
     </StaffGate>
   )
 }
 
-function AdminBoard({ go, scopeRole }: { go: (p: string) => void; scopeRole: 'MALL_ADMIN' | 'CINEMA_MANAGER' | 'STORE_MANAGER' }) {
+function AdminBoard({ go, scopeRole }: { go: (p: string) => void; scopeRole: 'CAMPUS_ADMIN' | 'BLOCK_MANAGER' | 'STORE_MANAGER' }) {
   const [data, setData] = useState<AdminOverview | null>(null)
   const [showNewStore, setShowNewStore] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -51,7 +51,7 @@ function AdminBoard({ go, scopeRole }: { go: (p: string) => void; scopeRole: 'MA
   }, [load])
 
   usePolling(load, 6000)
-  // mall-scoped admin room (token-gated) — known once the overview has loaded
+  // campus-scoped admin room (token-gated) — known once the overview has loaded
   useRealtime(data?.scope?.realtimeMallId ? [`admin:${data.scope.realtimeMallId}`] : [], () => void load())
 
   const toggleStore = async (id: string, isOpen: boolean, name: string) => {
@@ -122,9 +122,9 @@ function AdminBoard({ go, scopeRole }: { go: (p: string) => void; scopeRole: 'MA
       <header className="flex items-start justify-between gap-2">
         <div>
           <p className="text-[10px] font-extrabold tracking-[0.18em] text-amber-600">
-            {data.scope.role === 'MALL_ADMIN'
+            {data.scope.role === 'CAMPUS_ADMIN'
               ? `MALL ADMIN · ${(data.scope.mallName ?? 'MALL').toUpperCase()}`
-              : data.scope.role === 'CINEMA_MANAGER'
+              : data.scope.role === 'BLOCK_MANAGER'
                 ? `CINEMA MANAGER · ${(data.scope.mallName ?? 'MALL').toUpperCase()}`
                 : `STORE MANAGER · ${(data.scope.mallName ?? 'MALL').toUpperCase()}`}
           </p>
@@ -168,7 +168,7 @@ function AdminBoard({ go, scopeRole }: { go: (p: string) => void; scopeRole: 'MA
                       {o.code} · <span className="text-orange-600">Seat {o.seat}</span>
                     </p>
                     <p className="text-[11px] text-muted-foreground">
-                      {o.screen} · {o.cinema} · {minAgo(o.placedAt)} · {rupees(o.totalPaise)}
+                      {o.classroom} · {o.block} · {minAgo(o.placedAt)} · {rupees(o.totalPaise)}
                     </p>
                   </div>
                   <StatusPill status={o.status === 'COMPLETED' ? 'DELIVERED' : 'ACCEPTED'} />
@@ -213,11 +213,11 @@ function AdminBoard({ go, scopeRole }: { go: (p: string) => void; scopeRole: 'MA
                 <div>
                   <p className="text-sm font-bold">
                     <span aria-hidden>{s.emoji}</span>{' '}
-                    <StoreName store={s} editable={scopeRole === 'MALL_ADMIN'} onSaved={() => void load()} />
+                    <StoreName store={s} editable={scopeRole === 'CAMPUS_ADMIN'} onSaved={() => void load()} />
                     <span className={`ml-2 rounded-full px-2 py-0.5 text-[10px] font-bold ${s.kycStatus === 'VERIFIED' ? 'bg-emerald-100 text-emerald-700' : s.kycStatus === 'REJECTED' ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-800'}`}>
                       KYC {s.kycStatus}
                     </span>
-                    <CommissionChip storeId={s.id} pct={s.commissionPct} editable={scopeRole === 'MALL_ADMIN'} onSaved={() => void load()} />
+                    <CommissionChip storeId={s.id} pct={s.commissionPct} editable={scopeRole === 'CAMPUS_ADMIN'} onSaved={() => void load()} />
                   </p>
                   <p className="text-[11px] text-muted-foreground">
                     24h: {s.ordersLast24h} tickets · {rupees(s.salesPaise)} · live {s.liveTickets}
@@ -303,11 +303,11 @@ function AdminBoard({ go, scopeRole }: { go: (p: string) => void; scopeRole: 'MA
         </dl>
       </section>
 
-      {/* Phase 3: settlement runs + reconciliation (money actions are mall-admin only) */}
-      {scopeRole === 'MALL_ADMIN' && <SettlementPanel canAct />}
+      {/* Phase 3: settlement runs + reconciliation (money actions are campus-admin only) */}
+      {scopeRole === 'CAMPUS_ADMIN' && <SettlementPanel canAct />}
 
       {/* staff logins: create chef/manager accounts, reset passwords, disable access */}
-      {(scopeRole === 'MALL_ADMIN' || scopeRole === 'CINEMA_MANAGER') && (
+      {(scopeRole === 'CAMPUS_ADMIN' || scopeRole === 'BLOCK_MANAGER') && (
         <TeamPanel stores={data.stores.map((s) => ({ id: s.id, name: s.name, emoji: s.emoji }))} />
       )}
       {scopeRole === 'STORE_MANAGER' && <TeamPanel managerMode />}
@@ -348,7 +348,7 @@ function SeatTrace() {
   const [query, setQuery] = useState('')
   const [busy, setBusy] = useState(false)
   const [result, setResult] = useState<{
-    seat: { code: string; qrToken: string; screen: string; cinema: string; mall: string }
+    seat: { code: string; qrToken: string; classroom: string; block: string; campus: string }
     orders: { code: string; placedAt: string; customerName: string | null; status: string; paymentStatus: string; totalPaise: number; stores: { name: string; emoji: string | null; status: string }[] }[]
   } | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -410,7 +410,7 @@ function SeatTrace() {
       {result && (
         <div className="mt-3">
           <p className="rounded-xl bg-amber-50 px-3 py-2 text-xs font-bold text-amber-900 ring-1 ring-amber-200">
-            Seat {result.seat.code} · {result.seat.screen} · {result.seat.cinema} · {result.seat.mall}
+            Seat {result.seat.code} · {result.seat.classroom} · {result.seat.block} · {result.seat.campus}
             <span className="ml-1 font-mono text-[10px] font-semibold text-amber-700/80">QR {result.seat.qrToken}</span>
           </p>
           {result.orders.length === 0 ? (
@@ -437,7 +437,7 @@ function SeatTrace() {
   )
 }
 
-// Same-mall expansion: open a NEW storefront + its opening menu in one form.
+// Same-campus expansion: open a NEW storefront + its opening menu in one form.
 // The store starts KYC=PENDING (payout-gated) and shows up in the customer
 // app immediately — out-of-stock toggles work per item from day one.
 interface NewProductRow {
@@ -502,7 +502,7 @@ function NewStoreForm({ onCreated }: { onCreated: () => void }) {
 
   return (
     <section className="mb-3 rounded-2xl border border-amber-300 bg-amber-50/60 p-4" aria-label="Open a new store">
-      <p className="text-xs font-extrabold uppercase tracking-wider text-amber-800">New shop in this mall</p>
+      <p className="text-xs font-extrabold uppercase tracking-wider text-amber-800">New shop in this campus</p>
       <div className="mt-2 grid grid-cols-[64px_1fr] gap-2 sm:grid-cols-[64px_1fr_1fr_84px]">
         <input
           value={emoji}
@@ -610,7 +610,7 @@ function NewStoreForm({ onCreated }: { onCreated: () => void }) {
 }
 
 // Commission chip on each store card — shows the platform's cut and lets the
-// mall admin change it inline (PATCH /api/stores/[id] enforces role + scope).
+// campus admin change it inline (PATCH /api/stores/[id] enforces role + scope).
 function StoreName({ store, editable, onSaved }: { store: { id: string; name: string }; editable: boolean; onSaved: () => void }) {
   const [editing, setEditing] = useState(false)
   const [value, setValue] = useState(store.name)

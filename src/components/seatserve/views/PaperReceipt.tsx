@@ -1,9 +1,9 @@
 'use client'
 
-// SeatServe — PaperReceipt: the post-payment bill printed like a thermal
+// NotiFetch — PaperReceipt: the post-payment bill printed like a thermal
 // receipt sliding out of a POS slot. Just the slot + the paper (no machine
 // body, no hands — owner's brief). Warm hardware tones, white thermal paper,
-// monospace ink, torn zigzag bottom, scannable QR to the tracking screen.
+// monospace ink, torn zigzag bottom, scannable QR to the tracking classroom.
 
 import { useEffect, useState } from 'react'
 import QRCode from 'qrcode'
@@ -43,7 +43,7 @@ export default function PaperReceipt({
 }) {
   const [qr, setQr] = useState<string | null>(null)
 
-  // scannable QR → tracking screen (matches the reference bill's QR)
+  // scannable QR → tracking classroom (matches the reference bill's QR)
   useEffect(() => {
     let cancelled = false
     const url = typeof window !== 'undefined' ? `${window.location.origin}/#/track/${orderCode}` : orderCode

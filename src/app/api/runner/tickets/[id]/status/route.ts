@@ -15,7 +15,7 @@ const bodySchema = z.object({
 
 export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
-  const auth = await requireStaff(request, ['RUNNER', 'MALL_ADMIN'])
+  const auth = await requireStaff(request, ['RUNNER', 'CAMPUS_ADMIN'])
   if ('error' in auth) return auth.error
   const user = auth.user
 
@@ -33,10 +33,10 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   if (user.role === 'RUNNER' && ticket.deliveryRun?.runnerId !== user.runnerId) {
     return fail('This run is not assigned to you', 403)
   }
-  // Audit fix #17: mall admin could advance ANY ticket platform-wide —
-  // pin them to their own mall.
-  if (user.role === 'MALL_ADMIN' && ticket.order.mallId !== (user.mallId ?? '__none__')) {
-    return fail('This ticket is outside your mall', 403)
+  // Audit fix #17: campus admin could advance ANY ticket platform-wide —
+  // pin them to their own campus.
+  if (user.role === 'CAMPUS_ADMIN' && ticket.order.campusId !== (user.campusId ?? '__none__')) {
+    return fail('This ticket is outside your campus', 403)
   }
 
   // Audit fix #1 (family): no staff route may advance an UNPAID order's
@@ -88,11 +88,11 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     entityType: 'StoreTicket',
     entityId: ticket.id,
     orderId: ticket.orderId,
-    mallId: ticket.order.mallId,
+    campusId: ticket.order.campusId,
     meta: { ticketCode: ticket.ticketCode },
   })
   await emitToRooms({
-    rooms: [`order:${ticket.order.code}`, `store:${ticket.storeId}`, `runners:${ticket.order.mallId}`, `admin:${ticket.order.mallId}`],
+    rooms: [`order:${ticket.order.code}`, `store:${ticket.storeId}`, `runners:${ticket.order.campusId}`, `admin:${ticket.order.campusId}`],
     event: 'ticket:status',
     data: { ticketId: ticket.id, status: to, orderCode: ticket.order.code },
   })

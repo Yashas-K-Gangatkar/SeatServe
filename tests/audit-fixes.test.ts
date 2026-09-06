@@ -1,6 +1,6 @@
-// SeatServe — tests for the audit-fix round (showtime picker, leg-void math, room tokens)
+// NotiFetch — tests for the audit-fix round (lecture picker, leg-void math, room tokens)
 import { describe, expect, test } from 'bun:test'
-import { pickCurrentShow } from '../src/lib/showtime'
+import { pickCurrentShow } from '../src/lib/lecture'
 import { computeLegReversal } from '../src/lib/leg-voids'
 import { signRoomToken, verifyRoomToken, isStaffRoom } from '../src/lib/realtime-auth'
 import { cutoffInfo } from '../src/lib/cutoff'
@@ -11,8 +11,8 @@ describe('audit fix #20 — pickCurrentShow', () => {
   const now = new Date('2026-01-01T19:00:00Z')
 
   test('prefers the earliest show whose cutoff is still OPEN over a started show', () => {
-    const startedClosed = { id: 'a', movieTitle: 'Old', startsAt: new Date(now.getTime() - 60 * MIN), orderCutoffMinutes: 30 }
-    const laterOpen = { id: 'b', movieTitle: 'Next', startsAt: new Date(now.getTime() + 60 * MIN), orderCutoffMinutes: 30 }
+    const startedClosed = { id: 'a', subject: 'Old', startsAt: new Date(now.getTime() - 60 * MIN), orderCutoffMinutes: 30 }
+    const laterOpen = { id: 'b', subject: 'Next', startsAt: new Date(now.getTime() + 60 * MIN), orderCutoffMinutes: 30 }
     const picked = pickCurrentShow([startedClosed, laterOpen], now)
     expect(picked.show?.id).toBe('b')
     expect(picked.reason).toBe('ordering-open')
@@ -20,7 +20,7 @@ describe('audit fix #20 — pickCurrentShow', () => {
   })
 
   test('falls back to the blocked show (inside 3h window) when nothing is orderable', () => {
-    const blocked = { id: 'x', movieTitle: 'Blocked', startsAt: new Date(now.getTime() + 20 * MIN), orderCutoffMinutes: 30 }
+    const blocked = { id: 'x', subject: 'Blocked', startsAt: new Date(now.getTime() + 20 * MIN), orderCutoffMinutes: 30 }
     const picked = pickCurrentShow([blocked], now)
     expect(picked.show?.id).toBe('x')
     expect(picked.reason).toBe('blocked-cutoff')
@@ -28,13 +28,13 @@ describe('audit fix #20 — pickCurrentShow', () => {
   })
 
   test('returns none when everything fell out of the 3h window', () => {
-    const ancient = { id: 'z', movieTitle: 'Ancient', startsAt: new Date(now.getTime() - 300 * MIN), orderCutoffMinutes: 30 }
+    const ancient = { id: 'z', subject: 'Ancient', startsAt: new Date(now.getTime() - 300 * MIN), orderCutoffMinutes: 30 }
     expect(pickCurrentShow([ancient], now).show).toBeNull()
   })
 
   test('picks the LATER open show when the closer future show is already past its cutoff', () => {
-    const soonButClosed = { id: 's', movieTitle: 'Soon', startsAt: new Date(now.getTime() + 10 * MIN), orderCutoffMinutes: 30 }
-    const laterOpen = { id: 'l', movieTitle: 'Later', startsAt: new Date(now.getTime() + 120 * MIN), orderCutoffMinutes: 30 }
+    const soonButClosed = { id: 's', subject: 'Soon', startsAt: new Date(now.getTime() + 10 * MIN), orderCutoffMinutes: 30 }
+    const laterOpen = { id: 'l', subject: 'Later', startsAt: new Date(now.getTime() + 120 * MIN), orderCutoffMinutes: 30 }
     const picked = pickCurrentShow([soonButClosed, laterOpen], now)
     expect(picked.show?.id).toBe('l')
   })

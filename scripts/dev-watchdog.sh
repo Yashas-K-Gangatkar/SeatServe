@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# SeatServe server watchdog — keeps :3000 alive.
+# NotiFetch server watchdog — keeps :3000 alive.
 # - If scripts/.prod-mode exists, restarts the production standalone server;
 #   otherwise restarts `next dev` (the demo default).
 # - Stale-lock-safe: takes over if the previous watchdog pid is dead.

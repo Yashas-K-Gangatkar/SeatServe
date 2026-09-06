@@ -1,7 +1,7 @@
-// GET /api/admin/qr?screenId=<id> — printable seat-QR sheet data (login required).
+// GET /api/admin/qr?classroomId=<id> — printable seat-QR sheet data (login required).
 // QR encodes `<public origin>/?qr=<seatToken>` so a phone camera scan opens
-// exactly that seat's ordering page. CINEMA_MANAGER is limited to their own
-// cinema's screens; MALL_ADMIN to their mall.
+// exactly that seat's ordering page. BLOCK_MANAGER is limited to their own
+// block's classrooms; CAMPUS_ADMIN to their campus.
 import { db } from '@/lib/db'
 import { ok, fail } from '@/lib/api-helpers'
 import { requireStaff } from '@/lib/auth-server'
@@ -14,28 +14,28 @@ function publicOrigin(request: Request): string {
 }
 
 export async function GET(request: Request) {
-  const auth = await requireStaff(request, ['CINEMA_MANAGER', 'MALL_ADMIN'])
+  const auth = await requireStaff(request, ['BLOCK_MANAGER', 'CAMPUS_ADMIN'])
   if ('error' in auth) return auth.error
   const user = auth.user
 
   const url = new URL(request.url)
-  const screenId = url.searchParams.get('screenId')
+  const classroomId = url.searchParams.get('classroomId')
 
   const scopeWhere =
-    user.role === 'MALL_ADMIN'
-      ? { cinema: { mallId: user.mallId ?? '__none__' } }
-      : { cinemaId: user.cinemaId ?? '__none__' }
+    user.role === 'CAMPUS_ADMIN'
+      ? { block: { campusId: user.campusId ?? '__none__' } }
+      : { blockId: user.blockId ?? '__none__' }
 
-  const screens = await db.screen.findMany({
+  const classrooms = await db.classroom.findMany({
     where: scopeWhere,
-    include: { cinema: true, _count: { select: { seats: true } } },
+    include: { block: true, _count: { select: { seats: true } } },
     orderBy: { name: 'asc' },
   })
-  const screen = screenId ? screens.find((s) => s.id === screenId) : screens[0]
-  if (!screen) return fail('Screen not found (or outside your scope)', 404)
+  const classroom = classroomId ? classrooms.find((s) => s.id === classroomId) : classrooms[0]
+  if (!classroom) return fail('Classroom not found (or outside your scope)', 404)
 
   const seats = await db.seat.findMany({
-    where: { screenId: screen.id },
+    where: { classroomId: classroom.id },
     orderBy: [{ rowLabel: 'asc' }, { seatNumber: 'asc' }],
   })
 
@@ -55,8 +55,8 @@ export async function GET(request: Request) {
 
   return ok({
     origin,
-    screens: screens.map((s) => ({ id: s.id, name: s.name, cinema: s.cinema.name, seatsCount: s._count.seats })),
-    screen: { id: screen.id, name: screen.name, cinema: screen.cinema.name },
+    classrooms: classrooms.map((s) => ({ id: s.id, name: s.name, block: s.block.name, seatsCount: s._count.seats })),
+    classroom: { id: classroom.id, name: classroom.name, block: classroom.block.name },
     seats: seatData,
   })
 }

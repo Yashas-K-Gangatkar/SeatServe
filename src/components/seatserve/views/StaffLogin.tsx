@@ -1,6 +1,6 @@
 'use client'
 
-// SeatServe — staff portal login (#/staff/login).
+// NotiFetch — staff portal login (#/staff/login).
 // A deliberately separate experience from the customer app: work identity,
 // scoped access. Accounts are issued by the venue administrator — no demo
 // shortcuts are shown on a live platform.
@@ -79,8 +79,8 @@ export default function StaffLogin({ go }: { go: (p: string) => void }) {
         <p className="mt-4 text-[11px] font-extrabold tracking-[0.18em] text-orange-600">SEATSERVE STAFF PORTAL</p>
         <h1 className="mt-1 text-2xl font-black tracking-tight text-stone-900">Sign in to your console</h1>
         <p className="mt-2 text-sm leading-relaxed text-stone-600">
-          One platform, scoped views. Kitchen staff see only their store&apos;s tickets; runners their own runs; cinema
-          managers their own screens; the mall admin the whole mall.
+          One platform, scoped views. Kitchen staff see only their store&apos;s tickets; runners their own runs; block
+          managers their own classrooms; the campus admin the whole campus.
         </p>
 
         {checking ? (

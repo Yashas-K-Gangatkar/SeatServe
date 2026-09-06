@@ -1,8 +1,8 @@
 'use client'
 
-// SeatServe — store menu manager (#/menu)
+// NotiFetch — store menu manager (#/menu)
 // Owners create menu items and mark items out of stock (86'd) in one place.
-// STORE_MANAGER: their own store. MALL_ADMIN: pick any store in the mall.
+// STORE_MANAGER: their own store. CAMPUS_ADMIN: pick any store in the campus.
 import { useCallback, useEffect, useState } from 'react'
 import { ChevronLeft, Plus, UtensilsCrossed, PackageX, PackageCheck, Loader2, ImageOff, Pencil } from 'lucide-react'
 import { toast } from 'sonner'
@@ -36,7 +36,7 @@ interface MenuResponse {
 
 export default function MenuManager({ go }: { go: (p: string) => void }) {
   return (
-    <StaffGate roles={['STORE_MANAGER', 'MALL_ADMIN', 'CINEMA_MANAGER']} go={go} consoleName="Menu manager">
+    <StaffGate roles={['STORE_MANAGER', 'CAMPUS_ADMIN', 'BLOCK_MANAGER']} go={go} consoleName="Menu manager">
       {() => <MenuBoard go={go} />}
     </StaffGate>
   )

@@ -22,9 +22,9 @@ type MenuItem = {
 
 const MENU: MenuItem[] = [
   { name: 'Margherita (10")', price: 250, img: 'pizza', store: 'Pizza Corner', emoji: '🍕' },
-  { name: 'Butter Popcorn (L)', price: 220, img: 'popcorn', store: 'Cinema Snacks', emoji: '🍿' },
-  { name: 'Nachos with Cheese', price: 240, img: 'nachos', store: 'Cinema Snacks', emoji: '🍿' },
-  { name: 'Cold Coffee', price: 140, img: 'coffee', store: 'Cinema Snacks', emoji: '🍿' },
+  { name: 'Butter Popcorn (L)', price: 220, img: 'popcorn', store: 'Block Snacks', emoji: '🍿' },
+  { name: 'Nachos with Cheese', price: 240, img: 'nachos', store: 'Block Snacks', emoji: '🍿' },
+  { name: 'Cold Coffee', price: 140, img: 'coffee', store: 'Block Snacks', emoji: '🍿' },
   { name: 'Paneer Tikka Wrap', price: 210, img: 'wrap', store: 'Wrap House', emoji: '🌯' },
   { name: 'Peri Peri Fries', price: 110, img: 'fries', store: 'Wrap House', emoji: '🌯' },
   { name: 'Masala Dosa', price: 120, img: 'dosa', store: 'Dosa Junction', emoji: '🥘' },
@@ -55,7 +55,7 @@ export function MenuShowcase() {
           variants={fadeUp}
           className="mt-3 text-center text-base text-[#6F6F6F]"
         >
-          Real items from the stores at Aurora Mall — swipe through, tap add to
+          Real items from the stores at Aurora Campus — swipe through, tap add to
           open the live demo.
         </motion.p>
       </motion.div>

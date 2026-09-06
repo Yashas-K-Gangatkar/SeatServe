@@ -1,4 +1,4 @@
-// POST /api/simulator/reset — wipe + reseed the demo dataset (MALL_ADMIN only).
+// POST /api/simulator/reset — wipe + reseed the demo dataset (CAMPUS_ADMIN only).
 // Demo convenience; also wipes all staff sessions (sessions cascade on user delete).
 import { db } from '@/lib/db'
 import { ok, fail } from '@/lib/api-helpers'
@@ -6,7 +6,7 @@ import { requireStaff } from '@/lib/auth-server'
 import { seedDemoData } from '../../../../../prisma/seed'
 
 export async function POST(request: Request) {
-  const auth = await requireStaff(request, ['MALL_ADMIN'])
+  const auth = await requireStaff(request, ['CAMPUS_ADMIN'])
   if ('error' in auth) return auth.error
   try {
     // Audit fix #30: the reset wipes ALL users, so the caller's own session

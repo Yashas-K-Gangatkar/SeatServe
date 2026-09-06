@@ -1,4 +1,4 @@
-// SeatServe — cutoff rules & ticket state machine
+// NotiFetch — cutoff rules & ticket state machine
 import { describe, test, expect } from 'bun:test'
 import { cutoffAt, cutoffInfo } from '../src/lib/cutoff'
 import { canTransitionTicket, nextTicketStatus, kitchenControls, runnerControls, orderStatusFromTickets } from '../src/lib/order-state'

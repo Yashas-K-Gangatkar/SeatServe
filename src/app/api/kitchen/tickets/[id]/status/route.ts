@@ -2,7 +2,7 @@
 // NEW → ACCEPTED → PREPARING → READY_FOR_PICKUP (runner leg takes over after this).
 // CANCELLED is allowed from NEW/ACCEPTED/PREPARING (food not yet out) and voids
 // that store's settlement leg (ledger-internal; there are NO online refunds —
-// the cinema resolves customer exceptions at the counter).
+// the block resolves customer exceptions at the counter).
 //
 // Audit fixes in this route:
 //   #1  — an UNPAID order could be advanced to status PAID via this API. Now
@@ -29,7 +29,7 @@ const bodySchema = z.object({
 
 export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
-  const auth = await requireStaff(request, ['KITCHEN_STAFF', 'STORE_MANAGER', 'MALL_ADMIN', 'CINEMA_MANAGER'])
+  const auth = await requireStaff(request, ['KITCHEN_STAFF', 'STORE_MANAGER', 'CAMPUS_ADMIN', 'BLOCK_MANAGER'])
   if ('error' in auth) return auth.error
   const user = auth.user
 
@@ -39,11 +39,11 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
 
   const ticket = await db.storeTicket.findUnique({
     where: { id },
-    include: { order: { include: { seat: true, screen: { include: { cinema: true } } } }, store: true },
+    include: { order: { include: { seat: true, classroom: { include: { block: true } } } }, store: true },
   })
   if (!ticket) return fail('Ticket not found', 404)
 
-  if (!canAccessStore(user, { id: ticket.storeId, mallId: ticket.store.mallId })) {
+  if (!canAccessStore(user, { id: ticket.storeId, campusId: ticket.store.campusId })) {
     return fail('Your account is not authorized for this store', 403)
   }
 
@@ -87,8 +87,8 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   if (to === 'READY_FOR_PICKUP') {
     const existingRun = await db.deliveryRun.findUnique({ where: { ticketId: ticket.id } })
     if (!existingRun) {
-      const runners = await db.runner.findMany({ where: { isOnDuty: true, zone: { mallId: ticket.order.mallId } }, include: { zone: true } })
-      const wing = ticket.order.screen.cinema.wing
+      const runners = await db.runner.findMany({ where: { isOnDuty: true, zone: { campusId: ticket.order.campusId } }, include: { zone: true } })
+      const wing = ticket.order.classroom.block.wing
       const preferred = runners.find((r) => (wing ? r.zone?.name.includes(`Wing ${wing}`) : false)) ?? runners[0]
       if (preferred) {
         await db.deliveryRun.create({
@@ -97,7 +97,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
             runnerId: preferred.id,
             status: 'ASSIGNED',
             pickupLabel: `${ticket.store.name} · Food court, ground floor`,
-            dropLabel: `${ticket.order.screen.name} · Seat ${ticket.order.seat.code} · ${ticket.order.screen.cinema.name}`,
+            dropLabel: `${ticket.order.classroom.name} · ${ticket.order.seat?.code ?? ticket.order.seatLabel ?? 'door delivery'} · ${ticket.order.classroom.block.name}`,
           },
         })
         assignedRunner = preferred.name
@@ -128,18 +128,18 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     entityType: 'StoreTicket',
     entityId: ticket.id,
     orderId: ticket.orderId,
-    mallId: ticket.store.mallId,
+    campusId: ticket.store.campusId,
     meta: { from, to, ticketCode: ticket.ticketCode },
   })
 
   await emitToRooms({
-    rooms: [`store:${ticket.storeId}`, `admin:${ticket.order.mallId}`, `order:${ticket.order.code}`],
+    rooms: [`store:${ticket.storeId}`, `admin:${ticket.order.campusId}`, `order:${ticket.order.code}`],
     event: 'ticket:status',
     data: { ticketId: ticket.id, status: to, orderCode: ticket.order.code },
   })
   if (to === 'READY_FOR_PICKUP') {
     await emitToRooms({
-      rooms: [`runners:${ticket.order.mallId}`, `admin:${ticket.order.mallId}`],
+      rooms: [`runners:${ticket.order.campusId}`, `admin:${ticket.order.campusId}`],
       event: 'run:assigned',
       data: { ticketId: ticket.id, orderCode: ticket.order.code, runner: assignedRunner },
     })

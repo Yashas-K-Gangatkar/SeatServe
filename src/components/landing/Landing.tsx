@@ -27,9 +27,9 @@ import { Faq } from './sections/Faq'
 import { SiteFooter } from './sections/SiteFooter'
 
 interface DemoEntry {
-  aurora: { qrToken: string; seat: string; screen: string; mall: string } | null
-  auroraBlocked: { qrToken: string; seat: string; screen: string } | null
-  nexora: { qrToken: string; seat: string; screen: string; mall: string } | null
+  aurora: { qrToken: string; seat: string; classroom: string; campus: string } | null
+  auroraBlocked: { qrToken: string; seat: string; classroom: string } | null
+  nexora: { qrToken: string; seat: string; classroom: string; campus: string } | null
 }
 
 function useDemoSeat(): string | null {
@@ -56,7 +56,7 @@ function LandingBody() {
     <div className="relative flex min-h-dvh flex-col bg-[#FAF8F5] text-[#1A1A1A]">
       <Backdrop />
       <SiteHeader />
-      <main className="flex-1" aria-label="SeatServe">
+      <main className="flex-1" aria-label="NotiFetch">
         <Hero demoSeatHref={demoSeatHref} />
         <LiveStatus />
         <HowItWorks />
@@ -66,7 +66,7 @@ function LandingBody() {
         <TrustStats />
         <Testimonials />
         <Faq />
-        {/* screen-reader live region — mirrors the live deployment */}
+        {/* classroom-reader live region — mirrors the live deployment */}
         <section aria-label="Notifications" aria-live="polite" aria-relevant="additions text" aria-atomic="false" className="sr-only" tabIndex={-1} />
       </main>
       <SiteFooter />

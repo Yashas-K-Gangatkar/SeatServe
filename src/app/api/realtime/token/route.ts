@@ -2,9 +2,9 @@
 // Audit fix #18: issues short-lived HMAC room tokens for STAFF realtime rooms.
 // The socket.io service refuses staff-room subscribes without a valid token.
 // Authorization (server-side, session-derived — never from client params):
-//   admin:<mallId>   → MALL_ADMIN of that mall, CINEMA_MANAGER whose cinema is in it
-//   runners:<mallId> → RUNNER whose zone is in that mall, MALL_ADMIN of that mall
-//   store:<storeId>  → KITCHEN_STAFF / STORE_MANAGER of that store, MALL_ADMIN of its mall
+//   admin:<campusId>   → CAMPUS_ADMIN of that campus, BLOCK_MANAGER whose block is in it
+//   runners:<campusId> → RUNNER whose zone is in that campus, CAMPUS_ADMIN of that campus
+//   store:<storeId>  → KITCHEN_STAFF / STORE_MANAGER of that store, CAMPUS_ADMIN of its campus
 //   order:<code>     → public room (order code = capability) — no token needed
 import { z } from 'zod'
 import { db } from '@/lib/db'
@@ -31,22 +31,22 @@ export async function POST(request: Request) {
 
   let allowed = false
   if (kind === 'admin') {
-    if (user.role === 'MALL_ADMIN') allowed = scoped === user.mallId
-    else if (user.role === 'CINEMA_MANAGER' && user.cinemaId) {
-      const cinema = await db.cinema.findUnique({ where: { id: user.cinemaId }, select: { mallId: true } })
-      allowed = cinema?.mallId === scoped
+    if (user.role === 'CAMPUS_ADMIN') allowed = scoped === user.campusId
+    else if (user.role === 'BLOCK_MANAGER' && user.blockId) {
+      const block = await db.block.findUnique({ where: { id: user.blockId }, select: { campusId: true } })
+      allowed = block?.campusId === scoped
     }
   } else if (kind === 'runners') {
-    if (user.role === 'MALL_ADMIN') allowed = scoped === user.mallId
+    if (user.role === 'CAMPUS_ADMIN') allowed = scoped === user.campusId
     else if (user.role === 'RUNNER' && user.runnerId) {
       const runner = await db.runner.findUnique({ where: { id: user.runnerId }, include: { zone: true } })
-      allowed = runner?.zone?.mallId === scoped
+      allowed = runner?.zone?.campusId === scoped
     }
   } else if (kind === 'store') {
     if (user.role === 'KITCHEN_STAFF' || user.role === 'STORE_MANAGER') allowed = scoped === user.storeId
-    else if (user.role === 'MALL_ADMIN') {
-      const store = await db.store.findUnique({ where: { id: scoped }, select: { mallId: true } })
-      allowed = store?.mallId === user.mallId
+    else if (user.role === 'CAMPUS_ADMIN') {
+      const store = await db.store.findUnique({ where: { id: scoped }, select: { campusId: true } })
+      allowed = store?.campusId === user.campusId
     }
   }
 

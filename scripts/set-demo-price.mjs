@@ -1,7 +1,7 @@
 // Task 34 — set "Masala Chai" at Wraphouse Kitchen to ₹2 (200 paise) on live prod
 // so the owner can run a real Razorpay payment test for pocket change.
-// Login: ramesh (CINEMA_MANAGER) — doubles as a live check that the delegated
-// operator can reprice a mall store (Task 33 widening).
+// Login: ramesh (BLOCK_MANAGER) — doubles as a live check that the delegated
+// operator can reprice a campus store (Task 33 widening).
 const BASE = 'https://notifetch.in'
 const QR_TOKEN = 'GVTHGD4Q6F' // demo seat A-1
 const ITEM = 'Masala Chai'
@@ -35,7 +35,7 @@ async function main() {
   log('login ramesh', r0.status, r0.json?.data ? { role: r0.json.data.role } : r0.json)
   if (r0.status !== 200) process.exit(1)
 
-  // 2. find Wraphouse Kitchen in his mall scope
+  // 2. find Wraphouse Kitchen in his campus scope
   const r1 = await call('GET', '/api/admin/overview')
   log('overview', r1.status, { stores: r1.json?.data?.stores?.length })
   if (r1.status !== 200) process.exit(1)

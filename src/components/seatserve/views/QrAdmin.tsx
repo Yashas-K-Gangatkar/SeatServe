@@ -1,6 +1,6 @@
 'use client'
 
-// SeatServe — seat QR generator (#/qr)
+// NotiFetch — seat QR generator (#/qr)
 // Printable sheet: each QR encodes <origin>/?qr=<seatToken>; scanning opens that seat's menu.
 import { useCallback, useEffect, useState } from 'react'
 import { ChevronLeft, Printer, ScanLine } from 'lucide-react'
@@ -11,7 +11,7 @@ import { Spinner, LoadError } from '../ui-bits'
 
 export default function QrAdmin({ go }: { go: (p: string) => void }) {
   return (
-    <StaffGate roles={['MALL_ADMIN', 'CINEMA_MANAGER']} go={go} consoleName="Seat QR generator">
+    <StaffGate roles={['CAMPUS_ADMIN', 'BLOCK_MANAGER']} go={go} consoleName="Seat QR generator">
       {() => <QrSheet go={go} />}
     </StaffGate>
   )
@@ -19,7 +19,7 @@ export default function QrAdmin({ go }: { go: (p: string) => void }) {
 
 function QrSheet({ go }: { go: (p: string) => void }) {
   const [data, setData] = useState<QrResponse | null>(null)
-  const [screenId, setScreenId] = useState<string | null>(null)
+  const [classroomId, setScreenId] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
 
@@ -27,7 +27,7 @@ function QrSheet({ go }: { go: (p: string) => void }) {
     async (id?: string | null) => {
       try {
         setError(null)
-        setData(await get<QrResponse>(`/api/admin/qr${id ? `?screenId=${encodeURIComponent(id)}` : ''}`))
+        setData(await get<QrResponse>(`/api/admin/qr${id ? `?classroomId=${encodeURIComponent(id)}` : ''}`))
       } catch (err) {
         setError(err instanceof ApiError ? err.message : 'Could not load QR data')
       } finally {
@@ -39,14 +39,14 @@ function QrSheet({ go }: { go: (p: string) => void }) {
 
   useEffect(() => {
     setLoading(true)
-    void load(screenId)
-  }, [load, screenId])
+    void load(classroomId)
+  }, [load, classroomId])
 
   if (loading && !data) return <Spinner label="Generating QR codes…" />
   if (error)
     return (
       <div className="mx-auto max-w-md px-4 pt-16">
-        <LoadError message={error} onRetry={() => load(screenId)} />
+        <LoadError message={error} onRetry={() => load(classroomId)} />
       </div>
     )
   if (!data) return null
@@ -75,23 +75,23 @@ function QrSheet({ go }: { go: (p: string) => void }) {
         </header>
 
         <div className="mt-4 flex flex-wrap gap-2">
-          {data.screens.map((s) => (
+          {data.classrooms.map((s) => (
             <button
               key={s.id}
               onClick={() => setScreenId(s.id)}
-              className={`rounded-full border px-3.5 py-2 text-xs font-bold transition ${data.screen.id === s.id ? 'border-orange-400 bg-orange-50 text-orange-700 shadow-sm' : 'border-stone-300 bg-white text-stone-500 hover:bg-stone-50'}`}
-              aria-pressed={data.screen.id === s.id}
+              className={`rounded-full border px-3.5 py-2 text-xs font-bold transition ${data.classroom.id === s.id ? 'border-orange-400 bg-orange-50 text-orange-700 shadow-sm' : 'border-stone-300 bg-white text-stone-500 hover:bg-stone-50'}`}
+              aria-pressed={data.classroom.id === s.id}
             >
-              {s.name} · {s.cinema.replace('Aurora Cineplex — ', '')}
+              {s.name} · {s.block.replace('Aurora Cineplex — ', '')}
             </button>
           ))}
         </div>
       </div>
 
-      {/* print-only header — screen identity + sticker placement rules (appears on paper only) */}
+      {/* print-only header — classroom identity + sticker placement rules (appears on paper only) */}
       <div className="print-only mb-4 border-b-2 border-gray-800 pb-3">
         <h2 className="text-lg font-black tracking-tight text-gray-900">
-          Seat stickers — {data.screen.name} · {data.screen.cinema}
+          Seat stickers — {data.classroom.name} · {data.classroom.block}
         </h2>
         <p className="mt-1 text-[11px] font-semibold leading-snug text-gray-700">
           Placement rule: each sticker serves the seat BEHIND it — stick it on the seatback in front.
@@ -103,14 +103,14 @@ function QrSheet({ go }: { go: (p: string) => void }) {
       </div>
 
       {/* printable grid — white background for print legibility */}
-      <div className="print-area mt-6 grid grid-cols-3 gap-3 rounded-2xl bg-white p-4 sm:grid-cols-6" aria-label={`Seat QR codes for ${data.screen.name}`}>
+      <div className="print-area mt-6 grid grid-cols-3 gap-3 rounded-2xl bg-white p-4 sm:grid-cols-6" aria-label={`Seat QR codes for ${data.classroom.name}`}>
         {data.seats.map((seat) => (
           <figure key={seat.qrToken} className="qr-sticker rounded-lg border border-gray-200 bg-white p-2 text-center">
-            <img src={seat.dataUrl} alt={`QR code for seat ${seat.code}, ${data.screen.name}`} className="mx-auto h-auto w-full" />
+            <img src={seat.dataUrl} alt={`QR code for seat ${seat.code}, ${data.classroom.name}`} className="mx-auto h-auto w-full" />
             <figcaption className="mt-1">
               <p className="text-[13px] font-black leading-tight text-gray-900">{seat.code}</p>
               <p className="truncate text-[9px] font-semibold uppercase tracking-wide text-gray-500">
-                {data.screen.name} · {data.screen.cinema.replace('Aurora Cineplex — ', '')}
+                {data.classroom.name} · {data.classroom.block.replace('Aurora Cineplex — ', '')}
               </p>
               <p className="truncate text-[8px] text-gray-400">{seat.qrToken}</p>
             </figcaption>
@@ -118,7 +118,7 @@ function QrSheet({ go }: { go: (p: string) => void }) {
         ))}
       </div>
       <p className="print-hide mt-3 text-center text-[11px] text-muted-foreground">
-        {data.seats.length} seats · scan any code from this screen to open that seat on a phone.
+        {data.seats.length} seats · scan any code from this classroom to open that seat on a phone.
       </p>
     </div>
   )

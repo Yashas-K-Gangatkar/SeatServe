@@ -1,8 +1,8 @@
-// SeatServe Phase 3 — payment provider abstraction.
+// NotiFetch Phase 3 — payment provider abstraction.
 //
 // One public webhook endpoint (/api/payments/webhook) accepts events from ANY
 // configured provider: the verifier that validates the signature claims the
-// event, and the event is normalized into SeatServe's internal shape before
+// event, and the event is normalized into NotiFetch's internal shape before
 // state processing. Money state transitions never see provider specifics.
 //
 // Sandbox: SANDBOX_MOCK is always configured (no credentials needed).
@@ -15,7 +15,7 @@ import { verifySignature, webhookSecret } from '@/lib/webhook-sig'
 
 export type ProviderId = 'SANDBOX_MOCK' | 'RAZORPAY' | 'CASHFREE'
 
-/** SeatServe-normalized webhook event — all providers map to this. */
+/** NotiFetch-normalized webhook event — all providers map to this. */
 export interface NormalizedPaymentEvent {
   eventId: string
   type: 'payment.captured' | 'payment.failed' | 'refund.processed'
@@ -90,7 +90,7 @@ export function cashfreeVerify(secret: string, timestamp: string, rawBody: strin
 }
 
 // ───────────────────────── split instructions ─────────────────────────
-// Builders that demonstrate EXACTLY what SeatServe would hand Razorpay Route
+// Builders that demonstrate EXACTLY what NotiFetch would hand Razorpay Route
 // (transfers to linked accounts) and Cashfree Easy Split (vendor splits) at
 // capture time — derived from the order's own Split ledger. The sandbox uses
 // them for the settlement report; production calls them when creating the

@@ -1,6 +1,6 @@
 'use client'
 
-// SeatServe Phase 2 — StaffGate: wraps every staff console.
+// NotiFetch Phase 2 — StaffGate: wraps every staff console.
 // loading → spinner · no session → sign-in card · wrong role → forbidden card
 // · ok → render children with the session profile. The server enforces the
 // same rules on every API call; this gate only shapes the UI.
@@ -12,7 +12,7 @@ import { WarmBackdrop } from './WarmBackdrop'
 type AnyStaffRole = StaffProfile['role']
 
 // Generic over the allowed role union so `children` receives a NARROWED profile
-// (e.g. roles={['MALL_ADMIN','CINEMA_MANAGER']} → user.role is exactly that union)
+// (e.g. roles={['CAMPUS_ADMIN','BLOCK_MANAGER']} → user.role is exactly that union)
 // instead of forcing cast at every call site.
 export default function StaffGate<R extends AnyStaffRole = AnyStaffRole>({
   roles,
@@ -40,7 +40,7 @@ export default function StaffGate<R extends AnyStaffRole = AnyStaffRole>({
           <h1 className="mt-4 text-xl font-black tracking-tight text-stone-900">Staff sign-in required</h1>
           <p className="mt-2 text-sm leading-relaxed text-stone-600">
             <b>{consoleName}</b> is part of the staff portal. Sign in with your work account — every console is scoped to
-            your role and your store, cinema or mall.
+            your role and your store, block or campus.
           </p>
           <button
             onClick={() => go('#/staff/login')}

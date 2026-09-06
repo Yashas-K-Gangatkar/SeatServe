@@ -1,6 +1,6 @@
 // POST /api/payments/webhook — the signed payment callback receiver.
 // Phase 3: multi-provider. The verifier that validates the signature claims
-// the event: SANDBOX_MOCK (X-SeatServe-Signature), RAZORPAY (X-Razorpay-Signature,
+// the event: SANDBOX_MOCK (X-NotiFetch-Signature), RAZORPAY (X-Razorpay-Signature,
 // hex HMAC-SHA256 of the raw body) or CASHFREE (x-webhook-signature, base64
 // HMAC-SHA256 of timestamp+body). State processing is provider-agnostic.
 

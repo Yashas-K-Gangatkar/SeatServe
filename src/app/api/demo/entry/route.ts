@@ -11,25 +11,25 @@ import { ok, fail } from '@/lib/api-helpers'
 export async function GET() {
   if (process.env.NODE_ENV === 'production') return fail('Not found', 404)
   const heroSeat = await db.seat.findFirst({
-    where: { screen: { name: 'Screen 3' }, code: 'A-1' },
-    select: { qrToken: true, code: true, screen: { select: { name: true, cinema: { select: { mall: { select: { name: true } } } } } } },
+    where: { classroom: { name: { in: ['Classroom 3', 'Screen 3'] } }, code: 'A-1' },
+    select: { qrToken: true, code: true, classroom: { select: { name: true, block: { select: { campus: { select: { name: true } } } } } } },
   })
   const blockedSeat = await db.seat.findFirst({
-    where: { screen: { name: 'Screen 1' }, code: 'A-1' },
-    select: { qrToken: true, code: true, screen: { select: { name: true } } },
+    where: { classroom: { name: { in: ['Classroom 1', 'Screen 1'] } }, code: 'A-1' },
+    select: { qrToken: true, code: true, classroom: { select: { name: true } } },
   })
   const nexoraSeat = await db.seat.findFirst({
-    where: { screen: { name: 'Nexora Screen 1' }, code: 'A-1' },
-    select: { qrToken: true, code: true, screen: { select: { name: true, cinema: { select: { mall: { select: { name: true } } } } } } },
+    where: { classroom: { name: { in: ['Nexora Classroom 1', 'Nexora Screen 1'] } }, code: 'A-1' },
+    select: { qrToken: true, code: true, classroom: { select: { name: true, block: { select: { campus: { select: { name: true } } } } } } },
   })
 
   return ok({
     aurora: heroSeat
-      ? { qrToken: heroSeat.qrToken, seat: heroSeat.code, screen: heroSeat.screen.name, mall: heroSeat.screen.cinema.mall.name }
+      ? { qrToken: heroSeat.qrToken, seat: heroSeat.code, classroom: heroSeat.classroom.name, campus: heroSeat.classroom.block.campus.name }
       : null,
-    auroraBlocked: blockedSeat ? { qrToken: blockedSeat.qrToken, seat: blockedSeat.code, screen: blockedSeat.screen.name } : null,
+    auroraBlocked: blockedSeat ? { qrToken: blockedSeat.qrToken, seat: blockedSeat.code, classroom: blockedSeat.classroom.name } : null,
     nexora: nexoraSeat
-      ? { qrToken: nexoraSeat.qrToken, seat: nexoraSeat.code, screen: nexoraSeat.screen.name, mall: nexoraSeat.screen.cinema.mall.name }
+      ? { qrToken: nexoraSeat.qrToken, seat: nexoraSeat.code, classroom: nexoraSeat.classroom.name, campus: nexoraSeat.classroom.block.campus.name }
       : null,
   })
 }

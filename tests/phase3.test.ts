@@ -1,4 +1,4 @@
-// SeatServe Phase 3 — provider signatures, ledger-driven settlement math,
+// NotiFetch Phase 3 — provider signatures, ledger-driven settlement math,
 // refund adjustment exactness. All pure (no DB).
 import { describe, test, expect } from 'bun:test'
 import {

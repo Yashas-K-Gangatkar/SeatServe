@@ -1,10 +1,16 @@
-// SeatServe — normalized schema.
+// NotiFetch — normalized schema (campus-first).
 // NOTE: SQLite does not support Prisma enums — status/type fields are String
 // columns constrained by zod + TypeScript union types in src/lib/types.ts.
 // PHASE 4: this file targets SQLite (sandbox). `scripts/make-postgres-schema.mjs`
 // generates prisma/schema.postgres.prisma — the IDENTICAL schema with the
 // PostgreSQL provider — so production and sandbox never drift apart.
 // SQLite here, Postgres in production: zero schema changes required.
+//
+// CAMPUS PIVOT (Sep 2026): venue language is university-first — Campus →
+// Block → Classroom → Seat, Lectures instead of showtimes. Physical table
+// and column names are KEPT (the cinema-era names) via @@map/@map, so the
+// live production database (real Razorpay orders, staff logins, the mall
+// demo) carried over with ZERO data movement and zero downtime.
 
 generator client {
   provider = "prisma-client-js"
@@ -17,48 +23,62 @@ datasource db {
 
 // ───────────────────────────── Venues ─────────────────────────────
 
-model Mall {
+// A campus (was "mall") — the top-level tenant: a college/university
+// campus (or, for the legacy mall demo, a shopping mall).
+model Campus {
   id        String         @id @default(cuid())
   name      String
   city      String
   address   String
   createdAt DateTime       @default(now())
-  cinemas   Cinema[]
+  blocks   Block[]
   stores    Store[]
   zones     DeliveryZone[]
   orders    Order[]
   users     User[]
   auditLogs AuditLog[]
+
+  @@map("Mall")
 }
 
-model Cinema {
+// An academic block (was "cinema") — one building of the campus.
+model Block {
   id        String   @id @default(cuid())
-  mallId    String
-  mall      Mall     @relation(fields: [mallId], references: [id])
+  campusId    String   @map("mallId")
+  campus      Campus     @relation(fields: [campusId], references: [id])
   name      String
   wing      String?
   createdAt DateTime @default(now())
-  screens   Screen[]
+  classrooms   Classroom[]
   users     User[]
+
+  @@map("Cinema")
 }
 
-model Screen {
+// A classroom (was "screen") — rows × cols of seats. Two ways to order:
+// scan a per-seat QR (cinema style) or the DOOR QR sticker pasted outside
+// the classroom (campus style — one sticker per room, student types their
+// seat/roll number at checkout).
+model Classroom {
   id        String     @id @default(cuid())
-  cinemaId  String
-  cinema    Cinema     @relation(fields: [cinemaId], references: [id])
-  name      String // "Screen 3"
+  blockId  String     @map("cinemaId")
+  block    Block     @relation(fields: [blockId], references: [id])
+  name      String // "Room A-101"
   seatRows  Int
   seatCols  Int
+  doorQrToken String?  @unique // campus flow: QR sticker at the classroom door — /?qr=<token>
   seats     Seat[]
-  showtimes Showtime[]
+  lectures Lecture[]
   orders    Order[]
   createdAt DateTime   @default(now())
+
+  @@map("Screen")
 }
 
 model Seat {
   id         String   @id @default(cuid())
-  screenId   String
-  screen     Screen   @relation(fields: [screenId], references: [id])
+  classroomId   String   @map("screenId")
+  classroom     Classroom   @relation(fields: [classroomId], references: [id])
   code       String // "F-12"
   rowLabel   String
   seatNumber Int
@@ -67,27 +87,32 @@ model Seat {
   orders     Order[]
 }
 
-model Showtime {
+// A lecture/period on a classroom's timetable (was "showtime"). Its start
+// time doubles as the natural delivery slot: order during class, food lands
+// when the bell rings.
+model Lecture {
   id                 String   @id @default(cuid())
-  screenId           String
-  screen             Screen   @relation(fields: [screenId], references: [id])
-  movieTitle         String
+  classroomId           String   @map("screenId")
+  classroom             Classroom   @relation(fields: [classroomId], references: [id])
+  subject         String   @map("movieTitle") // e.g. "Physics"
   language           String?
   startsAt           DateTime
   orderCutoffMinutes Int      @default(30) // ordering closes N minutes before start
   isActive           Boolean  @default(true)
-  // Sandbox-demo guardian: when true, a stale (already-started) showtime is
+  // Sandbox-demo guardian: when true, a stale (already-started) lecture is
   // rolled forward so the demo never dead-ends at the ordering cutoff.
-  // The one intentionally-blocked demo showtime sets this to false.
+  // The one intentionally-blocked demo lecture sets this to false.
   demoAutoRoll       Boolean  @default(true)
   createdAt          DateTime @default(now())
   orders             Order[]
+
+  @@map("Showtime")
 }
 
 model DeliveryZone {
   id          String   @id @default(cuid())
-  mallId      String
-  mall        Mall     @relation(fields: [mallId], references: [id])
+  campusId      String   @map("mallId")
+  campus        Campus     @relation(fields: [campusId], references: [id])
   name        String // "Wing A · Screens 1–3"
   description String?
   runners     Runner[]
@@ -97,15 +122,15 @@ model DeliveryZone {
 
 model Store {
   id               String        @id @default(cuid())
-  mallId           String
-  mall             Mall          @relation(fields: [mallId], references: [id])
+  campusId           String       @map("mallId")
+  campus             Campus          @relation(fields: [campusId], references: [id])
   name             String
   slug             String        @unique
   tagline          String?
   emoji            String? // demo visual identity
   isOpen           Boolean       @default(true)
-  prepBufferMin    Int           @default(10) // extra handling for cinema delivery
-  // NO delivery fee — stores sit next door to the screens (owner decision)
+  prepBufferMin    Int           @default(10) // extra handling for block delivery
+  // NO delivery fee — stores sit next door to the classrooms (owner decision)
   commissionPct    Float         @default(12) // platform commission
   kycStatus        String        @default("PENDING") // PENDING | VERIFIED | REJECTED
   kycDetail        String? // JSON snapshot: { gstin, panMasked, bankMasked, fssai, submittedAt } — masked only, never full credentials
@@ -162,17 +187,21 @@ model CartItem {
 model Order {
   id               String        @id @default(cuid())
   code             String        @unique // "SS-7K2QX9"
-  mallId           String
-  mall             Mall          @relation(fields: [mallId], references: [id])
-  cinemaId         String
-  screenId         String
-  screen           Screen        @relation(fields: [screenId], references: [id])
-  seatId           String
-  seat             Seat          @relation(fields: [seatId], references: [id])
-  showtimeId       String?
-  showtime         Showtime?     @relation(fields: [showtimeId], references: [id])
+  campusId           String       @map("mallId")
+  campus             Campus          @relation(fields: [campusId], references: [id])
+  blockId         String       @map("cinemaId")
+  classroomId         String       @map("screenId")
+  classroom           Classroom        @relation(fields: [classroomId], references: [id])
+  // seatId is OPTIONAL since the campus pivot: door-QR orders target the
+  // classroom (delivery at the door) and carry seatLabel ("A-12" / roll no)
+  // instead of a Seat row. Legacy seat-QR orders still set seatId.
+  seatId           String?
+  seat             Seat?         @relation(fields: [seatId], references: [id])
+  seatLabel        String? // "A-12" or roll number typed at checkout (door-QR flow)
+  lectureId       String?      @map("showtimeId")
+  lecture         Lecture?     @relation(fields: [lectureId], references: [id])
   status           String        @default("PENDING_PAYMENT") // PENDING_PAYMENT | PAID | COMPLETED | CANCELLED | PARTIALLY_CANCELLED
-  paymentStatus    String        @default("PENDING") // PENDING | PAID | FAILED — no refund statuses: cinema policy is counter-side resolution
+  paymentStatus    String        @default("PENDING") // PENDING | PAID | FAILED — no refund statuses: block policy is counter-side resolution
   subtotalPaise    Int // sum of line totals (GST-inclusive; stores remit their own GST)
   platformFeePaise Int // 5% of the total the customer pays
   totalPaise       Int
@@ -220,7 +249,7 @@ model StoreTicket {
   deliveredAt    DateTime?
   cancelledAt    DateTime?
   // who cancelled this leg: CUSTOMER (self-service partial cancel) |
-  // KITCHEN_STAFF / STORE_MANAGER / MALL_ADMIN (staff cancel). Drives the
+  // KITCHEN_STAFF / STORE_MANAGER / CAMPUS_ADMIN (staff cancel). Drives the
   // customer-facing tracking message ("you cancelled" vs "store cancelled").
   cancelledByRole String?
   customerNote   String?
@@ -301,7 +330,7 @@ model Split {
   taxPaise         Int      @default(0)
   // PENDING | SETTLED — normal ledger. VOIDED — leg cancelled before
   // fulfilment, never owed (settlement-internal; there are no online refunds:
-  // the cinema's policy is counter-side resolution only).
+  // the block's policy is counter-side resolution only).
   settlementStatus String   @default("PENDING")
   settlementId     String?
   createdAt        DateTime @default(now())
@@ -329,14 +358,14 @@ model User {
   name         String
   phone        String   @unique
   email        String?  @unique
-  role         String // CUSTOMER | MALL_ADMIN | CINEMA_MANAGER | STORE_MANAGER | KITCHEN_STAFF | RUNNER
+  role         String // CUSTOMER | CAMPUS_ADMIN | BLOCK_MANAGER | STORE_MANAGER | KITCHEN_STAFF | RUNNER
   // Tenant scope — which slice of the platform this staff user may ever see.
   // Every staff API filter is derived from these fields (never from client input).
-  mallId       String?
-  cinemaId     String?
+  campusId     String?  @map("mallId")
+  blockId      String?  @map("cinemaId")
   storeId      String?
-  mall         Mall?    @relation(fields: [mallId], references: [id])
-  cinema       Cinema?  @relation(fields: [cinemaId], references: [id])
+  campus       Campus?  @relation(fields: [campusId], references: [id])
+  block        Block?   @relation(fields: [blockId], references: [id])
   store        Store?   @relation(fields: [storeId], references: [id])
   runnerId     String?  @unique
   runner       Runner?  @relation(fields: [runnerId], references: [id])
@@ -365,10 +394,10 @@ model AuditLog {
   entityType String
   entityId   String
   meta       String? // JSON
-  // Denormalized tenant scope — lets /api/audit filter EXACTLY by mall even for
+  // Denormalized tenant scope — lets /api/audit filter EXACTLY by campus even for
   // events that carry no orderId (store/product/auth events).
-  mallId     String?
-  mall       Mall?    @relation(fields: [mallId], references: [id])
+  campusId     String?  @map("mallId")
+  campus       Campus?  @relation(fields: [campusId], references: [id])
   orderId    String?
   order      Order?   @relation(fields: [orderId], references: [id])
   createdAt  DateTime @default(now())

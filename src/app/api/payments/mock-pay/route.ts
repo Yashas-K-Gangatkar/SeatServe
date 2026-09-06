@@ -103,7 +103,7 @@ export async function POST(request: Request) {
     const base = process.env.INTERNAL_BASE_URL ?? 'http://localhost:3000'
     const webhookResponse = await fetch(`${base}/api/payments/webhook`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'X-SeatServe-Signature': signature },
+      headers: { 'Content-Type': 'application/json', 'X-NotiFetch-Signature': signature },
       body: raw,
       // webhook must be fast; do not wait forever
       signal: AbortSignal.timeout(5000),
@@ -116,7 +116,7 @@ export async function POST(request: Request) {
     }
   } catch {
     // network hiccup during self-call: process locally with the SAME verified path
-    result = await processWebhookRequest(new Headers({ 'X-SeatServe-Signature': signature }), raw)
+    result = await processWebhookRequest(new Headers({ 'X-NotiFetch-Signature': signature }), raw)
   }
 
   if (!result.ok) return fail(`Webhook rejected: ${result.error}`, result.status)

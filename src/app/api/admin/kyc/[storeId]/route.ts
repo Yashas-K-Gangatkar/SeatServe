@@ -1,5 +1,5 @@
-// POST /api/admin/kyc/[storeId] — Phase 4: the mall admin OR the delegated
-// cinema manager (mall operator) VERIFIES or REJECTS a store's KYC. VERIFIED
+// POST /api/admin/kyc/[storeId] — Phase 4: the campus admin OR the delegated
+// block manager (campus operator) VERIFIES or REJECTS a store's KYC. VERIFIED
 // stores are payout-eligible (the settlement engine only pays verified
 // merchants); REJECTED sends the store back to fix their details.
 // Every decision is audited and pushed to the store's realtime room.
@@ -17,14 +17,14 @@ const bodySchema = z.object({
 
 export async function POST(request: Request, { params }: { params: Promise<{ storeId: string }> }) {
   const { storeId } = await params
-  const auth = await requireStaff(request, ['MALL_ADMIN', 'CINEMA_MANAGER'])
+  const auth = await requireStaff(request, ['CAMPUS_ADMIN', 'BLOCK_MANAGER'])
   if ('error' in auth) return auth.error
   const user = auth.user
 
   const store = await db.store.findUnique({ where: { id: storeId } })
   if (!store) return fail('Store not found', 404)
-  if (store.mallId !== (user.mallId ?? '__none__')) {
-    return fail('This store belongs to another mall', 403)
+  if (store.campusId !== (user.campusId ?? '__none__')) {
+    return fail('This store belongs to another campus', 403)
   }
   if (!store.kycDetail) return fail('The store has not submitted KYC yet', 409)
 
@@ -40,12 +40,12 @@ export async function POST(request: Request, { params }: { params: Promise<{ sto
     action: parsed.data.action === 'VERIFY' ? 'KYC_VERIFIED' : 'KYC_REJECTED',
     entityType: 'Store',
     entityId: storeId,
-    mallId: store.mallId,
+    campusId: store.campusId,
     meta: { name: store.name, previousStatus: store.kycStatus },
   })
 
   await emitToRooms({
-    rooms: [`admin:${store.mallId}`, `store:${storeId}`],
+    rooms: [`admin:${store.campusId}`, `store:${storeId}`],
     event: 'store:update',
     data: { storeId, kycStatus: status },
   })

@@ -1,7 +1,7 @@
 'use client'
 
-// SeatServe — customer seat page (#/seat/<qrToken>)
-// Mobile-first, dark-cinema friendly: big touch targets, high contrast, sticky cart bar.
+// NotiFetch — customer seat page (#/seat/<qrToken>)
+// Mobile-first, dark-block friendly: big touch targets, high contrast, sticky cart bar.
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Minus, Plus, ShoppingBag, Timer, Store as StoreIcon, ChevronLeft, MapPin, Ban, ChevronDown } from 'lucide-react'
 import { toast } from 'sonner'
@@ -24,6 +24,8 @@ export default function SeatPage({ qrToken, go }: { qrToken: string; go: (p: str
   const [openStores, setOpenStores] = useState<Record<string, boolean>>({})
   // bumped whenever a checkout closes — re-fetches the "Your orders" strip
   const [ordersTick, setOrdersTick] = useState(0)
+  // door-QR mode: the student's seat / roll label typed before checkout
+  const [seatLabel, setSeatLabel] = useState('')
 
   const cart = useCart()
   const { play } = useSound()
@@ -87,7 +89,7 @@ export default function SeatPage({ qrToken, go }: { qrToken: string; go: (p: str
     )
   if (!ctx) return null
 
-  const show = ctx.showtime
+  const show = ctx.lecture
   const cutoffClosed = show ? !show.cutoff.orderingOpen : true
 
   return (
@@ -96,7 +98,7 @@ export default function SeatPage({ qrToken, go }: { qrToken: string; go: (p: str
       {/* seat header */}
       <header>
         <div className="flex items-center justify-between gap-2">
-          <p className="text-[10px] font-extrabold tracking-[0.18em] text-orange-600">{ctx.mall.name.toUpperCase()}</p>
+          <p className="text-[10px] font-extrabold tracking-[0.18em] text-orange-600">{ctx.campus.name.toUpperCase()}</p>
           <button
             onClick={() => go('#/')}
             className="inline-flex items-center gap-1 rounded-full border border-border px-2.5 py-1 text-[11px] font-semibold text-muted-foreground hover:text-foreground"
@@ -106,17 +108,22 @@ export default function SeatPage({ qrToken, go }: { qrToken: string; go: (p: str
           </button>
         </div>
         <h1 className="mt-2 text-3xl font-black leading-tight tracking-tight text-stone-900">
-          {ctx.screen.name} · <span className="bg-gradient-to-r from-amber-500 to-orange-600 bg-clip-text text-transparent">Seat {ctx.seat.code}</span>
+          {ctx.classroom.name}
+          {ctx.seat ? (
+            <> · <span className="bg-gradient-to-r from-amber-500 to-orange-600 bg-clip-text text-transparent">Seat {ctx.seat.code}</span></>
+          ) : (
+            <> · <span className="bg-gradient-to-r from-amber-500 to-orange-600 bg-clip-text text-transparent">Door delivery</span></>
+          )}
         </h1>
         <p className="mt-1 flex items-center gap-1.5 text-sm text-muted-foreground">
           <MapPin className="h-3.5 w-3.5" aria-hidden />
-          {ctx.cinema.name}
+          {ctx.block.name}
         </p>
         {show && (
           <div className="mt-3 rounded-2xl border border-border bg-card p-3.5">
             <div className="flex items-center justify-between gap-2">
               <div>
-                <p className="text-sm font-bold">{show.movieTitle}</p>
+                <p className="text-sm font-bold">{show.subject}</p>
                 <p className="text-xs text-muted-foreground">
                   {show.language ? `${show.language} · ` : ''}Starts {new Date(show.startsAt).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}
                 </p>
@@ -133,21 +140,36 @@ export default function SeatPage({ qrToken, go }: { qrToken: string; go: (p: str
             </div>
           </div>
         )}
-        {/* seat switcher (demo: pretend you scanned a different seat) */}
-        <details className="mt-2 text-xs text-muted-foreground">
-          <summary className="cursor-pointer select-none py-1 font-semibold hover:text-foreground">Not your seat? Switch seat (demo)</summary>
-          <div className="mt-1 grid max-h-28 grid-cols-6 gap-1 overflow-y-auto kitchen-scroll rounded-xl border border-border bg-card p-2">
-            {ctx.screenSeats.slice(0, 36).map((s) => (
-              <button
-                key={s.qrToken}
-                onClick={() => go(`#/seat/${s.qrToken}`)}
-                className={`rounded-lg px-1 py-1.5 text-[10px] font-bold tabular hover:bg-amber-100 ${s.code === ctx.seat.code ? 'bg-amber-100 text-amber-800' : 'text-stone-500'}`}
-              >
-                {s.code}
-              </button>
-            ))}
+        {/* seat mode: demo seat switcher · door mode: seat/roll label input */}
+        {ctx.mode === 'seat' ? (
+          <details className="mt-2 text-xs text-muted-foreground">
+            <summary className="cursor-pointer select-none py-1 font-semibold hover:text-foreground">Not your seat? Switch seat (demo)</summary>
+            <div className="mt-1 grid max-h-28 grid-cols-6 gap-1 overflow-y-auto kitchen-scroll rounded-xl border border-border bg-card p-2">
+              {ctx.classroomSeats.slice(0, 36).map((s) => (
+                <button
+                  key={s.qrToken}
+                  onClick={() => go(`#/seat/${s.qrToken}`)}
+                  className={`rounded-lg px-1 py-1.5 text-[10px] font-bold tabular hover:bg-amber-100 ${s.code === ctx.seat?.code ? 'bg-amber-100 text-amber-800' : 'text-stone-500'}`}
+                >
+                  {s.code}
+                </button>
+              ))}
+            </div>
+          </details>
+        ) : (
+          <div className="mt-2 rounded-xl border border-border bg-card p-2.5">
+            <label className="block text-xs font-semibold text-muted-foreground" htmlFor="seatLabel">
+              Your seat / roll number (optional — food comes to the classroom door)
+            </label>
+            <input
+              id="seatLabel"
+              value={seatLabel}
+              onChange={(e) => setSeatLabel(e.target.value.slice(0, 12))}
+              placeholder="e.g. A-12 or 23"
+              className="mt-1 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm font-semibold tabular outline-none focus:ring-2 focus:ring-amber-300"
+            />
           </div>
-        </details>
+        )}
       </header>
 
       {/* orders this device already placed from this seat — live status cards */}
@@ -289,6 +311,8 @@ export default function SeatPage({ qrToken, go }: { qrToken: string; go: (p: str
           if (!v) setOrdersTick((t) => t + 1)
         }}
         ctx={ctx}
+        qrToken={qrToken}
+        seatLabel={seatLabel.trim() || undefined}
         onPlaced={(order) => go(`#/track/${order.code}`)}
       />
     </div>

@@ -1,4 +1,4 @@
-// SeatServe — configurable business rules (settings table with safe defaults).
+// NotiFetch — configurable business rules (settings table with safe defaults).
 // Platform fee is FIXED at 5% of the customer's total (owner decision) — not
 // settings-driven. The walk buffer (timing, not money) stays configurable.
 import { db } from '@/lib/db'

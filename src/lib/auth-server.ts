@@ -1,4 +1,4 @@
-// SeatServe Phase 2 — server-only auth helpers for API route handlers.
+// NotiFetch Phase 2 — server-only auth helpers for API route handlers.
 // Every staff-facing route calls requireStaff() and derives its Prisma
 // filters from the returned user's scope columns, NEVER from query params.
 import { cookies } from 'next/headers'
@@ -7,6 +7,7 @@ import { fail } from '@/lib/api-helpers'
 import {
   SESSION_COOKIE,
   hashSessionToken,
+  normalizeRole,
   roleAllowed,
   scopeErrorFor,
   type Role,
@@ -47,9 +48,9 @@ export async function sessionUser(request: Request): Promise<StaffUser | null> {
     id: u.id,
     name: u.name,
     email: u.email,
-    role: u.role as Role,
-    mallId: u.mallId,
-    cinemaId: u.cinemaId,
+    role: normalizeRole(u.role),
+    campusId: u.campusId,
+    blockId: u.blockId,
     storeId: u.storeId,
     runnerId: u.runnerId,
   }

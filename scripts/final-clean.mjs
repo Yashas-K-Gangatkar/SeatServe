@@ -1,7 +1,7 @@
 // FINAL-TEST CLEAN — the owner runs the last loop test with 100% self-created
 // real data, so everything test-shaped must go.
-// KEEPS: Aurora Mall subtree (cinemas/screens/532 seats/showtimes — QR posters
-//        depend on them), asha (MALL_ADMIN) + bhagya (real person; store link
+// KEEPS: Aurora Campus subtree (blocks/classrooms/532 seats/lectures — QR posters
+//        depend on them), asha (CAMPUS_ADMIN) + bhagya (real person; store link
 //        detached so the owner can re-assign her to the real store).
 // DELETES: the family-test store "milk products" + its products, ANY leftover
 //          commerce rows (orders/payments/refunds/splits/settlements/carts/

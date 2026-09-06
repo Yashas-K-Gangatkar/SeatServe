@@ -1,5 +1,5 @@
 // Soft warm blooms behind the staff work consoles — matches the landing's
-// "Warm Ivory Cinema" look so the work screens don't feel flat grey-on-white.
+// "Warm Ivory Block" look so the work classrooms don't feel flat grey-on-white.
 export function WarmBackdrop() {
   return (
     <div aria-hidden className="pointer-events-none fixed inset-0 -z-10 overflow-hidden">

@@ -37,7 +37,7 @@ const STATS: Stat[] = [
 ]
 
 const TRUST = [
-  'Real cinema pilot at Aurora Mall, Mumbai — not a mockup.',
+  'Real block pilot at Aurora Campus, Mumbai — not a mockup.',
   'Zero setup — no app, no sign-up. Scan and go.',
   'Card details never touch our servers — Razorpay handles payments.',
 ]

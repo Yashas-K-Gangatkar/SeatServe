@@ -1,7 +1,7 @@
 // GET /api/admin/settlement/auto-daily — Vercel Cron endpoint (23:00 IST daily).
 //
 // "Close the day": prepares PENDING settlement batches for ALL stores of the
-// mall in one shot — exactly what the admin's "Run settlement batch" button
+// campus in one shot — exactly what the admin's "Run settlement batch" button
 // does, triggered automatically every night. Idempotent by construction: the
 // ledger engine only ever batches rows that have no settlementId yet, so a
 // manual batch earlier the same day simply leaves nothing new for the cron.
@@ -23,14 +23,14 @@ export async function GET(request: Request) {
     return fail('Unauthorized', 401)
   }
 
-  const mall = await db.mall.findFirst({ orderBy: { createdAt: 'asc' } })
-  if (!mall) return fail('No mall configured', 404)
+  const campus = await db.campus.findFirst({ orderBy: { createdAt: 'asc' } })
+  if (!campus) return fail('No campus configured', 404)
 
   const dry = new URL(request.url).searchParams.get('dry') === '1'
 
   if (dry) {
     // Mirror runSettlementBatch's exact eligibility logic, without writing.
-    const stores = await db.store.findMany({ where: { mallId: mall.id }, orderBy: { name: 'asc' } })
+    const stores = await db.store.findMany({ where: { campusId: campus.id }, orderBy: { name: 'asc' } })
     const wouldSettle: { storeName: string; netPayablePaise: number; orderRows: number }[] = []
     const skipped: string[] = []
     for (const store of stores) {
@@ -51,13 +51,13 @@ export async function GET(request: Request) {
       const netPayablePaise = pendingRows.reduce((s, r) => s + r.amountPaise, 0)
       wouldSettle.push({ storeName: store.name, netPayablePaise, orderRows: payable.length })
     }
-    return ok({ dry: true, mall: mall.name, wouldSettle, skipped })
+    return ok({ dry: true, campus: campus.name, wouldSettle, skipped })
   }
 
-  const result = await runSettlementBatch(mall.id)
+  const result = await runSettlementBatch(campus.id)
   return ok({
     dry: false,
-    mall: mall.name,
+    campus: campus.name,
     batches: result.batches,
     skipped: result.skipped,
   })

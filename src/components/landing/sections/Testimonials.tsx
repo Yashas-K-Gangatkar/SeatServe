@@ -20,7 +20,7 @@ const REVIEWS = [
     meta: '1 week ago',
   },
   {
-    quote: "Finally don't have to miss half the movie waiting for snacks!",
+    quote: "Ordered from the last bench, samosa was waiting at the door when the bell rang!",
     name: 'Ananya S.',
     meta: 'Bengaluru · 3 days ago',
   },
@@ -71,7 +71,7 @@ export function Testimonials() {
         </div>
 
         <p className="mt-6 text-center text-[12px] text-[#8B8B8B]">
-          Pilot feedback from the Aurora Mall demo.
+          Pilot feedback from the Aurora Campus demo.
         </p>
       </div>
     </section>

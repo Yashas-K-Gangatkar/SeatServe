@@ -1,4 +1,4 @@
-// SeatServe — realtime bridge (server side).
+// NotiFetch — realtime bridge (server side).
 // Next.js API routes publish domain events to the socket.io mini-service
 // (port 3003) over an internal HTTP endpoint. Clients subscribe to rooms:
 //   store:<storeId> | runners | admin | order:<orderCode>

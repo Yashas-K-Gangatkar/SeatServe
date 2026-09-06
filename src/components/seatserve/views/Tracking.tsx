@@ -1,6 +1,6 @@
 'use client'
 
-// SeatServe — live order tracking (#/track/<code>)
+// NotiFetch — live order tracking (#/track/<code>)
 // Realtime via socket.io + 4s polling fallback. Per-store status timelines,
 // runner leg, payment state (incl. retry), help entry.
 // CANCEL WINDOW (owner rule): a paid order can be cancelled by the customer
@@ -112,7 +112,7 @@ function TrackingInner({ code, go }: { code: string; go: (p: string) => void }) 
   usePolling(load, 8000, !!order && order.paymentStatus === 'PAID' && order.status !== 'COMPLETED')
   const { play } = useSound()
   useRealtime([`order:${code.toUpperCase()}`], (event) => {
-    // the tracking screen has a voice: kitchen acceptance, readiness and
+    // the tracking classroom has a voice: kitchen acceptance, readiness and
     // delivery each land as a distinct cue (mirrors the haptic pattern)
     if (event === 'ticket:status') play('pop')
     else if (event === 'order:paid') play('success')
@@ -202,9 +202,9 @@ function TrackingInner({ code, go }: { code: string; go: (p: string) => void }) 
         </div>
         <p className="mt-2 flex items-center gap-1.5 text-sm text-muted-foreground">
           <MapPin className="h-3.5 w-3.5 shrink-0" aria-hidden />
-          {order.location.screen} · {order.location.seat} · {order.location.cinema}
+          {order.location.classroom} · {order.location.seat} · {order.location.block}
         </p>
-        {order.show && <p className="mt-1 text-xs text-muted-foreground">{order.show.movieTitle} · starts {timeHM(order.show.startsAt)}</p>}
+        {order.show && <p className="mt-1 text-xs text-muted-foreground">{order.show.subject} · starts {timeHM(order.show.startsAt)}</p>}
         {order.scheduledFor && (
           <p className="mt-2 flex items-center gap-1.5 rounded-lg bg-sky-50 px-2.5 py-1.5 text-xs font-bold text-sky-800 ring-1 ring-sky-200">
             <Clock className="h-3.5 w-3.5 shrink-0" aria-hidden /> Scheduled for {slotLabel(order.scheduledFor)} — the kitchen starts ~10 minutes before so food lands right on time
@@ -402,9 +402,9 @@ function TrackingInner({ code, go }: { code: string; go: (p: string) => void }) 
           order={{ code: order.code, totalPaise: order.totals.totalPaise }}
           receipt={{
             seatCode: order.location.seat,
-            screenName: order.location.screen,
-            cinemaName: order.location.cinema,
-            movie: order.show?.movieTitle,
+            screenName: order.location.classroom,
+            cinemaName: order.location.block,
+            movie: order.show?.subject,
             groups: order.stores
               .filter((s) => s.status !== 'CANCELLED')
               .map((s) => ({

@@ -1,5 +1,5 @@
 #!/bin/bash
-# SeatServe — end-to-end API golden path test (bash/curl) — Phase 3 edition.
+# NotiFetch — end-to-end API golden path test (bash/curl) — Phase 3 edition.
 # Covers: commerce flow + auth + tenant isolation + audit-round fixes
 # (#12–19 isolation, #1–11 money, #20–22 cutoff, kitchen leg cancel)
 # + Phase 3: provider webhooks (Razorpay/Cashfree schemes), settlement runs,
@@ -30,19 +30,19 @@ echo "── Context (QR) ──"
 C=$(curl -s "$BASE/api/context?qr=$AURORA_QR")
 SEAT=$(echo "$C" | jget "['data']['seat']['code']")
 check "QR resolves to Aurora A-1" "$([ "$SEAT" = "A-1" ] && echo 1 || echo 0)"
-OPEN=$(echo "$C" | jget "['data']['showtime']['cutoff']['orderingOpen']")
-check "ordering open for Screen 3 show" "$([ "$OPEN" = "True" ] && echo 1 || echo 0)"
+OPEN=$(echo "$C" | jget "['data']['lecture']['cutoff']['orderingOpen']")
+check "ordering open for Classroom 3 show" "$([ "$OPEN" = "True" ] && echo 1 || echo 0)"
 BADQR=$(code "$BASE/api/context?qr=NOPE")
 check "unknown QR → 404" "$([ "$BADQR" = "404" ] && echo 1 || echo 0)"
 
-# stores are located by NAME — admin-created stores (same-mall expansion) may
+# stores are located by NAME — admin-created stores (same-campus expansion) may
 # appear anywhere in the name-sorted list
 pick_store() { echo "$C" | python3 -c "
 import sys,json
 d=json.load(sys.stdin)['data']['stores']
 st=[s for s in d if s['name']==sys.argv[1]]
 print(json.dumps(st[0]) if st else '')" "$1"; }
-SNACKS_JSON=$(pick_store "Cinema Snacks"); PIZZA_JSON=$(pick_store "Pizza Corner"); MITHAI_JSON=$(pick_store "Mithai & More")
+SNACKS_JSON=$(pick_store "Block Snacks"); PIZZA_JSON=$(pick_store "Pizza Corner"); MITHAI_JSON=$(pick_store "Mithai & More")
 POPCORN=$(echo "$SNACKS_JSON" | jget "['products'][0]['id']")
 PIZZA=$(echo "$PIZZA_JSON" | jget "['products'][0]['id']")
 MITHAI=$(echo "$MITHAI_JSON" | jget "['products'][0]['id']")
@@ -51,7 +51,7 @@ SLUG1=$(echo "$PIZZA_JSON" | jget "['slug']")
 STORE1=$(echo "$SNACKS_JSON" | jget "['id']")
 STORE2=$(echo "$PIZZA_JSON" | jget "['id']")
 
-echo "── Audit #12/#13: cross-mall isolation ──"
+echo "── Audit #12/#13: cross-campus isolation ──"
 CN=$(curl -s "$BASE/api/context?qr=$NEXORA_QR")
 NEX_STORES=$(echo "$CN" | python3 -c "import sys,json;d=json.load(sys.stdin)['data'];print(','.join(s['name'] for s in d['stores']))")
 check "Nexora context shows ONLY Dosa Junction" "$([ "$NEX_STORES" = "Dosa Junction" ] && echo 1 || echo 0)"
@@ -69,7 +69,7 @@ ANON=$(code "$BASE/api/auth/me")
 check "me without session → 401" "$([ "$ANON" = "401" ] && echo 1 || echo 0)"
 curl -s -c "$JARS/admin" -X POST "$BASE/api/auth/login" -H 'Content-Type: application/json' -d '{"email":"asha@seatserve.demo","password":"demo1234"}' > /dev/null
 ADMIN_ROLE=$(curl -s -b "$JARS/admin" "$BASE/api/auth/me" | jget "['data']['role']")
-check "mall admin login (asha)" "$([ "$ADMIN_ROLE" = "MALL_ADMIN" ] && echo 1 || echo 0)"
+check "campus admin login (asha)" "$([ "$ADMIN_ROLE" = "CAMPUS_ADMIN" ] && echo 1 || echo 0)"
 curl -s -c "$JARS/k0" -X POST "$BASE/api/auth/login" -H 'Content-Type: application/json' -d "{\"email\":\"kitchen@$SLUG0.demo\",\"password\":\"demo1234\"}" > /dev/null
 K0_STORE=$(curl -s -b "$JARS/k0" "$BASE/api/auth/me" | jget "['data']['storeId']")
 check "cook login pinned to own store" "$([ "$K0_STORE" = "$STORE1" ] && echo 1 || echo 0)"
@@ -79,8 +79,8 @@ RUN_ROLE=$(curl -s -b "$JARS/run" "$BASE/api/auth/me" | jget "['data']['role']")
 check "runner login (ravi)" "$([ "$RUN_ROLE" = "RUNNER" ] && echo 1 || echo 0)"
 curl -s -c "$JARS/cm" -X POST "$BASE/api/auth/login" -H 'Content-Type: application/json' -d '{"email":"vikram@aurora.demo","password":"demo1234"}' > /dev/null
 curl -s -c "$JARS/nadmin" -X POST "$BASE/api/auth/login" -H 'Content-Type: application/json' -d '{"email":"meera@nexora.demo","password":"demo1234"}' > /dev/null
-NADMIN_MALL=$(curl -s -b "$JARS/nadmin" "$BASE/api/auth/me" | jget "['data']['mallId']")
-check "second-mall admin login (meera)" "$([ "$NADMIN_MALL" != "None" ] && [ -n "$NADMIN_MALL" ] && echo 1 || echo 0)"
+NADMIN_MALL=$(curl -s -b "$JARS/nadmin" "$BASE/api/auth/me" | jget "['data']['campusId']")
+check "second-campus admin login (meera)" "$([ "$NADMIN_MALL" != "None" ] && [ -n "$NADMIN_MALL" ] && echo 1 || echo 0)"
 
 echo "── Order creation (customer app stays login-free) ──"
 O=$(curl -s -X POST "$BASE/api/orders" -H 'Content-Type: application/json' \
@@ -121,17 +121,17 @@ check "already-paid order → 409" "$([ "$(echo "$P3" | jget "['ok']")" = "False
 echo "── Audit #3: payment.failed AFTER capture must not corrupt ──"
 WH_BODY="{\"eventId\":\"evt_fail_after_paid_$RUNKEY\",\"type\":\"payment.failed\",\"provider\":\"SANDBOX_MOCK\",\"providerRef\":\"$(echo "$P1" | jget "['data']['providerRef']")\",\"failureReason\":\"late decline\"}"
 SIG=$(python3 -c "import hmac,hashlib,sys;print(hmac.new(b'sandbox_webhook_secret_dev_only',sys.argv[1].encode(),hashlib.sha256).hexdigest())" "$WH_BODY")
-FA=$(curl -s -X POST "$BASE/api/payments/webhook" -H 'Content-Type: application/json' -H "X-SeatServe-Signature: $SIG" -d "$WH_BODY")
+FA=$(curl -s -X POST "$BASE/api/payments/webhook" -H 'Content-Type: application/json' -H "X-NotiFetch-Signature: $SIG" -d "$WH_BODY")
 check "late failed event → already_paid outcome" "$([ "$(echo "$FA" | jget "['data']['outcome']")" = "already_paid" ] && echo 1 || echo 0)"
 STILL_PAID=$(curl -s "$BASE/api/orders/$CODE")
 check "order still PAID after late failure" "$([ "$(echo "$STILL_PAID" | jget "['data']['paymentStatus']")" = "PAID" ] && echo 1 || echo 0)"
 
 echo "── Audit #18: realtime rooms are token-gated ──"
-AURORA_MALL=$(echo "$C" | jget "['data']['mall']['id']")
+AURORA_MALL=$(echo "$C" | jget "['data']['campus']['id']")
 MALL_ID=$(curl -s -b "$JARS/admin" "$BASE/api/realtime/token" -X POST -H 'Content-Type: application/json' -d "{\"room\":\"admin:$NADMIN_MALL\"}" | jget "['ok']")
-check "admin token for FOREIGN mall denied (ok=false)" "$([ "$MALL_ID" = "False" ] && echo 1 || echo 0)"
+check "admin token for FOREIGN campus denied (ok=false)" "$([ "$MALL_ID" = "False" ] && echo 1 || echo 0)"
 ADMIN_TOKEN=$(curl -s -b "$JARS/admin" "$BASE/api/realtime/token" -X POST -H 'Content-Type: application/json' -d "{\"room\":\"admin:$AURORA_MALL\"}" | jget "['data']['token']")
-check "admin token for OWN mall issued" "$([ -n "$ADMIN_TOKEN" ] && [ "$ADMIN_TOKEN" != "None" ] && echo 1 || echo 0)"
+check "admin token for OWN campus issued" "$([ -n "$ADMIN_TOKEN" ] && [ "$ADMIN_TOKEN" != "None" ] && echo 1 || echo 0)"
 RUNNER_ADMIN_TOKEN=$(curl -s -b "$JARS/run" "$BASE/api/realtime/token" -X POST -H 'Content-Type: application/json' -d "{\"room\":\"admin:$AURORA_MALL\"}" | jget "['ok']")
 check "runner denied admin room token" "$([ "$RUNNER_ADMIN_TOKEN" = "False" ] && echo 1 || echo 0)"
 bun scripts/realtime-auth-check.ts "$ADMIN_TOKEN" "admin:$AURORA_MALL" && RT_OK=1 || RT_OK=0
@@ -226,17 +226,17 @@ echo "── Admin board (scoped by session) ──"
 ANO=$(code "$BASE/api/admin/overview")
 check "admin overview without login → 401" "$([ "$ANO" = "401" ] && echo 1 || echo 0)"
 A=$(curl -s -b "$JARS/admin" "$BASE/api/admin/overview")
-check "mall admin scope label = Mall-wide" "$([ "$(echo "$A" | jget "['data']['scope']['label']")" = "Mall-wide" ] && echo 1 || echo 0)"
+check "campus admin scope label = Campus-wide" "$([ "$(echo "$A" | jget "['data']['scope']['label']")" = "Campus-wide" ] && echo 1 || echo 0)"
 A_MALL=$(echo "$A" | jget "['data']['scope']['mallName']")
-check "scope mallName = Aurora Mall (no more hardcoded label)" "$([ "$A_MALL" = "Aurora Mall" ] && echo 1 || echo 0)"
+check "scope mallName = Aurora Campus (no more hardcoded label)" "$([ "$A_MALL" = "Aurora Campus" ] && echo 1 || echo 0)"
 ACM=$(curl -s -b "$JARS/cm" "$BASE/api/admin/overview")
-check "cinema manager scope label = Your cinema only" "$([ "$(echo "$ACM" | jget "['data']['scope']['label']")" = "Your cinema only" ] && echo 1 || echo 0)"
-check "cinema manager gets realtimeMallId (own cinema's mall)" "$([ "$(echo "$ACM" | jget "['data']['scope']['realtimeMallId']")" = "$AURORA_MALL" ] && echo 1 || echo 0)"
+check "block manager scope label = Your block only" "$([ "$(echo "$ACM" | jget "['data']['scope']['label']")" = "Your block only" ] && echo 1 || echo 0)"
+check "block manager gets realtimeMallId (own block's campus)" "$([ "$(echo "$ACM" | jget "['data']['scope']['realtimeMallId']")" = "$AURORA_MALL" ] && echo 1 || echo 0)"
 NEX_OV=$(curl -s -b "$JARS/nadmin" "$BASE/api/admin/overview")
 NEX_CODES=$(echo "$NEX_OV" | python3 -c "import sys,json;print(','.join(o['code'] for o in json.load(sys.stdin)['data']['liveOrders']))")
 NEX_MALL=$(echo "$NEX_OV" | jget "['data']['scope']['mallName']")
 # true invariant: the Nexora board is the Nexora board and NO Aurora order leaks into it
-# (the mall may legitimately hold its own live orders, e.g. real staff testing)
+# (the campus may legitimately hold its own live orders, e.g. real staff testing)
 check "Nexora admin board scoped to Nexora + ZERO Aurora orders (isolation)" "$(python3 -c "import sys; codes='$NEX_CODES'.split(',') if '$NEX_CODES' else []; ok = ('Nexora' in '''$NEX_MALL''') and ('$CODE' not in codes); sys.exit(0 if ok else 1)" && echo 1 || echo 0)"
 AUD=$(curl -s -b "$JARS/admin" "$BASE/api/audit" | python3 -c "import sys,json;print(len(json.load(sys.stdin)['data']))")
 check "audit trail populated ($AUD)" "$([ "$AUD" -gt 5 ] && echo 1 || echo 0)"
@@ -258,24 +258,24 @@ echo "── Scoped controls ──"
 STORE_CLOSE=$(code -b "$JARS/k0" -X PATCH "$BASE/api/stores/$STORE2" -H 'Content-Type: application/json' -d '{"isOpen":false}')
 check "cook toggling ANOTHER store → 403" "$([ "$STORE_CLOSE" = "403" ] && echo 1 || echo 0)"
 RESET_CM=$(code -b "$JARS/cm" -X POST "$BASE/api/simulator/reset")
-check "cinema manager hitting reset → 403" "$([ "$RESET_CM" = "403" ] && echo 1 || echo 0)"
+check "block manager hitting reset → 403" "$([ "$RESET_CM" = "403" ] && echo 1 || echo 0)"
 
-echo "── Audit #20: showtime selection ──"
+echo "── Audit #20: lecture selection ──"
 CB=$(curl -s -X POST "$BASE/api/orders" -H 'Content-Type: application/json' \
   -d "{\"qrToken\":\"$BLOCKED_QR\",\"items\":[{\"productId\":\"$MITHAI\",\"qty\":1}]}")
 check "past-cutoff seat → blocked" "$([ "$(echo "$CB" | jget "['ok']")" = "False" ] && echo 1 || echo 0)"
-CBSHOW=$(curl -s "$BASE/api/context?qr=$BLOCKED_QR" | jget "['data']['showtime']['cutoff']['orderingOpen']")
+CBSHOW=$(curl -s "$BASE/api/context?qr=$BLOCKED_QR" | jget "['data']['lecture']['cutoff']['orderingOpen']")
 check "blocked seat context stays consistent with order API" "$([ "$CBSHOW" = "False" ] && echo 1 || echo 0)"
 
 echo "── QR sheet (staff only) ──"
 QR_NO=$(code "$BASE/api/admin/qr")
 check "QR sheet without login → 401" "$([ "$QR_NO" = "401" ] && echo 1 || echo 0)"
 N=$(curl -s -b "$JARS/cm" "$BASE/api/admin/qr" | python3 -c "import sys,json;print(len(json.load(sys.stdin)['data']['seats']))")
-check "cinema manager QR sheet returns 72 seats" "$([ "$N" = "72" ] && echo 1 || echo 0)"
+check "block manager QR sheet returns 72 seats" "$([ "$N" = "72" ] && echo 1 || echo 0)"
 
 echo "── Webhook signature ──"
 RAW='{"eventId":"evt_evil_1","type":"payment.captured","provider":"EVIL","providerRef":"pay_x"}'
-WH=$(code -X POST "$BASE/api/payments/webhook" -H 'Content-Type: application/json' -H 'X-SeatServe-Signature: deadbeef' -d "$RAW")
+WH=$(code -X POST "$BASE/api/payments/webhook" -H 'Content-Type: application/json' -H 'X-NotiFetch-Signature: deadbeef' -d "$RAW")
 check "forged webhook → 401" "$([ "$WH" = "401" ] && echo 1 || echo 0)"
 
 echo "── Phase 3: provider webhook schemes (Razorpay Route / Cashfree Easy Split) ──"
@@ -356,7 +356,7 @@ check "kitchen cannot touch another store's ticket (403)" "$([ "$P3_K0" = "403" 
 echo "── Phase 3: settlement batches & reconciliation ──"
 S_GET=$(curl -s -b "$JARS/admin" "$BASE/api/admin/settlement")
 S_SCOPE=$(echo "$S_GET" | jget "['data']['scope']")
-check "settlement summary scoped Mall-wide" "$([ "$S_SCOPE" = "Mall-wide" ] && echo 1 || echo 0)"
+check "settlement summary scoped Campus-wide" "$([ "$S_SCOPE" = "Campus-wide" ] && echo 1 || echo 0)"
 S_STORES=$(echo "$S_GET" | python3 -c "import sys,json;print(len(json.load(sys.stdin)['data']['stores']))")
 check "settlement summary lists all Aurora stores (incl. newly opened)" "$([ "$S_STORES" -ge "4" ] && echo 1 || echo 0)"
 S_ANON=$(code "$BASE/api/admin/settlement")

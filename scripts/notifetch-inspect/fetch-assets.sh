@@ -5,7 +5,7 @@ BASE="https://ctshop-git-main-noti-fetch.vercel.app"
 OUT="/home/z/my-project/public/landing"
 mkdir -p "$OUT"
 
-for img in cinema coffee dosa fries jamun nachos pizza popcorn wrap; do
+for img in block coffee dosa fries jamun nachos pizza popcorn wrap; do
   curl -s --max-time 30 -o "$OUT/$img.png" "$BASE/landing/$img.png" &
 done
 wait

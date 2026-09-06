@@ -1,6 +1,6 @@
 'use client'
 
-// SeatServe — landing / demo hub (#/)
+// NotiFetch — landing / demo hub (#/)
 // Customer app front door (no login — seat QR flow) + staff portal entry.
 // Seat QR tokens are RANDOM capabilities now (audit fix #15), so the demo
 // entry seat is resolved from /api/demo/entry instead of a hardcoded token.
@@ -9,9 +9,9 @@ import { Clapperboard, LockKeyhole, QrCode, Search, Info } from 'lucide-react'
 import { get } from '@/lib/client/api'
 
 interface DemoEntry {
-  aurora: { qrToken: string; seat: string; screen: string; mall: string } | null
-  auroraBlocked: { qrToken: string; seat: string; screen: string } | null
-  nexora: { qrToken: string; seat: string; screen: string; mall: string } | null
+  aurora: { qrToken: string; seat: string; classroom: string; campus: string } | null
+  auroraBlocked: { qrToken: string; seat: string; classroom: string } | null
+  nexora: { qrToken: string; seat: string; classroom: string; campus: string } | null
 }
 
 function useDemoEntry(): DemoEntry | null {
@@ -31,10 +31,10 @@ function useDemoEntry(): DemoEntry | null {
 }
 
 const HOW_STEPS = [
-  'Scan the QR at your seat — the menu opens with the stores inside your mall.',
+  'Scan the QR at your seat — the menu opens with the stores inside your campus.',
   'Add items from different stores to ONE cart, then pay by UPI or card.',
   'Track live — each store has its own status ticket. Cancel with automatic money-back until the kitchen accepts.',
-  'Staff run scoped consoles — a kitchen sees only its tickets, runners their own runs, the mall admin the whole venue.',
+  'Staff run scoped consoles — a kitchen sees only its tickets, runners their own runs, the campus admin the whole venue.',
 ]
 
 export default function SeatLanding({ go }: { go: (path: string) => void }) {
@@ -61,7 +61,7 @@ export default function SeatLanding({ go }: { go: (path: string) => void }) {
           {
             href: `#/seat/${nexoraToken}` as string | null,
             icon: QrCode,
-            title: `Customer · ${entry?.nexora?.mall} ${entry?.nexora?.seat}`,
+            title: `Customer · ${entry?.nexora?.campus} ${entry?.nexora?.seat}`,
             sub: 'SECOND MALL — same platform, isolated stores, proves multi-tenancy',
             tint: 'text-sky-600 bg-sky-100',
             tag: 'ISOLATION',
@@ -80,7 +80,7 @@ export default function SeatLanding({ go }: { go: (path: string) => void }) {
       href: '#/staff',
       icon: LockKeyhole,
       title: 'Staff portal',
-      sub: 'Kitchen · Runner · Cinema · Mall admin — sign-in required, every console scoped by role',
+      sub: 'Kitchen · Runner · Block · Campus admin — sign-in required, every console scoped by role',
       tint: 'text-violet-600 bg-violet-100',
       tag: 'STAFF LOGIN',
     },
@@ -181,7 +181,7 @@ export default function SeatLanding({ go }: { go: (path: string) => void }) {
             { p: 'Payments', t: 'Real UPI & cards', d: 'Razorpay checkout — pay once and every store is routed its share automatically.' },
             { p: 'Cancel window', t: 'Change of mind?', d: 'Cancel with automatic money-back until a kitchen taps Accept — then it locks.' },
             { p: 'Tracking', t: 'Live per-store status', d: 'Accepted → preparing → ready → runner picks up → at your seat, in realtime.' },
-            { p: 'Staff', t: 'Scoped consoles', d: 'Kitchen, runner, cinema and mall roles each see only their own work.' },
+            { p: 'Staff', t: 'Scoped consoles', d: 'Kitchen, runner, block and campus roles each see only their own work.' },
           ].map((ph) => (
             <div key={ph.p} className="rounded-2xl border border-stone-200 bg-white p-4">
               <p className="text-[10px] font-extrabold tracking-wider text-orange-600">{ph.p.toUpperCase()}</p>

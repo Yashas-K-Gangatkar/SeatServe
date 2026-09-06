@@ -14,8 +14,8 @@ export default function LegalShell({
     <div className="site-root min-h-dvh bg-[#FAF8F5] text-[#1A1A1A]">
       <header className="sticky top-0 z-40 border-b border-[#EFEAE0] bg-[#FAF8F5]/85 backdrop-blur">
         <div className="mx-auto flex h-14 max-w-2xl items-center justify-between px-4 sm:px-6">
-          <a href="/" className="flex items-center gap-1.5 text-[17px] font-extrabold tracking-tight" aria-label="SeatServe home">
-            <span aria-hidden>🍿</span> SeatServe
+          <a href="/" className="flex items-center gap-1.5 text-[17px] font-extrabold tracking-tight" aria-label="NotiFetch home">
+            <span aria-hidden>🍿</span> NotiFetch
           </a>
           <a href="/scan" className="inline-flex min-h-[44px] items-center text-sm font-bold text-[#8a6d1f] hover:underline">
             Scan QR

@@ -1,8 +1,8 @@
 // GET /api/kitchen/tickets?storeId=<id> — paid, live tickets for ONE store only.
 // Phase 2: login required. KITCHEN_STAFF/STORE_MANAGER are hard-locked to their
 // own store (server-side, from the session — client params cannot widen it);
-// MALL_ADMIN and the delegated CINEMA_MANAGER may supervise any store inside
-// their mall.
+// CAMPUS_ADMIN and the delegated BLOCK_MANAGER may supervise any store inside
+// their campus.
 import { db } from '@/lib/db'
 import { ok, fail } from '@/lib/api-helpers'
 import { requireStaff } from '@/lib/auth-server'
@@ -11,7 +11,7 @@ import { canAccessStore } from '@/lib/auth'
 const ACTIVE_STATUSES = ['NEW', 'ACCEPTED', 'PREPARING', 'READY_FOR_PICKUP'] as const
 
 export async function GET(request: Request) {
-  const auth = await requireStaff(request, ['KITCHEN_STAFF', 'STORE_MANAGER', 'MALL_ADMIN', 'CINEMA_MANAGER'])
+  const auth = await requireStaff(request, ['KITCHEN_STAFF', 'STORE_MANAGER', 'CAMPUS_ADMIN', 'BLOCK_MANAGER'])
   if ('error' in auth) return auth.error
   const user = auth.user
 
@@ -24,7 +24,7 @@ export async function GET(request: Request) {
   if (!store) return fail('Store not found', 404)
 
   // tenant isolation: a store cook can never read another store's tickets
-  if (!canAccessStore(user, { id: store.id, mallId: store.mallId })) {
+  if (!canAccessStore(user, { id: store.id, campusId: store.campusId })) {
     return fail('Your account is not authorized for this store', 403)
   }
 
@@ -33,8 +33,9 @@ export async function GET(request: Request) {
     include: {
       order: {
         include: {
-          seat: { include: { screen: { include: { cinema: true } } } },
-          showtime: true,
+          seat: true,
+          classroom: { include: { block: true } },
+          lecture: true,
         },
       },
       deliveryRun: { include: { runner: { select: { name: true } } } },
@@ -70,11 +71,11 @@ export async function GET(request: Request) {
         pickedUpAt: t.pickedUpAt,
         deliveredAt: t.deliveredAt,
         prepEtaMinutes: t.prepEtaMinutes,
-        screen: t.order.seat.screen.name,
-        cinema: t.order.seat.screen.cinema.name,
-        seat: t.order.seat.code,
-        movieTitle: t.order.showtime?.movieTitle ?? null,
-        showStartsAt: t.order.showtime?.startsAt ?? null,
+        classroom: t.order.classroom.name,
+        block: t.order.classroom.block.name,
+        seat: t.order.seat?.code ?? t.order.seatLabel ?? 'door',
+        subject: t.order.lecture?.subject ?? null,
+        showStartsAt: t.order.lecture?.startsAt ?? null,
         orderCode: t.order.code,
         customerName: t.order.customerName,
         items: (itemsByOrder.get(t.orderId) ?? []).map((i) => ({

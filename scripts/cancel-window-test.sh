@@ -1,5 +1,5 @@
 #!/bin/bash
-# SeatServe — cancel-before-accept window test (owner feature).
+# NotiFetch — cancel-before-accept window test (owner feature).
 # 1. order → pay → customer cancel (all legs NEW) → 200 + money back
 # 2. order → pay → kitchen ACCEPTS → customer cancel → 409 (locked)
 # 3. unpaid order → cancel → 409
@@ -14,12 +14,12 @@ code() { curl -s -o /dev/null -w '%{http_code}' "$@"; }
 JAR=$(mktemp -d)
 QR=$(curl -s "$BASE/api/demo/entry" | jget "['data']['aurora']['qrToken']")
 C=$(curl -s "$BASE/api/context?qr=$QR")
-# pick Cinema Snacks (kitchen@cinema-snacks.demo is the test's accepter);
+# pick Block Snacks (kitchen@cinema-snacks.demo is the test's accepter);
 # fall back to the first store with an AVAILABLE product
 PICK=$(echo "$C" | python3 -c "
 import sys,json
 d=json.load(sys.stdin)['data']
-order=['Cinema Snacks']+[s['name'] for s in d['stores']]
+order=['Block Snacks']+[s['name'] for s in d['stores']]
 names={s['name']:s for s in d['stores']}
 for name in order:
     s=names.get(name)

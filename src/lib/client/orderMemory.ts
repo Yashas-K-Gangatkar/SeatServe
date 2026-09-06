@@ -1,4 +1,4 @@
-// SeatServe — remembers orders placed from THIS seat on THIS device.
+// NotiFetch — remembers orders placed from THIS seat on THIS device.
 // A re-scan of the seat QR then shows "Your orders" straight on the seat
 // page — the customer never needs to have copied the tracking code.
 // Best-effort by design: private mode / cleared storage just means the

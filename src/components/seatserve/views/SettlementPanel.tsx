@@ -1,6 +1,6 @@
 'use client'
 
-// SeatServe Phase 3 — settlement & reconciliation panel (admin board section).
+// NotiFetch Phase 3 — settlement & reconciliation panel (admin board section).
 // Ledger-driven money view: per-store gross / commission / void adjustments
 // adjustments / net payable, settlement batches (PENDING → PROCESSED with UTR),
 // and the R1–R5 reconciliation health banner.
@@ -149,7 +149,7 @@ export default function SettlementPanel({ canAct }: { canAct: boolean }) {
 
       {/* per-store settlement summary */}
       {data.stores.length === 0 ? (
-        <EmptyState title="No stores in scope" hint="Settlement appears once stores exist in your mall." />
+        <EmptyState title="No stores in scope" hint="Settlement appears once stores exist in your campus." />
       ) : (
         <ul className="space-y-2">
           {data.stores.map((s) => (

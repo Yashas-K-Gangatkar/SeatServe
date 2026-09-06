@@ -1,4 +1,4 @@
-// SeatServe — API route helpers: consistent JSON envelopes + zod validation
+// NotiFetch — API route helpers: consistent JSON envelopes + zod validation
 import { NextResponse } from 'next/server'
 import type { ZodType } from 'zod'
 

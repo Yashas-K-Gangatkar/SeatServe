@@ -14,7 +14,7 @@ gen() { # slug, subject
 gen cold-coffee "iced cold coffee in a tall glass topped with whipped cream, coffee beans scattered beside"
 gen masala-chai "Indian masala chai in a traditional clay kulhad cup with rising steam, ginger and cardamom pods beside"
 gen popcorn-butter "large red-striped bucket overflowing with golden butter popcorn, melted butter glisten"
-gen popcorn-salted "large red-striped cinema bucket of classic salted popcorn, fluffy white and golden"
+gen popcorn-salted "large red-striped block bucket of classic salted popcorn, fluffy white and golden"
 gen nachos-cheese "crunchy nacho chips loaded with melted cheese sauce, jalapeno slices and salsa in a paper tray"
 gen samosa "two golden fried samosas on a plate with green mint chutney and tamarind sauce"
 gen filter-coffee "South Indian filter coffee in steel tumbler and davara with frothy foam, chicory coffee"

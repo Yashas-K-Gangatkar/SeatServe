@@ -1,26 +1,26 @@
-// GET /api/audit — recent audit trail (staff only; mall/cinema scoped by session)
+// GET /api/audit — recent audit trail (staff only; campus/block scoped by session)
 import { db } from '@/lib/db'
 import { ok } from '@/lib/api-helpers'
 import { requireStaff } from '@/lib/auth-server'
 
 export async function GET(request: Request) {
-  const auth = await requireStaff(request, ['MALL_ADMIN', 'CINEMA_MANAGER'])
+  const auth = await requireStaff(request, ['CAMPUS_ADMIN', 'BLOCK_MANAGER'])
   if ('error' in auth) return auth.error
   const user = auth.user
 
-  // Audit fix #19: exact mall scoping via the denormalized AuditLog.mallId.
-  // The old filter leaked other malls' Store/Product events when a second mall
-  // existed ("sandbox has one mall" assumption). The OR keeps order-bound rows
-  // matchable even if an old row predates the mallId column.
+  // Audit fix #19: exact campus scoping via the denormalized AuditLog.campusId.
+  // The old filter leaked other campuses' Store/Product events when a second campus
+  // existed ("sandbox has one campus" assumption). The OR keeps order-bound rows
+  // matchable even if an old row predates the campusId column.
   const scopeWhere =
-    user.role === 'MALL_ADMIN'
+    user.role === 'CAMPUS_ADMIN'
       ? {
           OR: [
-            { mallId: user.mallId ?? '__none__' },
-            { mallId: null, order: { mallId: user.mallId ?? '__none__' } },
+            { campusId: user.campusId ?? '__none__' },
+            { campusId: null, order: { campusId: user.campusId ?? '__none__' } },
           ],
         }
-      : { order: { screen: { cinemaId: user.cinemaId ?? '__none__' } } }
+      : { order: { classroom: { blockId: user.blockId ?? '__none__' } } }
 
   const logs = await db.auditLog.findMany({
     where: scopeWhere,
