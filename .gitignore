@@ -78,3 +78,4 @@ git token
 .env.prod-db
 scripts/.cookies-ramesh.txt
 .env.google-oauth
+.env.vercel-token
