@@ -1158,3 +1158,26 @@ Stage Summary:
 - Campus pivot COMPLETE and green on GitHub main; deploy + college-demo seeding fire the moment the Vercel fair-use block is lifted (owner must resolve in dashboard: appeal w/ bot evidence or upgrade; then Firewall → Attack Challenge Mode + >30 req/min per-IP block rule FIRST, else the bot re-burns the account)
 - notifetch.in DOWN (HTTP 402) until then; mall demo data + ramesh login + live orders intact in Neon
 - Pending: chai revert ₹2→₹20 (owner test), campus demo seed after deploy, HitAudit 24h read for the Vercel graph comparison
+
+---
+Task ID: 38
+Agent: Super Z (main)
+Task: Owner flagged surviving theatre/cinema content on the landing ("I said you to remove all this fake this") — full purge of fake testimonials, Aurora Mall pilot copy, SEATSERVE brand remnants; + explain DNS kill
+
+Work Log:
+- Owner evidence: screenshot of landing showing "Real cinema pilot at Aurora Mall", fake reviews (Priya M./Raj K./Ananya S.), "miss half the movie" — these were the OLD pre-pivot build (deploys blocked since Sep 4, so live site = frozen old version); but grep confirmed several fakes also survived in CURRENT code (Task 37 worklog only covered FlowDemo/FAQ/WhySeatServe — landing sections Testimonials/TrustStats/Hero/MenuShowcase/LiveStatus were missed)
+- REMOVED: sections/Testimonials.tsx (fully fabricated reviews + 4.8/250+ rating) + its mount in landing/Landing.tsx; fake TrustStats (500+ orders / 8 min / "Real block pilot Aurora Campus not a mockup") -> honest pilot facts (10 classrooms / 6 menu items / 15-min break window, "working campus demo" line)
+- Landing copy de-malled: Hero badge Aurora Campus Mumbai -> Nova Degree College · Bengaluru; MenuShowcase -> real Campus Canteen 6-item menu using shipped /menu/*.jpg photos (samosa 20, chai 15, filter coffee 20, momo 40, fries 35, cold coffee 30 — matches seed-campus-demo.mjs); WhySeatServe "5 stores/Aurora pilot/pizza-popcorn" -> "6 items/Campus canteen/samosa-momos-chai"; LiveStatus feed -> Campus Canteen samosa/momo/Room A-101; StepPanels + FlowDemo -> door-QR captions + campus menu rows; views/Landing eyebrow "AURORA MALL · MULTI-STORE IN-SEAT ORDERING" -> "CAMPUS CANTEEN · CLASSROOM DOOR ORDERING" + h1 -> "delivered to your classroom"; Clapperboard icon -> GraduationCap
+- Brand sweep: PaperReceipt header SEATSERVE -> NOTIFETCH (x2); StaffLogin + StaffPortal "SEATSERVE STAFF PORTAL" -> NOTIFETCH; layout.tsx OG title/description rewritten campus-first, share image popcorn -> samosa.jpg, favicon ��� -> 🥟; globals.css theme comment
+- Fixed BROKEN hero image: Hero referenced /landing/block.png which does not exist (404) -> generated public/landing/campus.png via image-gen (students + samosa + chai at canteen counter, warm gold) + alt text
+- Legal purge: terms/privacy/refund — "pilot at Aurora Campus, Mumbai" -> "campus food-ordering pilot at a partner college in Bengaluru"; privacy "Cinemas are full of families" -> campuses/students clause; rename artifacts fixed (payment/checkout/menu/tracking classroom -> page/screen); "interval rushes/show intervals" -> break-time; grievance@seatserve.in -> grievance@notifetch.in in ALL 3 legal pages + faq (owner must create the forward in Hostinger once back)
+- Backend sweep: Admin labels CINEMA MANAGER/MALL ADMIN -> BLOCK MANAGER/CAMPUS ADMIN; staff API response field cinemaName -> blockName (api/admin/staff + [id] + TeamPanel type/usage + 2nd setCinemaId state); reconciliation cinemaOrders/cinemaIssues -> blockOrders/blockIssues; scan page armrest/seat-back copy -> classroom door, Popcorn icon -> Coffee; faq page + site/faq-data.ts Aurora store lists -> Campus Canteen list
+- INTENTIONALLY KEPT (invisible internals, renaming = breakage): payment gateway notes key 'seatserve_order' + header 'x-seatserve-signature' (Razorpay plumbing), localStorage keys ('seatserve-cart', 'seatserve.myorders.v1', DemoEntry.aurora field), auth.ts normalizeRole CINEMA_MANAGER legacy bridge (old DB rows), QrAdmin 'Aurora Cineplex — ' display-strip (matches current Neon demo data until campus reseed), seatserve/ component dir name
+- Campus demo DB note: Neon still holds the Aurora Mall demo venue + old demo QR GVTHGD4Q6F; scripts/seed-campus-demo.mjs (Nova Degree College) seeds the replacement AFTER Vercel unblock; QrAdmin strip keeps displays clean meanwhile
+- Gates: tsc 0, eslint 0, bun test 93/93, next build clean. Commit 6ea1b2d as Yashas, pushed origin/main (deploy will fire on Vercel unblock)
+- DNS kill verified earlier via authoritative NS (nova/cosmos.dns-parking.com return empty for @ and www) — bot road to Vercel confirmed cut; explained to owner that DNS was the road not the disease
+
+Stage Summary:
+- Every user-visible surface now campus-only + honest (no fake reviews/stats, no cinema/mall words, no SeatServe brand); code identical in behavior, all gates green
+- Remaining before relaunch (after Vercel restore): create grievance@notifetch.in forward in Hostinger; restore DNS records; Firewall rules FIRST; run seed-campus-demo.mjs; optional post-unblock SQL to rename/hide Aurora demo venue
+- Vercel appeal links handed to owner: vercel.com/accountrecovery + vercel.com/help; rolling-30-day auto-heal backstop ~Oct 6
