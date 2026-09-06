@@ -1265,3 +1265,16 @@ Work Log:
 
 Stage Summary:
 - All pre-flight checks green; waiting on owner for token rotation + 2 DNS records; smoke test script ready (chai order → kitchen ticket)
+
+---
+Task ID: 44
+Agent: Super Z (main)
+Task: Owner asked for Google login instead of demo accounts + brief explanation of staff role assignment
+
+Work Log:
+- Consultation turn (no code): advised Google OAuth as ADD-ON (email-link by exact Gmail match, password login stays as backup) — full auth rewrite pre-pilot = risk; code build committed for same-day once owner delivers OAuth Client ID + Secret
+- Owner homework issued: Google Cloud Console → new project → OAuth consent screen (External, basic scopes only, publish) → Create OAuth Client ID (Web app) → redirect URI https://notifetch.in/api/auth/google/callback → paste Client ID + Secret
+- Explained role assignment flow: onboarding names the canteen manager; manager's admin board "My team" creates kitchen/runner/store logins with role dropdown; role decides consoles at /staff; server enforces scoping
+
+Stage Summary:
+- Google login = approved direction, blocked on owner's 2 Google Cloud keys; existing email+password proven and untouched; college walk-ins not gated on this
