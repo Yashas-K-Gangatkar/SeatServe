@@ -1203,3 +1203,19 @@ Stage Summary:
 - All three founder-critical college flows now PROVEN working end-to-end, not assumed: college self-onboards with printable door QRs → students order to their roll number → canteen sees/accepts tickets → menu fully manageable (add + delete + reprice + 86)
 - Sandbox payment loop repaired (webhook header) — matters for every future local test + the Railway fallback (same code)
 - Next: on Vercel unblock → firewall first → DNS restore → deploy auto-fires → seed-campus-demo.mjs
+
+---
+Task ID: 40
+Agent: Super Z (main)
+Task: Owner pasted back the other AI's rewritten playbook (fact-check owed) + asked why notifetch.in won't open; deliver the 3-flow walkthrough answer
+
+Work Log:
+- No code changes needed: Task 39 (6c90e42) already built+proved the three college flows E2E (24 checks)
+- Re-verified routes for the walkthrough: /onboard + /onboard/print exist; /staff → #/staff/login console; StaffPortal role→consoles map (CAMPUS_ADMIN/BLOCK_MANAGER/STORE_MANAGER/KITCHEN_STAFF/RUNNER); Kitchen polls GET /api/kitchen/tickets with chime + NEW→ACCEPTED→PREPARING→READY_FOR_PICKUP; MenuManager = add + price + 86 + NEW delete
+- Git: 6c90e42 on origin/main, tree clean except sandbox db/custom.db (local only)
+- Fact-checked the rewritten playbook: verdict 90% correct; fixes = (1) demo video cannot be recorded TODAY (site down) — record from *.vercel.app URL right after unblock BEFORE DNS restore; (2) playbook says both /onboarding and /onboard — correct route is /onboard; (3) manager picks own email+password in wizard, no temp password; (4) college office locations in target table are unverified guesses — confirm by phone/Maps before walking in; Railway = plan B only if appeal fails
+- Explained site-down to owner: two locks (Vercel suspension = theirs, DNS cut at Hostinger = ours, deliberate bot kill switch); restore order appeal → firewall → DNS
+
+Stage Summary:
+- Owner now has the exact 3-flow walkthrough (login → /staff; orders → #/kitchen polling board; menu → #/menu add/reprice/86/delete) + corrected playbook guidance
+- Everything still gated on Vercel appeal submission (still unconfirmed by owner)
