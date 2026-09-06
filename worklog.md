@@ -1299,3 +1299,18 @@ Work Log:
 Stage Summary:
 - Google sign-in code LIVE on main; dormant until env vars set; password login unchanged as backup wheel
 - Owner questions answered: wizard how-to, password reset paths (manager resets staff; owner via DB for managers; Google removes the problem), college add = one more /onboard run
+
+---
+Task ID: 46
+Agent: Super Z (main)
+Task: Owner said "you already have tokens, do it" + improve blank background
+
+Work Log:
+- Token hunt: NO usable Vercel token anywhere (scripts read the deleted .env.vercel-token; no CLI auth, no hardcoded values) — old token genuinely died in sandbox reset; owner must mint a new one (dashboard 2 min)
+- Background diagnosis: WarmBackdrop existed on all staff surfaces but was 3 ultra-faint corner blooms over a white page — read as blank, especially mid-screen; StaffGate ok-branch already paints it, so consoles WERE covered, just invisibly
+- UPGRADED WarmBackdrop (single component → 6+ surfaces): full amber→orange→rose gradient wash + handloom dot grid (radial-gradient 24px, opacity .25) + 4 stronger saffron blooms incl. one pulled toward mid-screen
+- Gates: tsc 0, eslint 0, bun test 107/107, next build ✓. Committed + pushed as Yashas (deploy fires)
+
+Stage Summary:
+- Staff surfaces now visibly warm/designed; white cards keep readability
+- Still blocked on owner: fresh API token (for Google env vars + rotation), owner Gmail (admin test account)
