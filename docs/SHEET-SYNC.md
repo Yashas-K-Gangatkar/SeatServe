@@ -1,8 +1,12 @@
-# Sheet-Sync — manage staff from a Google Sheet, fully automatic
+# Sheet-Sync — manage staff from a Microsoft 365 Excel sheet (or a Google Sheet), fully automatic
 
 Edit a sheet → the server picks it up on its own → staff accounts appear.
 No AI, no admin clicks, no code changes. This is the "I type a row and the
 server works even while nobody is watching" feature.
+
+Works with **Microsoft 365** (Excel in OneDrive — personal `1drv.ms` links and
+Microsoft 365 Business / SharePoint links), **Google Sheets**, or any plain
+`.xlsx` / `.csv` file behind a URL.
 
 ## What it does (every sync run)
 
@@ -21,8 +25,8 @@ Every change is written to the audit log (`STAFF_CREATED` / `STAFF_UPDATED` /
 
 ## 1. Make the sheet
 
-Create a Google Sheet with this header row (column order free, capitalization
-free, extra columns ignored):
+Create a sheet in **Excel (OneDrive)** or **Google Sheets** with this header
+row (column order free, capitalization free, extra columns ignored):
 
 ```
 Name | Email | Role | Store | Block | Zone | Phone | Password | Active
@@ -51,22 +55,58 @@ Rules:
 - `Phone` (optional): 10–13 digits. If blank, the server generates a dummy.
 - `Active` (optional): TRUE/FALSE. Blank = no change on update, TRUE on create.
 
-## 2. Publish it as CSV
+Excel notes:
+- Excel Online **autosaves**; desktop Excel uploads on save — either way the
+  server sees the latest version within minutes.
+- Type **Phone** without a leading `+` (e.g. `919876543210` or plain
+  `9876543210`). Excel treats a leading `+` as a formula.
+- Keep the **Email** / **Role** columns as plain text (that is Excel's default
+  for these values).
+
+## 2. Get a link the server can read
+
+### Option A — Microsoft 365 (OneDrive / Excel) — recommended
+
+1. Open the workbook in **Excel Online** (or desktop Excel saved to OneDrive).
+2. Click **Share** (top-right) → in the link settings pick **“Anyone with the
+   link”** and access level **“Can view”** → **Apply**.
+3. **Copy link** → that URL (looks like `https://1drv.ms/x/s!…` or
+   `https://yourorg-my.sharepoint.com/:x:/g/personal/…`) is the
+   `SHEET_SYNC_URL`.
+
+Both OneDrive-personal and Microsoft 365 Business (SharePoint) links work.
+The server downloads the workbook through OneDrive's anonymous-download
+endpoints and reads the `.xlsx` directly — no exports, no add-ons.
+
+> **Privacy:** anyone who holds the link can **view** the sheet — exactly like
+> the Google publish flow. Don't put personal banking/personal passwords in
+> it, use work-login passwords only, and remove the share link if you ever
+> retire the sheet.
+
+> If a sync ever reports *“got a sign-in / preview page instead of the
+> file”*, the link isn't anonymous-viewable — go back to Share → link
+> settings → “Anyone with the link”.
+
+### Option B — Google Sheets
 
 In the sheet: **File → Share → Publish to web →** pick the sheet tab →
 format **Comma-separated values (.csv)** → **Publish** → copy the long URL.
+(A normal “Anyone with the link” Google share URL also works — the server
+converts it to a CSV export automatically.)
 
-Keep that URL private — anyone with the link can read the sheet (that's how
+Keep the link private — anyone with the link can read the sheet (that's how
 the server reads it). Don't reuse personal passwords there; these are work
 logins for a canteen system.
 
 ## 3. Activate it (2 minutes)
 
-Paste the CSV link to the assistant (it will set `SHEET_SYNC_URL` on Vercel
-and run a `?dry=1` check with you), **or** set it yourself:
+Paste the sheet link (OneDrive/SharePoint or Google CSV — either works) to
+the assistant (it will set `SHEET_SYNC_URL` on Vercel and run a `?dry=1`
+check with you), **or** set it yourself:
 
 Vercel Dashboard → project `ct_shop` → Settings → Environment Variables →
-add `SHEET_SYNC_URL` = the CSV link (all environments) → Deployments → Redeploy.
+add `SHEET_SYNC_URL` = the sheet link (all environments) → Deployments →
+Redeploy.
 
 ## 4. Make it run every 5 minutes
 
@@ -109,3 +149,6 @@ Response includes `wouldCreate` / `wouldUpdate` / `wouldDeactivate` /
   audit trail.
 - The endpoint is dead (401) without the secret, and dormant unless
   `SHEET_SYNC_URL` is set.
+- The sheet can never delete a row, never create roles outside the five staff
+  roles, and a broken/un-shared link just produces an error report — never a
+  partial or wrong write.

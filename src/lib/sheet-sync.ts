@@ -1,11 +1,13 @@
-// Sheet-sync engine — pure, testable core for the Google-Sheets staff roster.
+// Sheet-sync engine — pure, testable core for the staff-roster sheet.
 //
-// The owner maintains a published Google Sheet ("Staff roster"); a cron route
-// (src/app/api/cron/sheet-sync) fetches it as CSV on a schedule and applies it
+// The owner maintains a roster sheet (a published Google Sheet OR a Microsoft
+// 365 Excel workbook in OneDrive/SharePoint); a cron route
+// (src/app/api/cron/sheet-sync) fetches it on a schedule and applies it
 // to the staff User table — create / update / deactivate, never delete.
 // This module owns everything that does NOT touch the DB or network:
 //   - RFC4180-lite CSV parsing (quotes, escaped quotes, commas, CRLF)
-//   - forgiving header aliases (name/fullname, email/id/login, role/post…)
+//   - a shared grid mapper so .xlsx grids and CSV rows get identical,
+//     forgiving header aliases (name/fullname, email/id/login, role/post…)
 //   - row validation with precise skip reasons
 // Secrets (password column) are validated but NEVER echoed into results.
 
@@ -138,7 +140,15 @@ function validatePassword(raw: string): string | null {
 
 /** Parse a whole CSV sheet into validated records (pure — no I/O). */
 export function mapSheet(text: string): SheetParse {
-  const grid = parseCsv(text).filter((r) => r.some((c) => c.trim() !== ''))
+  return mapGrid(parseCsv(text))
+}
+
+/**
+ * Map a raw grid (CSV rows or an .xlsx worksheet) into validated records.
+ * Blank rows are skipped; row numbers are 1-based with the header as row 1.
+ */
+export function mapGrid(gridRaw: string[][]): SheetParse {
+  const grid = gridRaw.filter((r) => r.some((c) => (c ?? '').trim() !== ''))
   if (grid.length === 0) return { headerFound: false, rows: [], total: 0 }
 
   const header = grid[0].map(norm)

@@ -1,8 +1,11 @@
-// GET /api/cron/sheet-sync — owner's Google Sheet → staff accounts, hands-free.
+// GET /api/cron/sheet-sync — owner's roster sheet → staff accounts, hands-free.
 //
-// The owner edits a published Google Sheet ("Staff roster": name, email, role,
-// store, password, active…). A cron trigger hits this route every few minutes;
-// the server fetches the sheet as CSV and applies it to the staff User table:
+// The owner edits a roster sheet — a Microsoft 365 Excel workbook in OneDrive
+// (or SharePoint), a published Google Sheet, or any plain .xlsx/.csv URL —
+// with columns like (name, email, role, store, block, zone, phone, password,
+// active…). A cron trigger hits this route every few minutes; the server
+// downloads the sheet (link → anonymous download, .xlsx or CSV) and applies
+// it to the staff User table:
 //   new email        → account created (role + scope resolved by name match)
 //   changed fields   → account updated (name/role/scope/phone/password/active)
 //   active = FALSE   → account deactivated (never deleted — history survives)
@@ -23,9 +26,11 @@ import { randomBytes } from 'node:crypto'
 import { db } from '@/lib/db'
 import { ok, fail } from '@/lib/api-helpers'
 import { cronSecretMatches } from '@/lib/cron-auth'
-import { hashPassword } from '@/lib/auth'
+import { hashPassword, verifyPassword } from '@/lib/auth'
 import { audit } from '@/lib/audit'
-import { mapSheet, pseudoPhoneFor, type SheetRecord } from '@/lib/sheet-sync'
+import { mapGrid, mapSheet, pseudoPhoneFor, type SheetParse, type SheetRecord } from '@/lib/sheet-sync'
+import { fetchSheet } from '@/lib/sheet-fetch'
+import { readXlsxGrid } from '@/lib/xlsx-read'
 
 const MAX_ROWS = 500
 
@@ -54,6 +59,16 @@ type ExistingUser = {
   blockId: string | null
   runnerId: string | null
   phone: string
+  passwordHash: string
+}
+
+/** True when the sheet password differs from the stored hash (unverifiable hash counts as different). */
+async function passwordDiffers(sheetPassword: string, storedHash: string): Promise<boolean> {
+  try {
+    return !(await verifyPassword(sheetPassword, storedHash))
+  } catch {
+    return true
+  }
 }
 
 type ParsedRow = ReturnType<typeof mapSheet>['rows'][number]
@@ -67,24 +82,24 @@ export async function GET(request: Request) {
   if (!sheetUrl) {
     return ok({
       enabled: false,
-      note: 'Set SHEET_SYNC_URL (published Google-Sheet CSV link) to activate sheet-sync.',
+      note: 'Set SHEET_SYNC_URL (Microsoft 365 / OneDrive share link, Google-Sheet CSV, or any direct .xlsx/.csv URL) to activate sheet-sync.',
     })
   }
 
   const dry = new URL(request.url).searchParams.get('dry') === '1'
 
-  // 1. fetch the published CSV
-  let csv: string
-  try {
-    const res = await fetch(sheetUrl, { cache: 'no-store', signal: AbortSignal.timeout(15_000), redirect: 'follow' })
-    if (!res.ok) return fail(`Sheet fetch failed: HTTP ${res.status}`, 502)
-    csv = await res.text()
-  } catch (err) {
-    return fail(`Sheet fetch failed: ${err instanceof Error ? err.message : 'network error'}`, 502)
-  }
+  // 1. download the sheet (xlsx bytes or csv text; login pages rejected)
+  const fetched = await fetchSheet(sheetUrl)
+  if (!fetched.ok) return fail(fetched.error, fetched.status)
 
-  // 2. parse + validate
-  const { headerFound, rows, total } = mapSheet(csv)
+  // 2. parse + validate (identical rules for Excel grids and CSV rows)
+  let parse: SheetParse
+  try {
+    parse = fetched.kind === 'xlsx' ? mapGrid(readXlsxGrid(fetched.bytes)) : mapSheet(fetched.text)
+  } catch (err) {
+    return fail(`Could not read the sheet: ${err instanceof Error ? err.message : 'unknown format'}`, 422)
+  }
+  const { headerFound, rows, total } = parse
   if (!headerFound) {
     return fail('Sheet header row not recognized — needs at least: name, email, role columns', 422)
   }
@@ -105,7 +120,7 @@ export async function GET(request: Request) {
     db.deliveryZone.findMany({ select: { id: true, name: true, campusId: true } }),
     db.user.findMany({
       where: { role: { not: 'CUSTOMER' } },
-      select: { id: true, email: true, name: true, role: true, isActive: true, storeId: true, blockId: true, runnerId: true, phone: true },
+      select: { id: true, email: true, name: true, role: true, isActive: true, storeId: true, blockId: true, runnerId: true, phone: true, passwordHash: true },
     }),
   ])
 
@@ -135,7 +150,7 @@ export async function GET(request: Request) {
         continue
       }
       if (dry) {
-        const diff = diffFor(record, prior)
+        const diff = await diffFor(record, prior)
         if (diff.length === 0) unchanged.push(record.email)
         else if (diff.length === 1 && diff[0] === 'active=false') deactivated.push(record.email)
         else updated.push(record.email)
@@ -160,6 +175,8 @@ export async function GET(request: Request) {
     return ok({
       enabled: true,
       dry: true,
+      source: fetched.kind,
+      fetchedVia: fetched.via,
       campus: campus.name,
       rows: total,
       wouldCreate: created,
@@ -173,6 +190,8 @@ export async function GET(request: Request) {
   return ok({
     enabled: true,
     dry: false,
+    source: fetched.kind,
+    fetchedVia: fetched.via,
     campus: campus.name,
     rows: total,
     created,
@@ -184,13 +203,13 @@ export async function GET(request: Request) {
 
   // ── helpers ──────────────────────────────────────────────────────
 
-  function diffFor(rec: SheetRecord, prior: { name: string; role: string; isActive: boolean; phone: string }): string[] {
+  async function diffFor(rec: SheetRecord, prior: ExistingUser): Promise<string[]> {
     const diffs: string[] = []
     if (rec.name !== prior.name) diffs.push('name')
     if (rec.role !== prior.role) diffs.push('role')
     if (rec.phone && rec.phone !== prior.phone) diffs.push('phone')
     if (rec.active !== null && rec.active !== prior.isActive) diffs.push(rec.active ? 'active=true' : 'active=false')
-    if (rec.password) diffs.push('password')
+    if (rec.password && (await passwordDiffers(rec.password, prior.passwordHash))) diffs.push('password')
     return diffs
   }
 
@@ -221,6 +240,7 @@ export async function GET(request: Request) {
     }
 
     const phone = rec.phone ?? pseudoPhoneFor(rec.email)
+    const passwordHash = await hashPassword(rec.password ?? fallbackPassword())
     const user = await db.user.create({
       data: {
         name: rec.name,
@@ -231,7 +251,7 @@ export async function GET(request: Request) {
         storeId,
         blockId,
         runnerId,
-        passwordHash: await hashPassword(rec.password ?? fallbackPassword()),
+        passwordHash,
         isActive: rec.active ?? true,
       },
       select: { id: true },
@@ -256,6 +276,7 @@ export async function GET(request: Request) {
       blockId,
       runnerId,
       phone,
+      passwordHash,
     })
   }
 
@@ -294,7 +315,7 @@ export async function GET(request: Request) {
       }
     }
 
-    if (rec.password) {
+    if (rec.password && (await passwordDiffers(rec.password, prior.passwordHash))) {
       data.passwordHash = await hashPassword(rec.password)
       notes.push('password reset')
     }
