@@ -1331,3 +1331,20 @@ Work Log:
 Stage Summary:
 - Google envs on project (pending Redeploy click to activate); scoped token still can't replace the leaked one — rotation of old token partially done at best, manual check advised
 - Remaining owner clicks: Redeploy → (fallback env entry) → create own staff login → Sign in with Google test
+
+---
+Task ID: 48
+Agent: Super Z (main)
+Task: Owner bug report — "can't log in with Google when I click sign in / login"
+
+Work Log:
+- Ruled out the Google side: hit accounts.google.com authorize endpoint with the owner's client_id + redirect_uri → HTTP 200 "Sign in - Google Accounts" → OAuth client + https://notifetch.in/api/auth/google/callback are correctly registered (scripts/diag-google-client.mjs)
+- Confirmed OAuth code live on GitHub main (raw 200 for oauth-google.ts, google/route.ts, StaffLogin.tsx); commit timeline: env upsert ~19:29 → pushes 19:31 (auto-redeploy fired AFTER upsert → prod likely live with envs)
+- Vercel token in .env.vercel-token now fully DEAD (/v2/user → 403 invalidToken:true — not just scope-limited anymore); cannot list envs, deploy, or decrypt prod DATABASE_URL
+- notifetch.in protected by Vercel Attack Challenge Mode: curl → challenge HTML; headless browser → "Failed to verify (Code 21)"; headed under Xvfb → "Code 11" — all automation blocked by design, real browsers pass
+- Local preview (port 3000) verified: /api/auth/providers → {"google":false}; /api/auth/google → 307 ?gerr=not_configured → on the preview the Google button is HIDDEN and can never complete (single registered callback = notifetch.in; preview callback would state_mismatch)
+- Wrote scripts/finish-google-rollout.mjs — one command: validate token scope → upsert 3 GOOGLE_* vars → redeploy from main → poll READY → probe providers → prints the exact browser checklist
+
+Stage Summary:
+- Diagnosis: nothing wrong with Google Cloud config or the app code. Failure modes for the owner: (A) testing on the sandbox PREVIEW → Google button hidden by design, Google OAuth can only work on notifetch.in; (B) on prod, if button missing → env vars/redeploy not active → needs fresh full-scope Vercel token (I finish it with the script) or 4 dashboard clicks; (C) if button present but bounce "not registered as staff" → their Gmail lacks an ACTIVE staff User row → Team panel fix. Design note restated: Google sign-in is staff-portal-only; customers never log in (seat QR is identity).
+- Blocked on: fresh full-scope Vercel token (or owner dashboard clicks) to make prod state 100% certain
