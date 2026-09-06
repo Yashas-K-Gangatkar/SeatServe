@@ -1367,3 +1367,21 @@ Stage Summary:
 - Google sign-in should now work for BOTH owner Gmails end-to-end: flow already reached the last step; user lookup now succeeds → session cookie → portal redirect
 - Owner role = CAMPUS_ADMIN (full console incl. Team panel); can rescope later if desired
 - Remaining hygiene (not blocking): rotate demo account passwords (chef@/ramesh@/runner@) before real pilot
+
+---
+Task ID: 50
+Agent: Super Z (main)
+Task: Owner upset — "saw yashas in two, third blocked, accuses code manipulation" — recheck everything
+
+Work Log:
+- Pulled 12h prod AuditLog: 20:18:52 LOGIN_GOOGLE ✓ (yashask2006 row id), 20:19:08 LOGIN_GOOGLE ✓ (clash.2 row id), 20:19:32 LOGIN_GOOGLE_REJECTED clash.3.yashas@gmail.com reason=no_account
+- Interpretation: BOTH created accounts logged in successfully (owner saw two "Yashas" welcomes — both rows carried my placeholder name); THIRD account clash.3 had no staff row → app rejected it via the SAME pre-existing rule that rejected the owner yesterday — zero code manipulation, one consistent email-exact-linking rule
+- Sessions table empty for those logins because owner logged out between attempts (logout deletes session rows) — consistent
+- Added clash.3.yashas@gmail.com as CAMPUS_ADMIN active (scripts/add-third-owner-account.mjs, unique phone +919000000003, audit STAFF_CREATED written); verified all 3 owner rows present+active
+- CODE FIX for the name confusion (c7707d4, pushed): google callback now syncs verified Google profile name to the staff row on every login — welcome toast shows the real Google account name, placeholders get replaced. Gates: tsc 0, eslint 0, bun test 14/14. Deploy c7707d4 → READY (verified via API)
+- Note: v6 deployments list id field is 'uid' — minor scripting stumble during polling, deploy itself unaffected
+
+Stage Summary:
+- All 3 owner Gmails now valid staff logins: yashask2006@, clash.2.yashas@, clash.3.yashas@ (all CAMPUS_ADMIN, active)
+- Rule proven consistent end-to-end by audit trail: registered email → in; unregistered → bounce. Nothing hardcoded; every attempt (success or rejection) is permanently audited
+- Name-sync deployed: next Google logins greet with the real Google display names
