@@ -1237,3 +1237,17 @@ Stage Summary:
 - Vercel block LIFTED; college demo LIVE on the vercel.app URL (student order + kitchen + manager + stickers all 200)
 - notifetch.in still dark by design — single DNS restore away, firewall must go first
 - Demo video for college walk-ins can now be recorded from the vercel.app link right after firewall is on
+
+---
+Task ID: 42
+Agent: Super Z (main)
+Task: Owner in Vercel Firewall dashboard — confirm Attack Mode ON, stop him from adding wrong rule (bypass), guide Rate Limit setup
+
+Work Log:
+- Screenshots reviewed: Firewall → Rules page; "Attack Mode Enabled" card confirmed bottom-left (Attack Challenge Mode is ON ✅); Add New dropdown open showing Rule 0/3 · Rate Limit 0/1 · IP Block 0/10 · System Bypass 0/0; owner was heading to ADD A BYPASS RULE (wrong direction — bypass = exempt IPs from protection, for whitelisting own IPs; bot needs BLOCKING) — told him to stop
+- Also disabled some Vercel AI/Agent feature — confirmed harmless, not on the serving path
+- Guided exact Rate Limit setup: Add New → Rate Limit → match all requests, per IP, more than 30 per 1 minute → Action Block → longest duration available (1 day ideal) → save
+- Warned: with Attack Mode ON, his own browser will see a quick "checking" flash on the vercel.app demo link = protection working
+
+Stage Summary:
+- Attack Challenge Mode ON (step 1a done); rate-limit rule pending owner click-through; then leaked-token rotation, then DNS restore
