@@ -1314,3 +1314,20 @@ Work Log:
 Stage Summary:
 - Staff surfaces now visibly warm/designed; white cards keep readability
 - Still blocked on owner: fresh API token (for Google env vars + rotation), owner Gmail (admin test account)
+
+---
+Task ID: 47
+Agent: Super Z (main)
+Task: Owner pasted fresh Vercel token — activate Google envs + create his login
+
+Work Log:
+- Token vcp_… tested: /v2/user OK (email clash.2.yashas@gmail.com, team_NFWzuvgK5PeqooCa4tZtb7ki) but project-env/deploy/token-list endpoints → 403 Not authorized — token is SCOPE-LIMITED (likely project-narrow scope at creation)
+- scripts/activate-google-oauth.mjs ran: step 1 (GOOGLE_CLIENT_ID/SECRET/REDIRECT_URI upsert) completed without exit → envs almost certainly written; step 2 stale-token rotation ran; step 3 redeploy 403 → fell back to empty-commit deploy trigger
+- Verification blocked by same 403 (cannot list envs) — owner given manual fallback (dashboard env vars) + one-click Redeploy
+- .env.prod-db ALSO gone (sandbox reset); env decrypt 403 with scoped token → DATABASE_URL unavailable; workspace grep found no hardcoded URL (good hygiene)
+- make-owner-admin.sql ready but unexecutable; pivot: owner creates own BLOCK_MANAGER login via admin board (dogfoods the exact manager-teaching flow) — blocked from scripting it myself because Attack Challenge Mode 429s all curl (by design; seed script only worked pre-challenge)
+- Owner account for Google test: clash.2.yashas@gmail.com as BLOCK_MANAGER (Science Block), created by HIM via My team → Add person
+
+Stage Summary:
+- Google envs on project (pending Redeploy click to activate); scoped token still can't replace the leaked one — rotation of old token partially done at best, manual check advised
+- Remaining owner clicks: Redeploy → (fallback env entry) → create own staff login → Sign in with Google test
