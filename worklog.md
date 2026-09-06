@@ -1181,3 +1181,25 @@ Stage Summary:
 - Every user-visible surface now campus-only + honest (no fake reviews/stats, no cinema/mall words, no SeatServe brand); code identical in behavior, all gates green
 - Remaining before relaunch (after Vercel restore): create grievance@notifetch.in forward in Hostinger; restore DNS records; Firewall rules FIRST; run seed-campus-demo.mjs; optional post-unblock SQL to rename/hide Aurora demo venue
 - Vercel appeal links handed to owner: vercel.com/accountrecovery + vercel.com/help; rolling-30-day auto-heal backstop ~Oct 6
+
+---
+Task ID: 39
+Agent: Super Z (main)
+Task: Owner asked to CHECK the three college flows ("how will college get into the web / receive orders / add and delete the menu — if not figured out, do it now")
+
+Work Log:
+- Audited all three flows in code (answer-first, then build):
+  1. GET IN — verified solid: /onboard wizard → POST /api/onboard/campus (public, rate-limited 5/h, caps 40 rooms/100 seats) creates Campus + Block + classrooms (door QRs + seats) + canteen (isOpen, KYC PENDING) + BLOCK_MANAGER email login + zone + runner + rolling 'Break' lectures (orderable minute one); returns door tokens + order URL; /onboard/print = sticker sheet via GET /api/onboard/qr?blockId=
+  2. RECEIVE ORDERS — verified solid: POST /api/orders accepts seat OR door QR (seatLabel stored, kitchen shows room+roll+note), NO KYC gate on ordering (store open from creation; KYC only gates payouts via settlement) — correct for pilot; kitchen board GET /api/kitchen/tickets polls, BLOCK_MANAGER campus-scoped via canAccessStore
+  3. MENU — add ✅ (POST /api/store/products + AddItemSheet with photo presets) but DELETE was MISSING (only 86/sold-out toggle + reprice) → BUILT IT
+- NEW: DELETE /api/products/[id] (STORE_MANAGER/CAMPUS_ADMIN/BLOCK_MANAGER, canAccessStore-scoped): past orders preserved (orderItem.productId nulled, name/price snapshots untouched), open carts cleaned in one transaction, audited PRODUCT_DELETED, realtime push
+- UI: MenuManager two-step delete (Delete → "Sure?" → removed; auto-disarm 4s; busy guard)
+- REAL BUG FOUND + FIXED: sandbox webhook verifier read legacy 'x-seatserve-signature' while pivot-renamed mock-pay sends 'x-notifetch-signature' → EVERY mock payment self-call rejected ("Invalid webhook signature") → sandbox pay loop dead since the campus pivot. Verifier now accepts new header canonical + legacy fallback (signatureHeaders both)
+- ENV repair en route: sandbox reset had swapped prisma client (postgres-validate errors) → bunx prisma generate (sqlite) + dev server restart; db/custom.db "readonly" was stale-inode after restart (fresh connection fixed)
+- E2E PROOF: scripts/college-flow-e2e.mjs (re-runnable, unique email+phone per run) — ALL 24 CHECKS PASSED against local server: onboarding (201, 2 sticker QRs, manager login) → login → menu add x2 → delete → unauth delete 401 → door-QR order (room+roll A-1+note) → mock-pay PAID → kitchen ticket with room/roll/note → ACCEPTED → delete item WITH order history (pastOrders=1, ticket still readable)
+- Gates: tsc 0, eslint 0, bun test 93/93, next build clean. Commit 6c90e42 as Yashas, pushed origin/main (deploys on Vercel unblock)
+
+Stage Summary:
+- All three founder-critical college flows now PROVEN working end-to-end, not assumed: college self-onboards with printable door QRs → students order to their roll number → canteen sees/accepts tickets → menu fully manageable (add + delete + reprice + 86)
+- Sandbox payment loop repaired (webhook header) — matters for every future local test + the Railway fallback (same code)
+- Next: on Vercel unblock → firewall first → DNS restore → deploy auto-fires → seed-campus-demo.mjs
