@@ -1461,3 +1461,24 @@ Work Log:
 Stage Summary:
 - Verdict given: link format OK + file exists, but anonymous access still blocked by OneDrive sharing setting; handed exact re-share click-path (Share → link settings → Anyone with the link → Can view; gear→More settings if option hidden)
 - Activation armed: token verified, env ready — the moment owner re-shares and confirms, next step is re-probe → check headers → set SHEET_SYNC_URL (3 envs) → redeploy → prod ?dry=1
+
+---
+Task ID: 55
+Agent: Super Z (main)
+Task: Owner re-shared a NEW link (Book2.xlsx) claiming anonymous access works — verify, fix server-side blockers, check sheet content
+
+Work Log:
+- Probed new link: still 403 via our pipeline even though owner can open it. curl cookie-jar test → 200 + real xlsx (PK magic, 7.4 KB) → root cause is OUR fetcher, not sharing
+- Root causes found (two):
+  1. OneDrive front door 403-rejects default runtime User-Agents (undici/bun) before the anonymous flow starts
+  2. Migrated-to-SPO personal OneDrive (migratedtospo=true) runs a redeem dance: intermediate redirect sets FedAuth guest cookie; undici redirect:'follow' drops Set-Cookie between hops → login wall. shares API also hard-fails these links ("unauthenticated")
+- Fixed sheet-fetch.ts: fetchFollowCookies() — manual redirect loop (max 10), cookie jar harvested from getSetCookie() and replayed ONLY to Microsoft hosts (1drv.ms/onedrive.com/live.com/microsoftpersonalcontent.com/sharepoint.com/office.com), browser UA on every hop, relative Location resolution
+- Test-mock bugs fixed on the way (cookie asserted at wrong hop index; relative-location route from wrong host)
+- Gates: bun test 151/151, tsc 0, eslint 0; committed dba0cbb + pushed
+- Probed REAL link end-to-end: downloads Book2.xlsx (7404 B) via download=1 ✓ — BUT grid is ["sdfs"],["asdfsf"], headerFound=false — owner's sheet is still random test data, no Name/Email/Role/Store/Password/Active headers
+- Noted: this link is Book2.xlsx in "Microsoft Copilot Chat Files", NOT the staff_info.xlsx from Task 53
+
+Stage Summary:
+- Server side is now FULLY capable: any correctly shared M365 personal link downloads and parses
+- Remaining blocker is purely sheet content: owner must fill the template (Name, Email, Role, Store, Password, Active) with the 5 valid roles
+- Activation (SHEET_SYNC_URL + redeploy + prod dry=1) deferred until owner fills the sheet; token verified and ready
