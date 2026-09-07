@@ -1501,3 +1501,24 @@ Stage Summary:
 - LIVE END STATE: SHEET_SYNC_URL active in prod; two staff accounts working (ravi@notifetch.in / Passw0rd!23 kitchen, priya@notifetch.in / Passw0rd!45 store manager, both Wraphouse Kitchen); any NEW row the owner adds to Book2.xlsx gets pulled automatically on that person's first login attempt (5-min throttle) — no pinger needed
 - Owner must use EXACT store name "Wraphouse Kitchen" in the sheet (his "Wrap House" would be skipped with a clear reason)
 - Verification path blocked only by edge protection (by design); hash-verification + real-engine seed = login correctness proof
+
+---
+Task ID: 57
+Agent: Super Z (main)
+Task: Add Sapthagiri NPS University (isolated staff login), 1 mgr + 4 chefs + 4 runners (test, not demo), ₹1 test menu, explain why sheet edits don't show
+
+Work Log:
+- Built multi-campus sheet-sync (47fa8df): optional Campus/College/University column; per-row campus resolve by exact name (unknown → skip w/ reason); store/block/zone scopes resolve ONLY within the row's campus; applyUpdate handles campus moves (campusId + scope re-resolution); dry-run reports campus diffs; 4 new tests (155 pass) — deploy READY
+- Discovered Attack Challenge Mode auto-DISABLED → prod APIs reachable again
+- Onboarded Sapthagiri on PROD via the real wizard API (scripts/onboard-sapthagiri.mjs): campus cmtrmpuu50001jp04ovpnqak4, Main Block (2 rooms × 25 seats, Room M-101 door QR 62FJVY25AB), Sapthagiri Canteen store cmtrmpuu7001jjp043qr6msc3, admin test.admin@notifetch.in (BLOCK_MANAGER role via wizard)
+- Menu via manager API as test.admin (scripts/seed-sapthagiri-menu.mjs): 15 items (3 pasta, 4 burger/sandwich, 4 halo2x/desserts, 4 combo sets) ALL pricePaise=100 (₹1), imageUrl from shipped /menu/*.jpg (API requires it)
+- Created DeliveryZone "Sapthagiri Campus" (cmtrmsk6u0001qkp2f8i1drb2) via DB (no zones API); postgres client swap dance again (sandbox reset had wiped .env.vercel-token/.env.prod-db — restored from chat token + re-decrypted)
+- Seeded 9 staff via REAL engine with Campus column (scripts/seed-sapthagiri-staff.ts): fixture bug (6 fields vs 7-col header) silently defaulted campus → caught by store-not-found skips on real run; fixed; 9/9 created, idempotent 9/9 unchanged
+- verify-sapthagiri.ts: all 10 accounts campus=Sapthagiri; runners on-duty in Sapthagiri Campus zone
+- PROD VERIFICATION: POST /api/auth/login test.manager@notifetch.in/Test@1234 → 200 STORE_MANAGER campusId=Sapthagiri ✓; prod ?dry=1 vs real Book2.xlsx → downloaded + parsed, 422 header-not-recognized (expected: sheet still holds sdfs/asdfsf placeholder) ✓
+- git show --stat: no secret files in commit; .env.* confirmed gitignored
+
+Stage Summary:
+- Sapthagiri NPS University fully isolated: 10 test accounts (admin, manager, 4 chefs, 4 runners), ₹1 15-item menu, block/rooms/seats/QRs live for customer testing
+- Sheet workflow: owner can now manage BOTH campuses from one Excel via Campus column (blank = Aurora Mall)
+- Owner's Excel question answered: the link is view/download-only — NOTHING can write into his OneDrive; sheet = input, DB = output; rows he pastes will confirm as unchanged against already-created accounts
