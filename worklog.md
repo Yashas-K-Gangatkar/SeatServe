@@ -1446,3 +1446,18 @@ Work Log:
 Stage Summary:
 - Blocker is on the OneDrive side (sharing scope), not the server; auto-sync makes 5-min freshness unnecessary for the hire/join flow
 - Activation is 2 clicks away once owner: (1) re-shares sheet Anyone-with-link/Can-view, (2) sends link + either fresh Vercel token or sets SHEET_SYNC_URL himself (Settings → Env Vars → Redeploy)
+
+---
+Task ID: 54
+Agent: Super Z (main)
+Task: Owner re-sent a NEW 1drv.ms link (…ZAX3SXefVfh5lEzpKAJfeU9E) + fresh Vercel token; asked "will this work" before doing anything
+
+Work Log:
+- Saved fresh token to .env.vercel-token (chmod 600); verified via GET project + env list: works, CRON_SECRET present, SHEET_SYNC_URL still absent
+- Probed link through prod pipeline (scripts/probe-sheet-link.ts): shares-API → 403, download=1 → 403 (same as Task 53's original link)
+- curl trace with browser UA: 1drv.ms → onedrive.live.com/:x:/g/personal/… (migratedtospo=true) → /Documents/staff_info.xlsx → Authenticate.aspx → login.live.com login.srf (guests=1) — definitive: sharing scope is still "Specific people", NOT "Anyone with the link"
+- Learned the file name behind the link: staff_info.xlsx — owner HAS created the roster file; only the share scope blocks us
+
+Stage Summary:
+- Verdict given: link format OK + file exists, but anonymous access still blocked by OneDrive sharing setting; handed exact re-share click-path (Share → link settings → Anyone with the link → Can view; gear→More settings if option hidden)
+- Activation armed: token verified, env ready — the moment owner re-shares and confirms, next step is re-probe → check headers → set SHEET_SYNC_URL (3 envs) → redeploy → prod ?dry=1
