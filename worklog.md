@@ -1427,3 +1427,22 @@ Stage Summary:
 - Owner's answer: YES — his Microsoft 365 Excel sheet is now a supported control panel, zero add-ins; Google Sheets still works; everything dormant until SHEET_SYNC_URL is set
 - Owner's 3 activation steps: make sheet (Name/Email/Role/Store/Password/Active) → Share "Anyone with the link (Can view)" → give me the link (or paste SHEET_SYNC_URL himself); 5-min pinger per docs §4 already documented (cron-job.org with CRON_SECRET header)
 - Sheet can never delete, never guess scope, never leak passwords; unshared link = clean error report
+
+---
+Task ID: 53
+Agent: Super Z (main)
+Task: Owner pasted his real OneDrive link (1drv.ms/x/c/…) — activate + handle blockers
+
+Work Log:
+- Probed the link via the prod pipeline (scripts/probe-sheet-link.ts): shares-API → 403; download=1 → 403; raw browser-UA trace → 302 to login.live.com → link is NOT anonymous-viewable ("specific people" sharing). Owner must re-share as Anyone-with-link/Can-view; template handed over with exact roles
+- Sandbox reset between turns wiped gitignored secrets: .env.vercel-token + .env.prod-db GONE again → cannot set SHEET_SYNC_URL / decrypt prod envs this turn; asked owner for fresh token OR self-serve dashboard steps
+- Built auto-sync so activation doesn't depend on a pinger (Attack Challenge Mode likely blocks cron-job.org anyway):
+  - src/lib/sheet-sync-run.ts: sync core extracted from cron route into lib (route = auth + response mapping; behavior re-verified E2E identical)
+  - src/lib/sheet-autosync.ts: 5-min-throttled background sync via next/server after(); injectable clock/scheduler/work for tests; dormant until SHEET_SYNC_URL; failures logged, login response never altered
+  - Wired into /api/auth/login unknown-ID + wrong-password branches and google callback no_account → new hire's NEXT login attempt works with zero admin/pinger involvement
+- E2E proven on dev server: users deleted → login attempt 401 → after() pulls sheet → row appears with correct role/store → login with sheet password = 200 + session; throttle prevents stacking; all test data cleaned
+- Gates: tsc 0, eslint 0, bun test 149/149; pushed 0961fb8 (deploy verification not possible without token)
+
+Stage Summary:
+- Blocker is on the OneDrive side (sharing scope), not the server; auto-sync makes 5-min freshness unnecessary for the hire/join flow
+- Activation is 2 clicks away once owner: (1) re-shares sheet Anyone-with-link/Can-view, (2) sends link + either fresh Vercel token or sets SHEET_SYNC_URL himself (Settings → Env Vars → Redeploy)
