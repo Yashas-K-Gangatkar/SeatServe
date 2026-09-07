@@ -343,4 +343,47 @@ describe('fetchSheet', () => {
     expect(out.ok).toBe(true)
     if (out.ok) expect(out.kind).toBe('xlsx')
   })
+
+  test('OneDrive redeem dance: cookies set on a redirect are replayed on the next hop (migrated-to-SPO accounts)', async () => {
+    const xlsx = buildXlsx(FULL_XLSX_PARTS)
+    const seen: Array<{ url: string; cookie?: string }> = []
+    const impl = ((input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input)
+      const cookie = (init?.headers as Record<string, string> | undefined)?.cookie
+      seen.push({ url, cookie })
+      if (url.includes('api.onedrive.com')) {
+        // shares API rejects these migrated-account links outright
+        return Promise.resolve(new Response('{"error":{"code":"unauthenticated"}}', { headers: { 'content-type': 'application/json' } }))
+      }
+      if (url.includes('1drv.ms')) {
+        // first hop: redirect + anonymous guest cookie (like Authenticate.aspx)
+        return Promise.resolve(new Response(null, {
+          status: 302,
+          headers: { location: 'https://onedrive.live.com/personal/u/Documents/Book2.xlsx?redeem=1', 'set-cookie': 'FedAuth=anon-guest-77; path=/; HttpOnly' },
+        }))
+      }
+      if (cookie === 'FedAuth=anon-guest-77') {
+        return Promise.resolve(new Response(new Uint8Array(xlsx), { headers: { 'content-type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' } }))
+      }
+      // no cookie → login wall (what the old fetch hit)
+      return Promise.resolve(new Response('<html>Sign in</html>', { headers: { 'content-type': 'text/html' } }))
+    }) as unknown as typeof fetch
+
+    const out = await fetchSheet('https://1drv.ms/x/c/2BF31EFB856A4D1A/IQD56mkdgRwHSYBjeG', impl)
+    expect(out.ok).toBe(true)
+    if (out.ok && out.kind === 'xlsx') expect(readXlsxGrid(out.bytes)[0][0]).toBe('Name')
+    // hop 0 = shares API, hop 1 = 1drv.ms redirect (jar still empty), hop 2 = cookie replay
+    expect(seen[2]?.cookie).toBe('FedAuth=anon-guest-77')
+  })
+
+  test('relative Location headers are resolved against the current URL', async () => {
+    const impl = fetchFromRoutes([
+      { match: (u) => u.includes('1drv.ms'), respond: () => new Response(null, { status: 302, headers: { location: 'https://onedrive.live.com/:x:/g/personal/u?redeem=1' } }) },
+      { match: (u) => u.includes('onedrive.live.com/:x:'), respond: () => new Response(null, { status: 302, headers: { location: '/personal/u/Book2.xlsx' } }) },
+      { match: (u) => u.includes('/personal/u/Book2.xlsx'), respond: () => new Response('Name,Email\nA,a@x.io', { headers: { 'content-type': 'text/csv' } }) },
+    ])
+    const out = await fetchSheet('https://1drv.ms/x/c/ABC/DEF', impl)
+    expect(out.ok).toBe(true)
+    if (out.ok) expect(out.kind).toBe('csv')
+  })
 })
