@@ -9,6 +9,7 @@ import { ok, fail, parseBody } from '@/lib/api-helpers'
 import { SESSION_COOKIE, hashSessionToken, newSessionToken, sessionExpiry, verifyPassword } from '@/lib/auth'
 import { sessionCookieOptions } from '@/lib/auth-server'
 import { audit } from '@/lib/audit'
+import { scheduleSheetAutoSync } from '@/lib/sheet-autosync'
 
 const bodySchema = z.object({
   email: z.string().trim().toLowerCase().email('Enter a valid email'),
@@ -52,6 +53,10 @@ export async function POST(request: Request) {
   const user = await db.user.findUnique({ where: { email } })
   if (!user || !user.passwordHash) {
     recordLoginFail(failKey)
+    // Unknown login ID — the owner's roster sheet may have gained this person
+    // moments ago. Kick a throttled background sheet-sync so the NEXT attempt
+    // succeeds on its own (response is never changed either way).
+    scheduleSheetAutoSync()
     return fail('Invalid email or password', 401)
   }
   if (!user.isActive) return fail('This account is deactivated — contact your campus admin', 403)
@@ -71,6 +76,9 @@ export async function POST(request: Request) {
       campusId: user.campusId,
       meta: { email },
     })
+    // A sheet-driven password reset may have landed since their last login —
+    // same throttled background pull, so the fresh password works next try.
+    scheduleSheetAutoSync()
     return fail('Invalid email or password', 401)
   }
 

@@ -9,6 +9,7 @@ import { db } from '@/lib/db'
 import { SESSION_COOKIE, hashSessionToken, newSessionToken, sessionExpiry } from '@/lib/auth'
 import { sessionCookieOptions } from '@/lib/auth-server'
 import { audit } from '@/lib/audit'
+import { scheduleSheetAutoSync } from '@/lib/sheet-autosync'
 import {
   OAUTH_STATE_COOKIE,
   STAFF_ROLES,
@@ -73,6 +74,9 @@ export async function GET(request: Request) {
       entityId: profile.profile.email,
       meta: { reason: 'no_account' },
     })
+    // Their email may have been added to the roster sheet moments ago — kick
+    // the same throttled background pull so a retry works without admin help.
+    scheduleSheetAutoSync()
     return loginWith('no_account')
   }
   if (!user.isActive) return loginWith('deactivated')
