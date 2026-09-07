@@ -126,3 +126,48 @@ describe('pseudoPhoneFor', () => {
     expect(set.size).toBe(50)
   })
 })
+
+describe('campus column (multi-campus sheets)', () => {
+  test('campus/college aliases map and land on the record', () => {
+    const a = mapSheet('Name,Email,Role,Campus\nAsha,a@x.io,KITCHEN_STAFF,Sapthagiri NPS University')
+    expect(a.rows[0].ok).toBe(true)
+    if (a.rows[0].ok) expect(a.rows[0].record.campus).toBe('Sapthagiri NPS University')
+
+    const b = mapSheet('Name,Email,Role,College Name\nBasil,b@x.io,RUNNER,Nova Degree College')
+    expect(b.rows[0].ok).toBe(true)
+    if (b.rows[0].ok) expect(b.rows[0].record.campus).toBe('Nova Degree College')
+  })
+
+  test('absent or blank campus → null (engine defaults to first campus)', () => {
+    const noCol = mapSheet('Name,Email,Role\nAsha,a@x.io,KITCHEN_STAFF')
+    expect(noCol.rows[0].ok).toBe(true)
+    if (noCol.rows[0].ok) expect(noCol.rows[0].record.campus).toBeNull()
+
+    const blank = mapSheet('Name,Email,Role,Campus\nAsha,a@x.io,KITCHEN_STAFF,')
+    expect(blank.rows[0].ok).toBe(true)
+    if (blank.rows[0].ok) expect(blank.rows[0].record.campus).toBeNull()
+  })
+
+  test('campus column does not break the other aliases (mixed column order)', () => {
+    const out = mapSheet('Campus,Role,Email,Store,Name,Password,Active\nSapthagiri NPS University,KITCHEN_STAFF,c@x.io,Wraphouse Kitchen,Chef C,Test@1234,TRUE')
+    expect(out.headerFound).toBe(true)
+    const r = out.rows[0]
+    expect(r.ok).toBe(true)
+    if (r.ok) {
+      expect(r.record.campus).toBe('Sapthagiri NPS University')
+      expect(r.record.store).toBe('Wraphouse Kitchen')
+      expect(r.record.password).toBe('Test@1234')
+      expect(r.record.active).toBe(true)
+    }
+  })
+
+  test('xlsx-style grids carry campus the same way (mapGrid parity)', () => {
+    const grid = [
+      ['Name', 'Email', 'Role', 'Campus'],
+      ['Runner R', 'r@x.io', 'RUNNER', 'Sapthagiri NPS University'],
+    ]
+    const out = mapSheet(grid.map((r) => r.join(',')).join('\n'))
+    expect(out.rows[0].ok).toBe(true)
+    if (out.rows[0].ok) expect(out.rows[0].record.campus).toBe('Sapthagiri NPS University')
+  })
+})

@@ -26,6 +26,7 @@ export type SheetRecord = {
   name: string
   email: string
   role: SyncRole
+  campus: string | null // null/blank → default (first) campus
   store: string | null
   block: string | null
   zone: string | null
@@ -106,6 +107,7 @@ const FIELD_ALIASES: Record<string, keyof RowFields> = {}
 for (const alias of ['name', 'fullname', 'staffname', 'person', 'empname']) FIELD_ALIASES[norm(alias)] = 'name'
 for (const alias of ['email', 'emailid', 'id', 'loginid', 'login', 'username', 'user']) FIELD_ALIASES[norm(alias)] = 'email'
 for (const alias of ['role', 'designation', 'post', 'job', 'jobrole']) FIELD_ALIASES[norm(alias)] = 'role'
+for (const alias of ['campus', 'campusname', 'college', 'collegename', 'university']) FIELD_ALIASES[norm(alias)] = 'campus'
 for (const alias of ['store', 'storename', 'outlet', 'shop', 'canteen']) FIELD_ALIASES[norm(alias)] = 'store'
 for (const alias of ['block', 'blockname', 'building', 'department']) FIELD_ALIASES[norm(alias)] = 'block'
 for (const alias of ['zone', 'zonename', 'deliveryzone', 'area']) FIELD_ALIASES[norm(alias)] = 'zone'
@@ -113,7 +115,7 @@ for (const alias of ['phone', 'mobile', 'whatsapp', 'number', 'contact', 'phonen
 for (const alias of ['password', 'pass', 'pwd']) FIELD_ALIASES[norm(alias)] = 'password'
 for (const alias of ['active', 'status', 'enabled']) FIELD_ALIASES[norm(alias)] = 'active'
 
-type RowFields = Partial<Record<'name' | 'email' | 'role' | 'store' | 'block' | 'zone' | 'phone' | 'password' | 'active', string>>
+type RowFields = Partial<Record<'name' | 'email' | 'role' | 'campus' | 'store' | 'block' | 'zone' | 'phone' | 'password' | 'active', string>>
 
 // ─────────────────────────── row mapping ───────────────────────────
 
@@ -228,6 +230,7 @@ export function mapGrid(gridRaw: string[][]): SheetParse {
         name,
         email: emailRaw,
         role,
+        campus: get('campus') || null,
         store: get('store') || null,
         block: get('block') || null,
         zone: get('zone') || null,

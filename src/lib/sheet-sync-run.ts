@@ -40,6 +40,7 @@ type ExistingUser = {
   name: string
   role: string
   isActive: boolean
+  campusId: string
   storeId: string | null
   blockId: string | null
   runnerId: string | null
@@ -96,9 +97,13 @@ export async function runSheetSync(dry: boolean): Promise<SheetSyncOutcome> {
     .filter((r): r is Extract<ParsedRow, { ok: false }> => !r.ok)
     .map((r) => ({ email: r.email, row: r.rowNumber, reason: r.reason }))
 
-  // 3. load lookup data + existing staff
-  const campus = await db.campus.findFirst({ orderBy: { createdAt: 'asc' } })
-  if (!campus) return { ok: false, status: 404, error: 'No campus configured' }
+  // 3. load lookup data + existing staff (multi-campus: rows may target any
+  // campus by name via the optional Campus column; blank → first campus)
+  const campuses = await db.campus.findMany({ orderBy: { createdAt: 'asc' } })
+  if (campuses.length === 0) return { ok: false, status: 404, error: 'No campus configured' }
+  const defaultCampus = campuses[0]
+  const normName = (s: string) => s.trim().toLowerCase()
+  const campusByName = new Map(campuses.map((c) => [normName(c.name), c]))
 
   const [stores, blocks, zones, existing] = await Promise.all([
     db.store.findMany({ select: { id: true, name: true, campusId: true } }),
@@ -106,15 +111,16 @@ export async function runSheetSync(dry: boolean): Promise<SheetSyncOutcome> {
     db.deliveryZone.findMany({ select: { id: true, name: true, campusId: true } }),
     db.user.findMany({
       where: { role: { not: 'CUSTOMER' } },
-      select: { id: true, email: true, name: true, role: true, isActive: true, storeId: true, blockId: true, runnerId: true, phone: true, passwordHash: true },
+      select: { id: true, email: true, name: true, role: true, isActive: true, campusId: true, storeId: true, blockId: true, runnerId: true, phone: true, passwordHash: true },
     }),
   ])
 
-  const maps: NameMaps = {
-    storeByName: new Map(stores.map((s) => [s.name.trim().toLowerCase(), s])),
-    blockByName: new Map(blocks.map((b) => [b.name.trim().toLowerCase(), b])),
-    zoneByName: new Map(zones.map((z) => [z.name.trim().toLowerCase(), z])),
-  }
+  // scope names resolve ONLY within the row's campus — never across campuses
+  const mapsFor = (campusId: string): NameMaps => ({
+    storeByName: new Map(stores.filter((s) => s.campusId === campusId).map((s) => [normName(s.name), s])),
+    blockByName: new Map(blocks.filter((b) => b.campusId === campusId).map((b) => [normName(b.name), b])),
+    zoneByName: new Map(zones.filter((z) => z.campusId === campusId).map((z) => [normName(z.name), z])),
+  })
   const byEmail = new Map(existing.filter((u) => u.email).map((u) => [u.email!.toLowerCase(), u])) as Map<string, ExistingUser>
 
   const created: string[] = []
@@ -126,23 +132,29 @@ export async function runSheetSync(dry: boolean): Promise<SheetSyncOutcome> {
   for (const { record } of good) {
     const prior = byEmail.get(record.email)
     try {
+      const campus = record.campus ? campusByName.get(normName(record.campus)) : defaultCampus
+      if (!campus) {
+        skipped.push({ email: record.email, row: record.rowNumber, reason: `campus "${record.campus}" not found — use the exact campus name` })
+        continue
+      }
+      const maps = mapsFor(campus.id)
       if (!prior) {
         if (dry) {
           created.push(record.email)
           continue
         }
-        await applyCreate(record, campus.id, maps)
+        await applyCreate(record, campus, maps)
         created.push(record.email)
         continue
       }
       if (dry) {
-        const diff = await diffFor(record, prior)
+        const diff = await diffFor(record, prior, campus)
         if (diff.length === 0) unchanged.push(record.email)
         else if (diff.length === 1 && diff[0] === 'active=false') deactivated.push(record.email)
         else updated.push(record.email)
         continue
       }
-      const result = await applyUpdate(record, prior)
+      const result = await applyUpdate(record, prior, campus, maps)
       if (result === 'unchanged') unchanged.push(record.email)
       else if (result === 'deactivated') deactivated.push(record.email)
       else updated.push(record.email)
@@ -165,7 +177,7 @@ export async function runSheetSync(dry: boolean): Promise<SheetSyncOutcome> {
         dry: true,
         source: fetched.kind,
         fetchedVia: fetched.via,
-        campus: campus.name,
+        campus: defaultCampus.name,
         rows: total,
         wouldCreate: created,
         wouldUpdate: updated,
@@ -183,7 +195,7 @@ export async function runSheetSync(dry: boolean): Promise<SheetSyncOutcome> {
       dry: false,
       source: fetched.kind,
       fetchedVia: fetched.via,
-      campus: campus.name,
+      campus: defaultCampus.name,
       rows: total,
       created,
       updated,
@@ -195,17 +207,18 @@ export async function runSheetSync(dry: boolean): Promise<SheetSyncOutcome> {
 
   // ── helpers ──────────────────────────────────────────────────────
 
-  async function diffFor(rec: SheetRecord, prior: ExistingUser): Promise<string[]> {
+  async function diffFor(rec: SheetRecord, prior: ExistingUser, campus: { id: string; name: string }): Promise<string[]> {
     const diffs: string[] = []
     if (rec.name !== prior.name) diffs.push('name')
     if (rec.role !== prior.role) diffs.push('role')
+    if (campus.id !== prior.campusId) diffs.push(`campus→${campus.name}`)
     if (rec.phone && rec.phone !== prior.phone) diffs.push('phone')
     if (rec.active !== null && rec.active !== prior.isActive) diffs.push(rec.active ? 'active=true' : 'active=false')
     if (rec.password && (await passwordDiffers(rec.password, prior.passwordHash))) diffs.push('password')
     return diffs
   }
 
-  async function applyCreate(rec: SheetRecord, campusId: string, m: NameMaps) {
+  async function applyCreate(rec: SheetRecord, campus: { id: string; name: string }, m: NameMaps) {
     let storeId: string | null = null
     let blockId: string | null = null
     let runnerId: string | null = null
@@ -239,7 +252,7 @@ export async function runSheetSync(dry: boolean): Promise<SheetSyncOutcome> {
         email: rec.email,
         phone,
         role: rec.role,
-        campusId,
+        campusId: campus.id,
         storeId,
         blockId,
         runnerId,
@@ -255,8 +268,8 @@ export async function runSheetSync(dry: boolean): Promise<SheetSyncOutcome> {
       action: 'STAFF_CREATED',
       entityType: 'User',
       entityId: user.id,
-      campusId,
-      meta: { via: 'sheet', email: rec.email, role: rec.role, scopeName, row: rec.rowNumber },
+      campusId: campus.id,
+      meta: { via: 'sheet', email: rec.email, role: rec.role, campus: campus.name, scopeName, row: rec.rowNumber },
     })
     byEmail.set(rec.email, {
       id: user.id,
@@ -264,6 +277,7 @@ export async function runSheetSync(dry: boolean): Promise<SheetSyncOutcome> {
       name: rec.name,
       role: rec.role,
       isActive: rec.active ?? true,
+      campusId: campus.id,
       storeId,
       blockId,
       runnerId,
@@ -272,10 +286,19 @@ export async function runSheetSync(dry: boolean): Promise<SheetSyncOutcome> {
     })
   }
 
-  async function applyUpdate(rec: SheetRecord, prior: ExistingUser): Promise<'unchanged' | 'deactivated' | 'updated'> {
+  async function applyUpdate(
+    rec: SheetRecord,
+    prior: ExistingUser,
+    campus: { id: string; name: string },
+    maps: NameMaps,
+  ): Promise<'unchanged' | 'deactivated' | 'updated'> {
     const data: Record<string, unknown> = {}
     const notes: string[] = []
 
+    if (campus.id !== prior.campusId) {
+      data.campusId = campus.id
+      notes.push(`campus→${campus.name}`)
+    }
     if (rec.name !== prior.name) data.name = rec.name
     if (rec.phone && rec.phone !== prior.phone) data.phone = rec.phone
     if (rec.active !== null && rec.active !== prior.isActive) data.isActive = rec.active
@@ -283,27 +306,30 @@ export async function runSheetSync(dry: boolean): Promise<SheetSyncOutcome> {
     if (rec.role !== prior.role) {
       data.role = rec.role
       notes.push(`role→${rec.role}`)
-      // resolve scope for the NEW role (old scope fields stay when leaving them)
+    }
+
+    // scope must be (re)resolved for a NEW role or a campus move — never guessed
+    if (rec.role !== prior.role || campus.id !== prior.campusId) {
       if (rec.role === 'STORE_MANAGER' || rec.role === 'KITCHEN_STAFF') {
         const store = rec.store ? maps.storeByName.get(rec.store.trim().toLowerCase()) : undefined
-        if (!store) throw new Error(`cannot change role: store "${rec.store ?? '(blank)'}" not found`)
+        if (!store) throw new Error(`cannot apply change: store "${rec.store ?? '(blank)'}" not found in ${campus.name}`)
         data.storeId = store.id
         notes.push(store.name)
       } else if (rec.role === 'BLOCK_MANAGER') {
         const block = rec.block ? maps.blockByName.get(rec.block.trim().toLowerCase()) : undefined
-        if (!block) throw new Error(`cannot change role: block "${rec.block ?? '(blank)'}" not found`)
+        if (!block) throw new Error(`cannot apply change: block "${rec.block ?? '(blank)'}" not found in ${campus.name}`)
         data.blockId = block.id
         notes.push(block.name)
       } else if (rec.role === 'RUNNER') {
         const zone = rec.zone ? maps.zoneByName.get(rec.zone.trim().toLowerCase()) : undefined
-        if (!zone) throw new Error(`cannot change role: delivery zone "${rec.zone ?? '(blank)'}" not found`)
+        if (!zone) throw new Error(`cannot apply change: delivery zone "${rec.zone ?? '(blank)'}" not found in ${campus.name}`)
         const runner = await db.runner.create({
           data: { name: rec.name, phone: rec.phone ?? prior.phone, zoneId: zone.id, isOnDuty: true },
         })
         data.runnerId = runner.id
         notes.push(zone.name)
       } else if (rec.role === 'CAMPUS_ADMIN') {
-        // campus-wide scope — campusId already set
+        // campus-wide scope — campusId already set above
       }
     }
 
@@ -321,7 +347,8 @@ export async function runSheetSync(dry: boolean): Promise<SheetSyncOutcome> {
       action: data.isActive === false ? 'STAFF_DEACTIVATED' : 'STAFF_UPDATED',
       entityType: 'User',
       entityId: prior.id,
-      meta: { via: 'sheet', email: rec.email, changes: [...Object.keys(data).filter((k) => k !== 'passwordHash'), ...notes], row: rec.rowNumber },
+      campusId: campus.id,
+      meta: { via: 'sheet', email: rec.email, campus: campus.name, changes: [...Object.keys(data).filter((k) => k !== 'passwordHash'), ...notes], row: rec.rowNumber },
     })
     return data.isActive === false ? 'deactivated' : 'updated'
   }
