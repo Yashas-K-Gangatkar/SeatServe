@@ -1522,3 +1522,21 @@ Stage Summary:
 - Sapthagiri NPS University fully isolated: 10 test accounts (admin, manager, 4 chefs, 4 runners), ₹1 15-item menu, block/rooms/seats/QRs live for customer testing
 - Sheet workflow: owner can now manage BOTH campuses from one Excel via Campus column (blank = Aurora Mall)
 - Owner's Excel question answered: the link is view/download-only — NOTHING can write into his OneDrive; sheet = input, DB = output; rows he pastes will confirm as unchanged against already-created accounts
+
+---
+Task ID: 58
+Agent: Super Z (main)
+Task: Owner Q&A + enforce "no sheet row → no login" + remove everything Aurora Mall
+
+Work Log:
+- EXPLAINED (owner confusion): his Book2.xlsx still only has "ajshdfbsd" (screenshot); the share link is view-only — NOTHING can write into his OneDrive; ravi/priya/test.* live in the DB, he must paste rows himself (paste-ready block handed over, incl. bhagya + 3 yashas + test.admin which his table missed)
+- ROSTER GATE built: src/lib/sheet-gate.ts (pure: parse/decide/rosterEmailsFromParse — skipped-with-email rows still count as "on roster"); runSheetSync now snapshots sheet emails into AppSetting sheet_roster_state BEFORE applying rows (failures keep last-known emails + record lastError; dry runs never write); login route freshens roster INLINE when 5-min throttle allows (freshenRosterInline, 6s cap so OneDrive latency never hangs login) then 403s emails missing from snapshot (audited LOGIN_BLOCKED_ROSTER); gate arms ONLY after first successful sheet read (fail-safe against lockouts); cron payloads expose rosterGate state
+- PROD PURGE (scripts/purge-demo-malls.mjs, backup first → backups/backup-2026-09-07T19-44-22): Aurora Mall renamed IN PLACE → "Wraphouse" (Bengaluru) so Wraphouse Kitchen store + bhagya/ravi/priya + Yashas×3 CAMPUS_ADMIN survive by ID and blank-Campus sheet rows resolve to it as default campus; deleted inside it: Chai + Chicken stores, asha/chef/runner/ramesh demo users + demo runner row, blocks/classrooms/seats/lectures/zones/demo orders+payments+splits+settlements+tickets+runs; Nova Degree College (2nd demo campus) deleted whole. First run died on DeliveryRun_runnerId_fkey (users deleted before orders) → reordered orders-before-users, idempotent re-run clean
+- SWEEP: /api/demo/entry campus-agnostic (keys demo/demoBlocked/demoAlt; picks first room + blocked-lecture room + other-campus room), Landing x2 + scan + QrAdmin consumers updated, seed.ts Aurora/Nexora → NotiFetch/Second Campus naming, api-golden-path.sh + 3 dev scripts re-keyed, docs/SHEET-SYNC.md: Campus column + login-gate section + pinger section corrected (login-triggered sync is the real-time mechanism)
+- GATES: 168/168 tests (13 new sheet-gate), tsc 0, eslint 0; commit e413f92 pushed 47fa8df..e413f92; deploy dpl_527X READY
+- PROD VERIFIED: ravi + test.manager + test.runner1 logins → 200 (gate disarmed); wrong-password probe fired the inline pull which read his real Book2.xlsx and wrote sheet_roster_state {lastError:"Sheet header row not recognized", emails:[]} — gate arms itself the moment he pastes the real header+rows
+
+Stage Summary:
+- Live rule now: login → server pulls sheet (≤5 min cache) → email not in sheet = login refused; remove a row = instant lockout next attempt; account never deleted
+- Prod campuses now exactly two: Wraphouse (default; Wraphouse Kitchen) + Sapthagiri NPS University; all Aurora/Nexora/Nova demo data gone
+- Owner action: paste the provided 15-row block into Book2.xlsx → next login attempt auto-arms the gate; his pasted table's 11 rows match the DB exactly (verified all 11 exist with those roles/scopes/passwords)
