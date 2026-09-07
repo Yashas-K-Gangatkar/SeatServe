@@ -32,7 +32,7 @@ async function waitForDeploy() {
   while (Date.now() < deadline) {
     try {
       const entry = (await j(await fetch(`${BASE}/api/demo/entry`))).data
-      const ctx = (await j(await fetch(`${BASE}/api/context?qr=${entry.aurora.qrToken}`))).data
+      const ctx = (await j(await fetch(`${BASE}/api/context?qr=${entry.demo.qrToken}`))).data
       const first = ctx.stores?.[0]?.products?.[0]
       if (first && 'imageUrl' in first) {
         console.log('deploy live — imageUrl present in API')
@@ -60,7 +60,7 @@ const cookie = loginRes.headers
   .join('; ')
 console.log('admin session ok')
 
-const ctx = (await j(await fetch(`${BASE}/api/context?qr=${entry.aurora.qrToken}`))).data
+const ctx = (await j(await fetch(`${BASE}/api/context?qr=${entry.demo.qrToken}`))).data
 let okCount = 0
 let failCount = 0
 for (const s of ctx.stores) {

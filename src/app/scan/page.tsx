@@ -12,7 +12,7 @@ import { Coffee, Keyboard, ScanLine } from 'lucide-react'
 import { get } from '@/lib/client/api'
 
 interface DemoEntry {
-  aurora: { qrToken: string; seat: string } | null
+  demo: { qrToken: string; seat: string } | null
 }
 
 type ScanState = 'idle' | 'starting' | 'scanning' | 'unsupported' | 'denied'
@@ -31,7 +31,7 @@ export default function ScanPage() {
     let cancelled = false
     void get<DemoEntry>('/api/demo/entry')
       .then((entry) => {
-        if (!cancelled && entry?.aurora?.qrToken) setDemoToken(entry.aurora.qrToken)
+        if (!cancelled && entry?.demo?.qrToken) setDemoToken(entry.demo.qrToken)
       })
       .catch(() => undefined)
     return () => {
@@ -102,10 +102,10 @@ export default function ScanPage() {
     setManualError(null)
     try {
       const entry = await get<DemoEntry>('/api/demo/entry')
-      const seat = entry?.aurora?.seat?.toUpperCase()
+      const seat = entry?.demo?.seat?.toUpperCase()
       if (seat && (wanted === seat || wanted === seat.replace(/[^\dA-Z]/g, ''))) {
-        if (entry?.aurora?.qrToken) {
-          window.location.href = `/#/seat/${encodeURIComponent(entry.aurora.qrToken)}`
+        if (entry?.demo?.qrToken) {
+          window.location.href = `/#/seat/${encodeURIComponent(entry.demo.qrToken)}`
           return
         }
       }

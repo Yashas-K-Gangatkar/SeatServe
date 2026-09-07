@@ -4,6 +4,11 @@ Edit a sheet → the server picks it up on its own → staff accounts appear.
 No AI, no admin clicks, no code changes. This is the "I type a row and the
 server works even while nobody is watching" feature.
 
+**The sheet is the boss of logins**: every staff login makes the server check
+the sheet (fresh pull, throttled to one pull per 5 minutes), and a person who
+is not in the sheet cannot sign in — even if an account exists in the
+database. See "The login gate" below.
+
 Works with **Microsoft 365** (Excel in OneDrive — personal `1drv.ms` links and
 Microsoft 365 Business / SharePoint links), **Google Sheets**, or any plain
 `.xlsx` / `.csv` file behind a URL.
@@ -29,17 +34,22 @@ Create a sheet in **Excel (OneDrive)** or **Google Sheets** with this header
 row (column order free, capitalization free, extra columns ignored):
 
 ```
-Name | Email | Role | Store | Block | Zone | Phone | Password | Active
+Name | Email | Role | Campus | Store | Block | Zone | Phone | Password | Active
 ```
 
-Example rows (Aurora Mall):
+`Campus` (optional) picks the university by exact name for multi-campus
+setups — e.g. `Sapthagiri NPS University`. Leave it blank for the default
+(first) campus. Store/Block/Zone names only ever match INSIDE the row's own
+campus, so two campuses can safely both have a "Campus Canteen".
+
+Example rows:
 
 ```
-Ravi Kumar      ravi.k@example.com   KITCHEN_STAFF  Wraphouse              Snacks2Go    TRUE
-Priya Sharma    priya@example.com    STORE_MANAGER  Wraphouse              Manager@21   TRUE
-Suresh          suresh@example.com   BLOCK_MANAGER            Science Block  Block@123  TRUE
-Dinesh          dinesh@example.com   RUNNER                    Zone A                  TRUE
-Old Staff       old@example.com      KITCHEN_STAFF  Wraphouse                           FALSE
+Ravi Kumar      ravi.k@example.com   KITCHEN_STAFF                Wraphouse Kitchen             Snacks@21    TRUE
+Priya Sharma    priya@example.com    STORE_MANAGER                Wraphouse Kitchen             Manager@21   TRUE
+Test Manager    tm@example.com       STORE_MANAGER   Sapthagiri NPS University  Sapthagiri Canteen           Test@1234    TRUE
+Dinesh          dinesh@example.com   RUNNER          Sapthagiri NPS University               Sapthagiri Campus  TRUE
+Old Staff       old@example.com      KITCHEN_STAFF                Wraphouse Kitchen                          FALSE
 ```
 
 Rules:
@@ -49,9 +59,9 @@ Rules:
   existing shop exactly (e.g. `Wraphouse`).
 - `BLOCK_MANAGER` needs a **Block** name; `RUNNER` needs a **Zone** name.
 - `Password` (optional): min 8 chars with at least one letter and one number.
-  Leave blank on create → a random password nobody knows; the person then logs
-  in with Google (if their Gmail was added) or you reset a password from the
-  Team panel. Best: just fill it.
+  **Leave blank for an existing person you don't want to touch** — a blank
+  password never changes their login. Leave blank on create → a random
+  password nobody knows; best: just fill it.
 - `Phone` (optional): 10–13 digits. If blank, the server generates a dummy.
 - `Active` (optional): TRUE/FALSE. Blank = no change on update, TRUE on create.
 
@@ -108,25 +118,41 @@ Vercel Dashboard → project `ct_shop` → Settings → Environment Variables �
 add `SHEET_SYNC_URL` = the sheet link (all environments) → Deployments →
 Redeploy.
 
-## 4. Make it run every 5 minutes
+## 4. When does the sheet get pulled?
 
-The sync endpoint is `GET https://notifetch.in/api/cron/sheet-sync` and it is
-protected by `CRON_SECRET` (already configured on Vercel — Vercel's own cron
-sends it automatically once per day as a fallback).
+**Every staff login attempt pulls the sheet automatically** (throttled to one
+pull per 5 minutes per server) — a new row takes effect the moment that
+person tries to sign in, and a removed row locks them out on their next
+login. No pinger, no cron setup needed.
 
-For ~5-minute freshness, use a free pinger (cron-job.org, 3-minute setup):
-1. Sign up at cron-job.org → **Create cronjob**
-2. URL: `https://notifetch.in/api/cron/sheet-sync`
-3. Schedule: every 5 minutes
-4. Advanced → Headers → add: `Authorization` = `Bearer <your CRON_SECRET>`
-   (find it in Vercel → Settings → Environment Variables → CRON_SECRET → click to reveal)
-5. Save & enable. Done — the sheet is now the control panel.
+On top of that, `GET https://notifetch.in/api/cron/sheet-sync` (protected by
+`CRON_SECRET`) applies the sheet on a schedule — Vercel's own cron already
+hits it once a day as a fallback. External pingers (cron-job.org etc.) are
+blocked by the platform's attack protection, so the login-triggered pull is
+the real-time mechanism.
 
-(Alternative: GitHub Actions on the repo with a `schedule: '*/5 * * * *'`
-workflow that curls the endpoint with the `CRON_SECRET` stored as an Actions
-secret — ask the assistant to generate the workflow file.)
+To apply a sheet change WITHOUT waiting for a login (e.g. a password reset
+for someone who can't log in), just ask the assistant to run the sync once.
 
-## 5. Safe-testing (do this first)
+## 5. The login gate — no row, no login
+
+The server keeps a snapshot of the last successfully-read sheet. On every
+staff login:
+
+1. the server refreshes the snapshot (fresh sheet pull when the 5-minute
+   throttle allows; bounded so login never hangs on a slow OneDrive),
+2. then checks the email against that snapshot —
+   **not in the sheet → login rejected with "ask the owner to add your row"**,
+   even if the account exists in the database with the right password.
+
+Fail-safes: until the server has read the sheet successfully ONCE (real
+header row + at least one person), the gate stays open — a broken or empty
+sheet can never lock everyone out. Removing a row from the sheet blocks new
+logins immediately on the next attempt; it never deletes the account, so
+order history survives. Every gate rejection is audit-logged
+(`LOGIN_BLOCKED_ROSTER`).
+
+## 6. Safe-testing (do this first)
 
 Open in a browser or curl, with the secret header, before letting cron run for
 real — it reports what WOULD happen and writes nothing:
@@ -137,7 +163,8 @@ Authorization: Bearer <CRON_SECRET>
 ```
 
 Response includes `wouldCreate` / `wouldUpdate` / `wouldDeactivate` /
-`unchanged` / `skipped` (with reasons per row).
+`unchanged` / `skipped` (with reasons per row), plus `rosterGate` — whether
+the login gate is armed and how many emails the sheet tracks.
 
 ## Guarantees
 

@@ -44,24 +44,24 @@ export async function seedDemoData(db: DB): Promise<void> {
 
   // ── venues ───────────────────────────────────────────────────────
   const campus = await db.campus.create({
-    data: { name: 'Aurora Campus', city: 'Mumbai', address: 'Linking Road, Bandra West, Mumbai 400050' },
+    data: { name: 'NotiFetch Campus', city: 'Bengaluru', address: 'Campus Road, Bengaluru 560001' },
   })
 
-  // SECOND MALL — proves multi-campus isolation end-to-end (orders, context,
+  // SECOND CAMPUS — proves multi-campus isolation end-to-end (orders, context,
   // runner queue, admin scoping are all tested across the campus boundary).
   const mall2 = await db.campus.create({
-    data: { name: 'Nexora Campus', city: 'Pune', address: 'Nagar Road, Yerawada, Pune 411006' },
+    data: { name: 'Second Campus', city: 'Mysuru', address: 'Second Campus Road, Mysuru 570001' },
   })
 
   const zoneA = await db.deliveryZone.create({ data: { campusId: campus.id, name: 'Zone A · Wing A (Screens 1–3)' } })
   const zoneB = await db.deliveryZone.create({ data: { campusId: campus.id, name: 'Zone B · Wing B (Screens 4–6)' } })
-  const zoneN = await db.deliveryZone.create({ data: { campusId: mall2.id, name: 'Zone N · Nexora levels 1–3' } })
+  const zoneN = await db.deliveryZone.create({ data: { campusId: mall2.id, name: 'Zone N · Second Campus levels 1–3' } })
 
   const cinemaA = await db.block.create({
-    data: { campusId: campus.id, name: 'Aurora Cineplex — Wing A', wing: 'A' },
+    data: { campusId: campus.id, name: 'Main Block — Wing A', wing: 'A' },
   })
   const cinemaB = await db.block.create({
-    data: { campusId: campus.id, name: 'Aurora Cineplex — Wing B', wing: 'B' },
+    data: { campusId: campus.id, name: 'Main Block — Wing B', wing: 'B' },
   })
 
   const ROWS = ['A', 'B', 'C', 'D', 'E', 'F']
@@ -101,9 +101,9 @@ export async function seedDemoData(db: DB): Promise<void> {
   const screen6 = await createScreen(cinemaB.id, 6, 'Classroom 6')
 
   const cinemaN = await db.block.create({
-    data: { campusId: mall2.id, name: 'Nexora Cinemas', wing: 'N' },
+    data: { campusId: mall2.id, name: 'Second Block', wing: 'N' },
   })
-  const screenN1 = await createScreen(cinemaN.id, 1, 'Nexora Classroom 1', ['A', 'B', 'C', 'D'], 8)
+  const screenN1 = await createScreen(cinemaN.id, 1, 'Second Classroom 1', ['A', 'B', 'C', 'D'], 8)
 
   // Showtimes — Classroom 1 starts in 20 min ⇒ 30-min cutoff already passed (blocked demo,
   // demoAutoRoll=false keeps it permanently demonstrable via the demo-roll guardian)
@@ -201,7 +201,7 @@ export async function seedDemoData(db: DB): Promise<void> {
   ]
   for (const p of products) await db.product.create({ data: p })
 
-  // ── second-campus store (Nexora · Pune) ────────────────────────────
+  // ── second-campus store (Second Campus · Mysuru) ────────────────────────────
   const dosa = await db.store.create({
     data: {
       campusId: mall2.id,
@@ -235,7 +235,7 @@ export async function seedDemoData(db: DB): Promise<void> {
   const rN = await db.runner.create({ data: { name: 'Kiran Patil', phone: '+91 98200 44444', zoneId: zoneN.id, rating: 4.7 } })
 
   await db.user.create({ data: { name: 'Asha Rao', phone: '+91 90000 00001', email: 'asha@seatserve.demo', role: 'CAMPUS_ADMIN', campusId: campus.id, passwordHash: demoHash } })
-  await db.user.create({ data: { name: 'Vikram Mehta', phone: '+91 90000 00002', email: 'vikram@aurora.demo', role: 'BLOCK_MANAGER', campusId: campus.id, blockId: cinemaA.id, passwordHash: demoHash } })
+  await db.user.create({ data: { name: 'Vikram Mehta', phone: '+91 90000 00002', email: 'vikram@campus.demo', role: 'BLOCK_MANAGER', campusId: campus.id, blockId: cinemaA.id, passwordHash: demoHash } })
   for (const s of [snacks, pizza, wraps, mithai]) {
     await db.user.create({ data: { name: `${s.name} Manager`, phone: `+91 9000${s.slug.length} 1100`, email: `manager@${s.slug}.demo`, role: 'STORE_MANAGER', storeId: s.id, passwordHash: demoHash } })
     await db.user.create({ data: { name: `${s.name} Kitchen`, phone: `+91 9000${s.slug.length} 2200`, email: `kitchen@${s.slug}.demo`, role: 'KITCHEN_STAFF', storeId: s.id, passwordHash: demoHash } })
@@ -244,8 +244,8 @@ export async function seedDemoData(db: DB): Promise<void> {
   await db.user.create({ data: { name: 'Sana Sheikh', phone: '+91 90000 00004', email: 'sana@runner.demo', role: 'RUNNER', runnerId: r2.id, campusId: campus.id, passwordHash: demoHash } })
   await db.user.create({ data: { name: 'Priya Sharma', phone: '+91 90000 00005', role: 'CUSTOMER' } })
 
-  // second-campus staff — their boards must show NOTHING from Aurora
-  await db.user.create({ data: { name: 'Meera Iyer', phone: '+91 91000 00001', email: 'meera@nexora.demo', role: 'CAMPUS_ADMIN', campusId: mall2.id, passwordHash: demoHash } })
+  // second-campus staff — their boards must show NOTHING from the first campus
+  await db.user.create({ data: { name: 'Meera Iyer', phone: '+91 91000 00001', email: 'meera@second.demo', role: 'CAMPUS_ADMIN', campusId: mall2.id, passwordHash: demoHash } })
   await db.user.create({ data: { name: 'Dosa Junction Manager', phone: '+91 91000 00002', email: 'manager@dosa-junction.demo', role: 'STORE_MANAGER', storeId: dosa.id, passwordHash: demoHash } })
   await db.user.create({ data: { name: 'Dosa Junction Kitchen', phone: '+91 91000 00003', email: 'kitchen@dosa-junction.demo', role: 'KITCHEN_STAFF', storeId: dosa.id, passwordHash: demoHash } })
   await db.user.create({ data: { name: 'Kiran Patil', phone: '+91 91000 00004', email: 'kiran@runner.demo', role: 'RUNNER', runnerId: rN.id, campusId: mall2.id, passwordHash: demoHash } })

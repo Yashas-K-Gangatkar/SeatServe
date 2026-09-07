@@ -82,7 +82,7 @@ function QrSheet({ go }: { go: (p: string) => void }) {
               className={`rounded-full border px-3.5 py-2 text-xs font-bold transition ${data.classroom.id === s.id ? 'border-orange-400 bg-orange-50 text-orange-700 shadow-sm' : 'border-stone-300 bg-white text-stone-500 hover:bg-stone-50'}`}
               aria-pressed={data.classroom.id === s.id}
             >
-              {s.name} · {s.block.replace('Aurora Cineplex — ', '')}
+              {s.name} · {s.block.replace(/^[^—]+—\s*/, '')}
             </button>
           ))}
         </div>
@@ -110,7 +110,7 @@ function QrSheet({ go }: { go: (p: string) => void }) {
             <figcaption className="mt-1">
               <p className="text-[13px] font-black leading-tight text-gray-900">{seat.code}</p>
               <p className="truncate text-[9px] font-semibold uppercase tracking-wide text-gray-500">
-                {data.classroom.name} · {data.classroom.block.replace('Aurora Cineplex — ', '')}
+                {data.classroom.name} · {data.classroom.block.replace(/^[^—]+—\s*/, '')}
               </p>
               <p className="truncate text-[8px] text-gray-400">{seat.qrToken}</p>
             </figcaption>

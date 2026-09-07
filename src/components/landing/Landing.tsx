@@ -26,9 +26,7 @@ import { Faq } from './sections/Faq'
 import { SiteFooter } from './sections/SiteFooter'
 
 interface DemoEntry {
-  aurora: { qrToken: string; seat: string; classroom: string; campus: string } | null
-  auroraBlocked: { qrToken: string; seat: string; classroom: string } | null
-  nexora: { qrToken: string; seat: string; classroom: string; campus: string } | null
+  demo: { qrToken: string; seat: string; classroom: string; campus: string } | null
 }
 
 function useDemoSeat(): string | null {
@@ -37,7 +35,7 @@ function useDemoSeat(): string | null {
     let cancelled = false
     void get<DemoEntry>('/api/demo/entry')
       .then((entry) => {
-        if (!cancelled && entry?.aurora?.qrToken) setToken(entry.aurora.qrToken)
+        if (!cancelled && entry?.demo?.qrToken) setToken(entry.demo.qrToken)
       })
       .catch(() => undefined)
     return () => {

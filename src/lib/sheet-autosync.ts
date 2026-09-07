@@ -64,3 +64,35 @@ export function scheduleSheetAutoSync(
   })
   return true
 }
+
+/**
+ * INLINE roster freshen for the login gate — same 5-minute throttle and
+ * "one at a time" rail as the background sync, but the caller AWAITS it so
+ * the roster gate decides with a sheet pull from the last few seconds, not
+ * the last few minutes ("the server always checks the Excel sheet when
+ * someone logs in"). Bounded by `capMs`: if the sheet is slow, login
+ * proceeds against the last-known snapshot instead of hanging.
+ *
+ * Returns true only when a sync ran AND settled inside the cap. Never throws.
+ */
+export async function freshenRosterInline(
+  now: number = Date.now(),
+  work: () => Promise<{ ok: boolean; error?: string }> = () => runSheetSync(false),
+  capMs: number = 6000,
+): Promise<boolean> {
+  if (!autoSyncAllowed(now)) return false
+  markAutoSync(now)
+  let settled = false
+  const p = work()
+    .then((out) => {
+      if (!out.ok) console.warn('[sheet-autosync] inline sync failed:', out.error)
+    })
+    .catch((err: unknown) => {
+      console.warn('[sheet-autosync] inline sync crashed:', err instanceof Error ? err.message : err)
+    })
+    .finally(() => {
+      settled = true
+    })
+  await Promise.race([p, new Promise((r) => setTimeout(r, capMs))])
+  return settled
+}

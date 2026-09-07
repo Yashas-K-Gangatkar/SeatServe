@@ -7,7 +7,7 @@ const j = (r) => r.json()
 
 // 1) demo seat token
 const entry = (await fetch(`${BASE}/api/demo/entry`).then(j))?.data
-const qrToken = entry?.aurora?.qrToken
+const qrToken = entry?.demo?.qrToken
 if (!qrToken) throw new Error('no demo seat token: ' + JSON.stringify(entry).slice(0, 200))
 console.log('seat token ok')
 

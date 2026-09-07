@@ -9,7 +9,8 @@ import { ok, fail, parseBody } from '@/lib/api-helpers'
 import { SESSION_COOKIE, hashSessionToken, newSessionToken, sessionExpiry, verifyPassword } from '@/lib/auth'
 import { sessionCookieOptions } from '@/lib/auth-server'
 import { audit } from '@/lib/audit'
-import { scheduleSheetAutoSync } from '@/lib/sheet-autosync'
+import { scheduleSheetAutoSync, freshenRosterInline } from '@/lib/sheet-autosync'
+import { ROSTER_STATE_KEY, parseRosterState, rosterGateDecision } from '@/lib/sheet-gate'
 
 const bodySchema = z.object({
   email: z.string().trim().toLowerCase().email('Enter a valid email'),
@@ -48,6 +49,28 @@ export async function POST(request: Request) {
   const failKey = `${email}|${ip}`
   if (loginTooManyAttempts(failKey) >= LOGIN_MAX_FAILS) {
     return fail('Too many failed attempts — try again in 10 minutes', 429)
+  }
+
+  // ROSTER GATE — owner requirement: "the server should always check the
+  // Excel sheet whenever someone logs in, and if their name is not shown,
+  // their login should not be processed." Freshen the snapshot inline when
+  // the 5-minute throttle allows (bounded so login never hangs on OneDrive),
+  // then refuse anyone the sheet does not list. Not armed = no successful
+  // sheet pull yet → gate stays open (otherwise a broken sheet would lock
+  // out every staff account at once).
+  await freshenRosterInline()
+  const rosterState = parseRosterState((await db.appSetting.findUnique({ where: { key: ROSTER_STATE_KEY } }))?.value)
+  const gate = rosterGateDecision(rosterState, email)
+  if (!gate.allowed) {
+    await audit({
+      actorRole: 'SYSTEM',
+      actorRef: 'roster-gate',
+      action: 'LOGIN_BLOCKED_ROSTER',
+      entityType: 'User',
+      entityId: email,
+      meta: { email },
+    })
+    return fail('Your email is not in the staff roster sheet yet — ask the owner to add your row to the Excel sheet first.', 403)
   }
 
   const user = await db.user.findUnique({ where: { email } })

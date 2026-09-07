@@ -12,7 +12,7 @@ jget() { python3 -c "import sys,json;d=json.load(sys.stdin);print(eval('d'+sys.a
 code() { curl -s -o /dev/null -w '%{http_code}' "$@"; }
 
 JAR=$(mktemp -d)
-QR=$(curl -s "$BASE/api/demo/entry" | jget "['data']['aurora']['qrToken']")
+QR=$(curl -s "$BASE/api/demo/entry" | jget "['data']['demo']['qrToken']")
 C=$(curl -s "$BASE/api/context?qr=$QR")
 # pick Block Snacks (kitchen@cinema-snacks.demo is the test's accepter);
 # fall back to the first store with an AVAILABLE product

@@ -50,8 +50,8 @@ export async function GET(request: Request) {
   const settings = await getSettings()
 
   // Audit fix #13: return ONLY stores inside the seat's campus. The old query
-  // returned every store on the platform (cross-campus leak — and with the
-  // second seed campus it would have let an Aurora seat order from Nexora).
+  // returned every store on the platform (cross-campus leak — a seat from one
+  // campus could have ordered from another campus's store).
   const stores = await db.store.findMany({
     where: { campusId: classroom.block.campusId },
     orderBy: { name: 'asc' },

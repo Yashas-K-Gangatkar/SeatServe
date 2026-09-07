@@ -9,9 +9,8 @@ import { GraduationCap, LockKeyhole, QrCode, Search, Info } from 'lucide-react'
 import { get } from '@/lib/client/api'
 
 interface DemoEntry {
-  aurora: { qrToken: string; seat: string; classroom: string; campus: string } | null
-  auroraBlocked: { qrToken: string; seat: string; classroom: string } | null
-  nexora: { qrToken: string; seat: string; classroom: string; campus: string } | null
+  demo: { qrToken: string; seat: string; classroom: string; campus: string } | null
+  demoAlt: { qrToken: string; seat: string; classroom: string; campus: string } | null
 }
 
 function useDemoEntry(): DemoEntry | null {
@@ -39,9 +38,9 @@ const HOW_STEPS = [
 
 export default function SeatLanding({ go }: { go: (path: string) => void }) {
   const entry = useDemoEntry()
-  const seatToken = entry?.aurora?.qrToken ?? null
-  const seatLabel = entry?.aurora ? `Room ${entry.aurora.classroom}` : 'your classroom'
-  const nexoraToken = entry?.nexora?.qrToken ?? null
+  const seatToken = entry?.demo?.qrToken ?? null
+  const seatLabel = entry?.demo ? `Room ${entry.demo.classroom}` : 'your classroom'
+  const altToken = entry?.demoAlt?.qrToken ?? null
 
   const consoles = [
     ...(seatToken
@@ -56,12 +55,12 @@ export default function SeatLanding({ go }: { go: (path: string) => void }) {
           },
         ]
       : []),
-    ...(nexoraToken
+    ...(altToken
       ? [
           {
-            href: `#/seat/${nexoraToken}` as string | null,
+            href: `#/seat/${altToken}` as string | null,
             icon: QrCode,
-            title: `Customer · ${entry?.nexora?.campus} ${entry?.nexora?.seat}`,
+            title: `Customer · ${entry?.demoAlt?.campus} ${entry?.demoAlt?.seat}`,
             sub: 'SECOND CAMPUS — same platform, isolated stores, proves multi-tenancy',
             tint: 'text-sky-600 bg-sky-100',
             tag: 'ISOLATION',

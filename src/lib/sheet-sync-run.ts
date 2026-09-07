@@ -14,6 +14,7 @@ import { db } from '@/lib/db'
 import { hashPassword, verifyPassword } from '@/lib/auth'
 import { audit } from '@/lib/audit'
 import { mapGrid, mapSheet, pseudoPhoneFor, type SheetParse, type SheetRecord } from '@/lib/sheet-sync'
+import { ROSTER_STATE_KEY, emptyRosterState, parseRosterState, rosterEmailsFromParse, type RosterState } from '@/lib/sheet-gate'
 import { fetchSheet } from '@/lib/sheet-fetch'
 import { readXlsxGrid } from '@/lib/xlsx-read'
 
@@ -75,22 +76,57 @@ export async function runSheetSync(dry: boolean): Promise<SheetSyncOutcome> {
     }
   }
 
+  // Roster-gate state (login refuses emails that are not in the last
+  // successfully-read sheet). Real runs keep it current; dry runs only report.
+  const priorState = parseRosterState((await db.appSetting.findUnique({ where: { key: ROSTER_STATE_KEY } }))?.value)
+  const writeRosterState = async (patch: Partial<RosterState>): Promise<RosterState> => {
+    const next: RosterState = { ...emptyRosterState(), ...(priorState ?? {}), ...patch }
+    await db.appSetting.upsert({
+      where: { key: ROSTER_STATE_KEY },
+      update: {
+        value: JSON.stringify(next),
+      },
+      create: { key: ROSTER_STATE_KEY, value: JSON.stringify(next) },
+    })
+    return next
+  }
+
   // 1. download the sheet (xlsx bytes or csv text; login pages rejected)
   const fetched = await fetchSheet(sheetUrl)
-  if (!fetched.ok) return { ok: false, status: fetched.status, error: fetched.error }
+  if (!fetched.ok) {
+    if (!dry) await writeRosterState({ lastError: fetched.error, lastErrorAt: new Date().toISOString() })
+    return { ok: false, status: fetched.status, error: fetched.error }
+  }
 
   // 2. parse + validate (identical rules for Excel grids and CSV rows)
   let parse: SheetParse
   try {
     parse = fetched.kind === 'xlsx' ? mapGrid(readXlsxGrid(fetched.bytes)) : mapSheet(fetched.text)
   } catch (err) {
-    return { ok: false, status: 422, error: `Could not read the sheet: ${err instanceof Error ? err.message : 'unknown format'}` }
+    const msg = `Could not read the sheet: ${err instanceof Error ? err.message : 'unknown format'}`
+    if (!dry) await writeRosterState({ lastError: msg, lastErrorAt: new Date().toISOString() })
+    return { ok: false, status: 422, error: msg }
   }
   const { headerFound, rows, total } = parse
   if (!headerFound) {
-    return { ok: false, status: 422, error: 'Sheet header row not recognized — needs at least: name, email, role columns' }
+    const msg = 'Sheet header row not recognized — needs at least: name, email, role columns'
+    if (!dry) await writeRosterState({ lastError: msg, lastErrorAt: new Date().toISOString() })
+    return { ok: false, status: 422, error: msg }
   }
   if (total > MAX_ROWS) return { ok: false, status: 422, error: `Sheet has ${total} rows — limit is ${MAX_ROWS}` }
+
+  // 2b. the sheet was read successfully — snapshot its emails as the roster
+  // gate truth BEFORE applying rows (the sheet, not the apply result, decides
+  // who may log in). Skipped-with-email rows still count as "on the roster".
+  const rosterEmails = rosterEmailsFromParse(parse)
+  if (!dry) {
+    await writeRosterState({
+      emails: rosterEmails,
+      lastSuccessAt: new Date().toISOString(),
+      lastError: null,
+      lastErrorAt: null,
+    })
+  }
 
   const good = rows.filter((r): r is Extract<ParsedRow, { ok: true }> => r.ok)
   const skipped = rows
@@ -184,6 +220,11 @@ export async function runSheetSync(dry: boolean): Promise<SheetSyncOutcome> {
         wouldDeactivate: deactivated,
         unchanged,
         skipped,
+        rosterGate: {
+          armedNow: (priorState?.emails.length ?? 0) > 0,
+          wouldArm: rosterEmails.length > 0,
+          wouldTrack: rosterEmails.length,
+        },
       },
     }
   }
@@ -202,6 +243,11 @@ export async function runSheetSync(dry: boolean): Promise<SheetSyncOutcome> {
       deactivated,
       unchanged,
       skipped,
+      rosterGate: {
+        armed: rosterEmails.length > 0,
+        tracked: rosterEmails.length,
+        lastSuccessAt: new Date().toISOString(),
+      },
     },
   }
 
